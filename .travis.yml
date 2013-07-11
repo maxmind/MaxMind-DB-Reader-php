@@ -1,0 +1,32 @@
+language: php
+
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+
+before_install:
+  - composer self-update
+  - composer install --dev -n --prefer-source
+  - pyrus install pear/PHP_CodeSniffer
+  - phpenv rehash
+
+script:
+  - mkdir -p build/logs
+  - phpcs --standard=PSR2 src/
+  - phpunit -c phpunit.xml.dist
+
+after_script:
+  - php vendor/bin/coveralls
+
+notifications:
+  email:
+    recipients:
+      - dev@maxmind.com
+    on_success: change
+    on_failure: always
+  hipchat:
+    secure: "Um4ZUKu3B66IrL8ux8sIiL/A16NZKugHHvbegKenRjUGQB6OXQ4h0H8D0qzG\n+oSt3jYibhNSgUy7zLTEOvfD/gBJurnbbzS5b8RtDUrzp6LMeaxZbJa2Efbl\nZK88g8LV4frwCevEW2JWqKmqEgnOqhfkDDaJoiaJHX/RLyOJwBc="
+
+A
+
