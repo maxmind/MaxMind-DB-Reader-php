@@ -10,6 +10,8 @@ class Decoder
     private $debug = true;
     private $fileStream;
     private $pointerBase;
+    // FIXME
+    public $POINTER_TEST_HACK;
 
     private $types = array(
         0  => 'extended',
@@ -58,8 +60,9 @@ class Decoder
 
             // for unit testing
             if ($this->POINTER_TEST_HACK) {
-                return $pointer;
+                return array($pointer);
             }
+
             $result = $this->decode($pointer);
 
             return array($result, $offset);
@@ -142,28 +145,25 @@ class Decoder
 
     private function decodeDouble($bits)
     {
-        // FIXME - this will only work on little endian machines with
-        // IEEE 754 doubles
-        list(, $double) = unpack('d', strrev($bits));
+        // FIXME? - Assumes IEEE 754 double on platform
+        list(, $double) = unpack('d', $this->maybeSwitchByteOrder($bits));
         return $double;
     }
 
     private function decodeFloat($bits)
     {
-        // FIXME - this will only work on little endian machines with
-        // IEEE 754 floats
-        list(, $float) = unpack('f', strrev($bits));
+        // FIXME? - Assumes IEEE 754 floats on platform
+        list(, $float) = unpack('f', $this->maybeSwitchByteOrder($bits));
         return $float;
     }
 
     private function decodeInt32($bytes)
     {
-        // PHP doesn't have a big-endian signed-long unpack
-        $unpacked = $this->decodeUint32($bytes);
-        $firstBit = $unpacked >> 31;
-        $signum = $firstBit ? -1 : 1;
-
-        return $signum * ($unpacked & 0x7FFFFFFF);
+        $bytes = $this->zeroPadLeft($bytes, 4);
+        // FIXME - this only works on little endian machines.
+        // PHP doesn't have a big-endian signed-long unpack.
+        list(, $int) = unpack('l', $this->maybeSwitchByteOrder($bytes));
+        return $int;
     }
 
     private $pointerValueOffset = array(
@@ -182,13 +182,29 @@ class Decoder
 
         $packed = $pointerSize == 4
             ? $buffer
-            : ( pack(C, $ctrlByte & 0x3) ) + $buffer;
+            : ( pack('C', $ctrlByte & 0x3) ) + $buffer;
 
-        $packed = $this->zeroPadLeft($packed, 4);
+        $unpacked = $this->decodeUint32($packed);
 
-        list(, $unpacked) = unpack('N', $packed);
+        if ($this->debug) {
+            $this->log('Control Byte', $ctrlByte);
+            $this->log('Pointer Offset', $offset);
+            $this->log('Pointer Size', $pointerSize);
+            $this->logBytes('Packed', $packed);
+            $this->log('Unpacked', $unpacked);
+            $this->log('Pointer Base', $this->pointerBase);
+            $this->log('Pointer Value Offset', $this->pointerValueOffset[$pointerSize]);
+        }
         $pointer = $unpacked + $this->pointerBase + $this->pointerValueOffset[$pointerSize];
 
+        if ($this->debug) {
+            $this->log('Control Byte', $ctrlByte);
+            $this->log('Pointer Offset', $offset);
+            $this->log('Pointer Size', $pointerSize);
+            $this->logBytes('Packed', $packed);
+            $this->log('Unpacked', $unpacked);
+            $this->log('Pointer', $pointer);
+        }
         return array($pointer, $offset);
     }
 
@@ -236,6 +252,9 @@ class Decoder
 
     private function read($offset, $numberOfBytes)
     {
+        if ($numberOfBytes == 0) {
+            return '';
+        }
         fseek($this->fileStream, $offset);
         return fread($this->fileStream, $numberOfBytes);
     }
@@ -260,9 +279,7 @@ class Decoder
 
     private function zeroPadLeft($content, $desiredLength)
     {
-        $padLength = $desiredLength - strlen($content);
-
-        return str_pad($content, $padLength, "\x00", STR_PAD_LEFT);
+        return str_pad($content, $desiredLength, "\x00", STR_PAD_LEFT);
     }
 
     private function log($name, $message)
@@ -274,5 +291,13 @@ class Decoder
     {
         $message = implode(',', array_map('dechex', unpack('C*', $bytes)));
         $this->log($name, $message);
+    }
+
+    private function maybeSwitchByteOrder($bytes)
+    {
+        // FIXME - Right now it _always_ switches byte order. When the object
+        // is created, it should detect endianness and that should be used
+        // here.
+        return strrev($bytes);
     }
 }
