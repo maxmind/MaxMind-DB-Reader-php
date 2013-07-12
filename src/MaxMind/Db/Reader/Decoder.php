@@ -7,7 +7,7 @@ use MaxMind\Db\Reader\InvalidDatabaseException;
 class Decoder
 {
 
-    private $debug = true;
+    private $debug;
     private $fileStream;
     private $pointerBase;
     // FIXME
@@ -38,6 +38,7 @@ class Decoder
     ) {
         $this->fileStream = $fileStream;
         $this->pointerBase = $pointerBase;
+        $this->debug = getenv('MAXMIND_DB_DECODER_DEBUG');
     }
 
 
@@ -108,11 +109,11 @@ class Decoder
         }
         switch ($type) {
             case 'map':
-                return $this->decodeMap($bytes, $offset);
+                return $this->decodeMap($size, $offset);
             case 'array':
-                return $this->decodeArray($bytes, $offset);
+                return $this->decodeArray($size, $offset);
             case 'boolean':
-                return array($this->decodeBoolean($bytes), $offset);
+                return array($this->decodeBoolean($size), $offset);
             case 'utf8_string':
                 return array($this->decodeString($bytes), $newOffset);
             case 'double':
@@ -120,7 +121,7 @@ class Decoder
             case 'float':
                 return array($this->decodeFloat($bytes), $newOffset);
             case 'bytes':
-                return array($this->getByteArray($bytes), $newOffset);
+                return array($bytes, $newOffset);
             case 'uint16':
                 return array($this->decodeUint16($bytes), $newOffset);
             case 'uint32':
@@ -128,7 +129,7 @@ class Decoder
             case 'int32':
                 return array($this->decodeInt32($bytes), $newOffset);
             case 'uint64':
-                return aray($this->decodeUint64($bytes), $newOffset);
+                return array($this->decodeUint64($bytes), $newOffset);
             case 'uint128':
                 return array($this->decodeUint128($bytes), $newOffset);
             default:
@@ -136,6 +137,23 @@ class Decoder
                     "Unknown or unexpected type: " + $type
                 );
         }
+    }
+
+    private function decodeArray($size, $offset)
+    {
+        $array = array();
+
+        for ($i = 0; $i < $size; $i++) {
+            list($value, $offset) = $this->decode($offset);
+            array_push($array, $value);
+        }
+
+        if ($this->debug) {
+            $this->log("Array size", $size);
+            $this->log("Decoded array", serialize($array));
+        }
+
+        return array($array, $offset);
     }
 
     private function decodeBoolean($size)
@@ -166,12 +184,30 @@ class Decoder
         return $int;
     }
 
+    private function decodeMap($size, $offset)
+    {
+
+        $map = array();
+
+        for ($i = 0; $i < $size; $i++) {
+            list($key, $offset) = $this->decode($offset);
+            list($value, $offset) = $this->decode($offset);
+            $map[$key] = $value;
+        }
+
+        if ($this->debug) {
+            $this->debug("Map size", $size);
+            $this->debug("Decoded map", serialize($map));
+        }
+        return array($map, $offset);
+    }
+
     private $pointerValueOffset = array(
         1 => 0,
         2 => 2048,
         3 => 526336,
         4 => 0,
-        );
+    );
 
     private function decodePointer($ctrlByte, $offset)
     {
@@ -182,19 +218,9 @@ class Decoder
 
         $packed = $pointerSize == 4
             ? $buffer
-            : ( pack('C', $ctrlByte & 0x3) ) + $buffer;
+            : ( pack('C', $ctrlByte & 0x7) ) . $buffer;
 
         $unpacked = $this->decodeUint32($packed);
-
-        if ($this->debug) {
-            $this->log('Control Byte', $ctrlByte);
-            $this->log('Pointer Offset', $offset);
-            $this->log('Pointer Size', $pointerSize);
-            $this->logBytes('Packed', $packed);
-            $this->log('Unpacked', $unpacked);
-            $this->log('Pointer Base', $this->pointerBase);
-            $this->log('Pointer Value Offset', $this->pointerValueOffset[$pointerSize]);
-        }
         $pointer = $unpacked + $this->pointerBase + $this->pointerValueOffset[$pointerSize];
 
         if ($this->debug) {
@@ -233,12 +259,13 @@ class Decoder
 
     private function decodeBigUint($bytes, $size)
     {
-        $size /= 4;
+        $numberOfLongs = $size/4;
         $integer = 0;
-        $unpacked = array_merge(unpack("N$size", $bytes));
+        $bytes = $this->zeroPadLeft($bytes, $size);
+        $unpacked = array_merge(unpack("N$numberOfLongs", $bytes));
         foreach ($unpacked as $part) {
             // No bitwise operators with bcmath :'-(
-            $integer = bcadd(bcmul($integer, bcpow($integer, 2)), $part);
+            $integer = bcadd(bcmul($integer, bcpow(2, 32)), $part);
         }
         return $integer;
     }
