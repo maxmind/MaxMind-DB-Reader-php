@@ -1,14 +1,17 @@
 # MaxMind DB Reader PHP API #
 
-## Beta Note ##
+## Alpha Note ##
 
-This is a beta release. The API may change before the first production
+This is a alpha release. The API may change before the first production
 release.
 
-To provide feedback or get support during the beta, please see the
+To provide feedback or get support during the alpha, please see the
 [MaxMind Customer Community](https://getsatisfaction.com/maxmind).
 
 ## Description ##
+
+This is the pure PHP API for reading MaxMind DB files. MaxMind DB is a binary
+file format that stores data indexed by IP address subnets (IPv4 or IPv6).
 
 ## Installation ##
 
@@ -20,7 +23,7 @@ To do this, add ```maxminddb/reader``` to your ```composer.json``` file.
 ```json
 {
     "require": {
-        "maxminddb/reader": "0.1.*"
+        "maxminddb/reader": "dev-master"
     }
 }
 ```
@@ -56,13 +59,22 @@ require 'vendor/autoload.php';
 <?php
 require_once 'vendor/autoload.php';
 
+use MaxMind\Db\Reader;
+
+$ipAddress = '24.24.24.24';
+$databaseFile = 'GeoIP2-City.mmdb';
+
+$reader = new Reader('GeoIP2-City.mmdb');
+
+print_r $reader->get($ip);
 ...
 ```
 
 ## Support ##
 
 Please report all issues with this code using the
-[GitHub issue tracker](https://github.com/maxmind/GeoIP2-php/issues).
+[GitHub issue tracker]
+(https://github.com/maxmind/MaxMind-DB-Reader-php/issues).
 
 If you are having an issue with a MaxMind service that is not specific
 to the client API, please see
@@ -70,10 +82,8 @@ to the client API, please see
 
 ## Requirements  ##
 
-This code requires PHP 5.3 or greater. Older versions of PHP are not
+This library requires PHP 5.3 or greater. Older versions of PHP are not
 supported.
-
-This library also relies on the [Guzzle HTTP client](http://guzzlephp.org/).
 
 ## Contributing ##
 
