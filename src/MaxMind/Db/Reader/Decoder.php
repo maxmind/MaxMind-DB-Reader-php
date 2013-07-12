@@ -221,7 +221,8 @@ class Decoder
             : ( pack('C', $ctrlByte & 0x7) ) . $buffer;
 
         $unpacked = $this->decodeUint32($packed);
-        $pointer = $unpacked + $this->pointerBase + $this->pointerValueOffset[$pointerSize];
+        $pointer = $unpacked + $this->pointerBase
+            + $this->pointerValueOffset[$pointerSize];
 
         if ($this->debug) {
             $this->log('Control Byte', $ctrlByte);
@@ -290,7 +291,7 @@ class Decoder
     {
         $size = $ctrlByte & 0x1f;
         $bytesToRead = $size < 29 ? 0 : $size - 28;
-        $bytes = $this->read($offset, $size);
+        $bytes = $this->read($offset, $bytesToRead);
         $decoded = $this->decodeUint32($bytes);
 
         if ($size == 29) {
@@ -298,6 +299,7 @@ class Decoder
         } elseif ($size == 30) {
             $size = 285 + $decoded;
         } elseif ($size > 30) {
+
             $size = $decoded & (0x0FFFFFFF >> (32 - (8 * $bytesToRead)))
                 + 65821;
         }
