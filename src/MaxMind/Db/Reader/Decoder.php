@@ -64,7 +64,7 @@ class Decoder
                 return array($pointer);
             }
 
-            $result = $this->decode($pointer);
+            list($result) = $this->decode($pointer);
 
             return array($result, $offset);
         }
@@ -196,8 +196,8 @@ class Decoder
         }
 
         if ($this->debug) {
-            $this->debug("Map size", $size);
-            $this->debug("Decoded map", serialize($map));
+            $this->log("Map size", $size);
+            $this->log("Decoded map", serialize($map));
         }
         return array($map, $offset);
     }
@@ -213,8 +213,8 @@ class Decoder
     {
         $pointerSize = (($ctrlByte >> 3) & 0x3) + 1;
 
-        // FIXME - need to update $offset
         $buffer = $this->read($offset, $pointerSize);
+        $offset = $offset + $pointerSize;
 
         $packed = $pointerSize == 4
             ? $buffer
