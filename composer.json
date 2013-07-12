@@ -1,7 +1,7 @@
 {
-    "name": "maxminddb/reader",
+    "name": "maxmind-db/reader",
     "description": "MaxMind DB Reader API",
-    "keywords": [ "geoip", "geolocation", "maxmind" ],
+    "keywords": [ "database", "geoip", "geolocation", "maxmind" ],
     "homepage": "https://github.com/maxmind/MaxMind-DB-php",
     "type": "library",
     "license": "LGPL-2.1+",
