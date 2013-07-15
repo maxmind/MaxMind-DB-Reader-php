@@ -50,7 +50,7 @@ class Decoder
         $type = $this->types[$ctrlByte >> 5];
 
         if ($this->debug) {
-            $this->log('Control Byte', $ctrlByte);
+            $this->logByte('Control Byte', $ctrlByte);
             $this->log('Type', $type);
         }
         // Pointers are a special case, we don't read the next $size bytes, we
@@ -105,6 +105,8 @@ class Decoder
         $newOffset = $offset + $size;
         $bytes = $this->read($offset, $size);
         if ($this->debug) {
+            $this->log('Size', $size);
+            $this->log('Number of bytes', strlen($bytes));
             $this->logBytes('Bytes to Decode', $bytes);
         }
         switch ($type) {
@@ -300,9 +302,10 @@ class Decoder
             $size = 285 + $decoded;
         } elseif ($size > 30) {
 
-            $size = $decoded & (0x0FFFFFFF >> (32 - (8 * $bytesToRead)))
+            $size = ($decoded & (0x0FFFFFFF >> (32 - (8 * $bytesToRead))))
                 + 65821;
         }
+
         return array($size, $offset + $bytesToRead);
     }
 
@@ -314,6 +317,11 @@ class Decoder
     private function log($name, $message)
     {
         print("$name: $message\n");
+    }
+
+    private function logByte($name, $byte)
+    {
+        $this->log($name, dechex($byte));
     }
 
     private function logBytes($name, $bytes)
