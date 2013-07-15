@@ -3,6 +3,7 @@
 namespace MaxMind\Db;
 
 use MaxMind\Db\Reader\Decoder;
+use MaxMind\Db\Reader\Logger;
 use MaxMind\Db\Reader\Metadata;
 
 class Reader
@@ -27,10 +28,8 @@ class Reader
      * @throws Exception
      *             if there is an error opening or reading from the file.
      */
-    public function __construct(
-        $database,
-        $fileMode = null
-    ) {
+    public function __construct($database)
+    {
         $this->debug = getenv('MAXMIND_DB_READER_DEBUG');
         $this->fileHandle = fopen($database, 'r');
         $start = $this->findMetadataStart($database);
@@ -45,7 +44,7 @@ class Reader
         );
 
         if ($this->debug) {
-            // $this->log(serialize($this->metadata));
+            Logger::log(serialize($this->metadata));
         }
     }
 
@@ -75,9 +74,9 @@ class Reader
         $rawAddress = array_merge(unpack('C*', inet_pton($ipAddress)));
 
         if ($this->debug) {
-            $this->log("\n");
-            $this->log("IP address", $ipAddress);
-            $this->log("IP address", implode(',', $rawAddress));
+            Logger::log();
+            Logger::log("IP address", $ipAddress);
+            Logger::log("IP address", implode(',', $rawAddress));
         }
 
         $isIp4AddressInIp6Db = count($rawAddress) == 4
@@ -91,32 +90,32 @@ class Reader
         for ($i = 0; $i < count($rawAddress) * 8 + $ipStartBit; $i++) {
             $bit = 0;
             if ($i >= $ipStartBit) {
-                $b = 0xFF & $rawAddress[($i - $ipStartBit) / 8];
-                $bit = 1 & ($b >> 7 - ($i % 8));
+                $tempBit = 0xFF & $rawAddress[($i - $ipStartBit) / 8];
+                $bit = 1 & ($tempBit >> 7 - ($i % 8));
             }
             $record = $this->readNode($nodeNum, $bit);
 
             if ($this->debug) {
-                $this->log("Bit #", $i);
-                $this->log("Bit value", $bit);
-                $this->log("Record", $bit == 1 ? "right" : "left");
-                $this->log("Record value", $record);
+                Logger::log("Bit #", $i);
+                Logger::log("Bit value", $bit);
+                Logger::log("Record", $bit == 1 ? "right" : "left");
+                Logger::log("Record value", $record);
             }
 
             if ($record == $this->metadata->nodeCount) {
                 if ($this->debug) {
-                    $this->log("Record is empty");
+                    Logger::log("Record is empty");
                 }
                 return 0;
             } elseif ($record > $this->metadata->nodeCount) {
                 if ($this->debug) {
-                    $this->log("Record is a data pointer");
+                    Logger::log("Record is a data pointer");
                 }
                 return $record;
             }
 
             if ($this->debug) {
-                $this->log("Record is a node number");
+                Logger::log("Record is a node number");
             }
 
             $nodeNum = $record;
@@ -168,7 +167,7 @@ class Reader
 
         if ($this->debug) {
             $treeSize = $this->metadata->searchTreeSize;
-            $this->log(
+            Logger::log(
                 'Resolved data pointer',
                 '( ' . $pointer . " - "
                 . $this->metadata->nodeCount . " ) + " . $treeSize . " = "
@@ -198,8 +197,8 @@ class Reader
         for ($i = 0; $i < $fileSize - $markerLength + 1; $i++) {
             for ($j = 0; $j < $markerLength; $j++) {
                 fseek($handle, $fileSize - $i - $j - 1);
-                $b = fgetc($handle);
-                if ($b != $marker[$markerLength - $j - 1]) {
+                $matchBit = fgetc($handle);
+                if ($matchBit != $marker[$markerLength - $j - 1]) {
                     continue 2;
                 }
             }
@@ -214,16 +213,6 @@ class Reader
     public function metadata()
     {
         return $this->metadata;
-    }
-
-    // XXX - move to separate classe or something
-    private function log($name, $message = null)
-    {
-        if ($message === null) {
-            print("$name\n");
-        } else {
-            print("$name: $message\n");
-        }
     }
 
     /**

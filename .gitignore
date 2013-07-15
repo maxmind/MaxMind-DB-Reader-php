@@ -4,6 +4,7 @@ composer.lock
 composer.phar
 phpunit.xml
 vendor/
+*.sublime-*
 *.sw?
 t.php
 *.old

@@ -3,6 +3,7 @@
 namespace MaxMind\Db\Reader;
 
 use MaxMind\Db\Reader\InvalidDatabaseException;
+use MaxMind\Db\Reader\Logger;
 
 class Decoder
 {
@@ -50,8 +51,8 @@ class Decoder
         $type = $this->types[$ctrlByte >> 5];
 
         if ($this->debug) {
-            $this->logByte('Control Byte', $ctrlByte);
-            $this->log('Type', $type);
+            Logger::logByte('Control Byte', $ctrlByte);
+            Logger::log('Type', $type);
         }
         // Pointers are a special case, we don't read the next $size bytes, we
         // use the size to determine the length of the pointer and then follow
@@ -75,9 +76,9 @@ class Decoder
             $typeNum = $nextByte + 7;
 
             if ($this->debug) {
-                $this->log('Offset', $offset);
-                $this->log('Next Byte', $nextByte);
-                $this->log('Type', $this->types[$typeNum]);
+                Logger::log('Offset', $offset);
+                Logger::log('Next Byte', $nextByte);
+                Logger::log('Type', $this->types[$typeNum]);
             }
 
             if ($typeNum < 8) {
@@ -105,9 +106,9 @@ class Decoder
         $newOffset = $offset + $size;
         $bytes = $this->read($offset, $size);
         if ($this->debug) {
-            $this->log('Size', $size);
-            $this->log('Number of bytes', strlen($bytes));
-            $this->logBytes('Bytes to Decode', $bytes);
+            Logger::log('Size', $size);
+            Logger::log('Number of bytes', strlen($bytes));
+            Logger::logBytes('Bytes to Decode', $bytes);
         }
         switch ($type) {
             case 'map':
@@ -151,8 +152,8 @@ class Decoder
         }
 
         if ($this->debug) {
-            $this->log("Array size", $size);
-            $this->log("Decoded array", serialize($array));
+            Logger::log("Array size", $size);
+            Logger::log("Decoded array", serialize($array));
         }
 
         return array($array, $offset);
@@ -198,8 +199,8 @@ class Decoder
         }
 
         if ($this->debug) {
-            $this->log("Map size", $size);
-            $this->log("Decoded map", serialize($map));
+            Logger::log("Map size", $size);
+            Logger::log("Decoded map", serialize($map));
         }
         return array($map, $offset);
     }
@@ -227,12 +228,12 @@ class Decoder
             + $this->pointerValueOffset[$pointerSize];
 
         if ($this->debug) {
-            $this->log('Control Byte', $ctrlByte);
-            $this->log('Pointer Offset', $offset);
-            $this->log('Pointer Size', $pointerSize);
-            $this->logBytes('Packed', $packed);
-            $this->log('Unpacked', $unpacked);
-            $this->log('Pointer', $pointer);
+            Logger::log('Control Byte', $ctrlByte);
+            Logger::log('Pointer Offset', $offset);
+            Logger::log('Pointer Size', $pointerSize);
+            Logger::logBytes('Packed', $packed);
+            Logger::log('Unpacked', $unpacked);
+            Logger::log('Pointer', $pointer);
         }
         return array($pointer, $offset);
     }
@@ -312,22 +313,6 @@ class Decoder
     private function zeroPadLeft($content, $desiredLength)
     {
         return str_pad($content, $desiredLength, "\x00", STR_PAD_LEFT);
-    }
-
-    private function log($name, $message)
-    {
-        print("$name: $message\n");
-    }
-
-    private function logByte($name, $byte)
-    {
-        $this->log($name, dechex($byte));
-    }
-
-    private function logBytes($name, $bytes)
-    {
-        $message = implode(',', array_map('dechex', unpack('C*', $bytes)));
-        $this->log($name, $message);
     }
 
     private function maybeSwitchByteOrder($bytes)
