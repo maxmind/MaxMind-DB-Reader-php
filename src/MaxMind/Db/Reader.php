@@ -216,7 +216,7 @@ class Reader
     }
 
     /**
-     * @return Metadata object for the reader.
+     * @return Metadata object for the database.
      */
     public function metadata()
     {
