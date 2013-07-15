@@ -65,7 +65,7 @@ class Reader
     public function get($ipAddress)
     {
         if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
-            throw new InvalidArgumentException(
+            throw new \InvalidArgumentException(
                 "$ipAddress is not a valid IP address"
             );
         }
