@@ -6,6 +6,10 @@ use MaxMind\Db\Reader\Decoder;
 use MaxMind\Db\Reader\Logger;
 use MaxMind\Db\Reader\Metadata;
 
+/**
+ * Instances of this class provide a reader for the MaxMind DB format. IP
+ * addresses can be looked up using the <code>get</code> method.
+ */
 class Reader
 {
     private $DATA_SECTION_SEPARATOR_SIZE = 16;
@@ -16,7 +20,6 @@ class Reader
     private $fileHandle;
     private $metadata;
 
-
     /**
      * Constructs a Reader for the MaxMind DB format. The file passed to it must
      * be a valid MaxMind DB file such as a GeoIp2 database file.
@@ -25,8 +28,9 @@ class Reader
      *            the MaxMind DB file to use.
      * @param string $fileMode
      *            the mode to open the file with.
-     * @throws Exception
-     *             if there is an error opening or reading from the file.
+     * @throws InvalidDatabaseException
+     *             if the database is invalid or there is an error reading
+     *             from it.
      */
     public function __construct($database)
     {
@@ -54,8 +58,9 @@ class Reader
      * @param string $ipAddress
      *            the IP address to look up.
      * @return the record for the IP address.
-     * @throws Exception
-     *             if a file I/O error occurs.
+     * @throws InvalidDatabaseException
+     *             if the database is invalid or there is an error reading
+     *             from it.
      */
     public function get($ipAddress)
     {
@@ -210,6 +215,9 @@ class Reader
         );
     }
 
+    /**
+     * @return Metadata object for the reader.
+     */
     public function metadata()
     {
         return $this->metadata;

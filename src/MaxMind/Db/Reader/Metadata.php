@@ -4,6 +4,10 @@ namespace MaxMind\Db\Reader;
 
 use MaxMind\Db\Reader\Decoder;
 
+/**
+ * This class provides the metadata for the database. This is primarily
+ * meant for internal use.
+ */
 class Metadata
 {
     private $binaryFormatMajorVersion;
@@ -33,7 +37,6 @@ class Metadata
         $this->recordSize = $metadata['record_size'];
         $this->nodeByteSize = $this->recordSize / 4;
         $this->searchTreeSize = $this->nodeCount * $this->nodeByteSize;
-
     }
 
     public function __get($var)
