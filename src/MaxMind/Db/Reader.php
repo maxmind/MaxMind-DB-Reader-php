@@ -64,6 +64,11 @@ class Reader
      */
     public function get($ipAddress)
     {
+        if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
+            throw new InvalidArgumentException(
+                "$ipAddress is not a valid IP address"
+            );
+        }
         $pointer = $this->findAddressInTree($ipAddress);
         if ($pointer == 0) {
             // FIXME - I think PHP might expect an exception, and the GeoIP2
