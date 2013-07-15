@@ -20,9 +20,9 @@ class Reader
      * Constructs a Reader for the MaxMind DB format. The file passed to it must
      * be a valid MaxMind DB file such as a GeoIp2 database file.
      *
-     * @param $database
+     * @param string $database
      *            the MaxMind DB file to use.
-     * @param $fileMode
+     * @param string $fileMode
      *            the mode to open the file with.
      * @throws Exception
      *             if there is an error opening or reading from the file.
@@ -52,10 +52,10 @@ class Reader
     /**
      * Looks up the <code>address</code> in the MaxMind DB.
      *
-     * @param ipAddress
+     * @param string $ipAddress
      *            the IP address to look up.
      * @return the record for the IP address.
-     * @throws IOException
+     * @throws Exception
      *             if a file I/O error occurs.
      */
     public function get($ipAddress)
@@ -225,14 +225,6 @@ class Reader
             print("$name: $message\n");
         }
     }
-
-    // XXX - cut and pasted
-    private function logBytes($name, $bytes)
-    {
-        $message = implode(',', array_map('dechex', unpack('C*', $bytes)));
-        $this->log($name, $message);
-    }
-
 
     /**
      * Closes the MaxMind DB and returns resources to the system.
