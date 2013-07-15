@@ -18,12 +18,12 @@ file format that stores data indexed by IP address subnets (IPv4 or IPv6).
 ### Define Your Dependencies ###
 
 We recommend installing this package with [Composer](http://getcomposer.org/).
-To do this, add ```maxminddb/reader``` to your ```composer.json``` file.
+To do this, add ```maxmind-db/reader``` to your ```composer.json``` file.
 
 ```json
 {
     "require": {
-        "maxminddb/reader": "dev-master"
+        "maxmind-db/reader": "dev-master"
     }
 }
 ```
