@@ -340,8 +340,7 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
         }
         fseek($handle, 0);
 
-        $decoder = new Decoder($handle);
-        $decoder->POINTER_TEST_HACK = true;
+        $decoder = new Decoder($handle, 0, true);
         list($actual) = $decoder->decode(0);
 
         if ($type == 'float') {

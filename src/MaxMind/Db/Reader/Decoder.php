@@ -11,8 +11,9 @@ class Decoder
     private $debug;
     private $fileStream;
     private $pointerBase;
-    // FIXME
-    public $POINTER_TEST_HACK;
+    // This is only used for unit testing
+    private $pointerTestHack;
+    private $switchByteOrder;
 
     private $types = array(
         0  => 'extended',
@@ -35,11 +36,15 @@ class Decoder
 
     public function __construct(
         $fileStream,
-        $pointerBase = 0
+        $pointerBase = 0,
+        $pointerTestHack = false
     ) {
         $this->fileStream = $fileStream;
         $this->pointerBase = $pointerBase;
+        $this->pointerTestHack = $pointerTestHack;
+
         $this->debug = getenv('MAXMIND_DB_DECODER_DEBUG');
+        $this->switchByteOrder = $this->isPlatformLittleEndian();
     }
 
 
@@ -61,7 +66,7 @@ class Decoder
             list($pointer, $offset) = $this->decodePointer($ctrlByte, $offset);
 
             // for unit testing
-            if ($this->POINTER_TEST_HACK) {
+            if ($this->pointerTestHack) {
                 return array($pointer);
             }
 
@@ -166,14 +171,14 @@ class Decoder
 
     private function decodeDouble($bits)
     {
-        // FIXME? - Assumes IEEE 754 double on platform
+        // XXX - Assumes IEEE 754 double on platform
         list(, $double) = unpack('d', $this->maybeSwitchByteOrder($bits));
         return $double;
     }
 
     private function decodeFloat($bits)
     {
-        // FIXME? - Assumes IEEE 754 floats on platform
+        // XXX - Assumes IEEE 754 floats on platform
         list(, $float) = unpack('f', $this->maybeSwitchByteOrder($bits));
         return $float;
     }
@@ -181,8 +186,6 @@ class Decoder
     private function decodeInt32($bytes)
     {
         $bytes = $this->zeroPadLeft($bytes, 4);
-        // FIXME - this only works on little endian machines.
-        // PHP doesn't have a big-endian signed-long unpack.
         list(, $int) = unpack('l', $this->maybeSwitchByteOrder($bytes));
         return $int;
     }
@@ -317,9 +320,13 @@ class Decoder
 
     private function maybeSwitchByteOrder($bytes)
     {
-        // FIXME - Right now it _always_ switches byte order. When the object
-        // is created, it should detect endianness and that should be used
-        // here.
-        return strrev($bytes);
+        return $this->switchByteOrder ? strrev($bytes) : $bytes;
+    }
+
+    private function isPlatformLittleEndian()
+    {
+        $testint = 0x00FF;
+        $packed = pack('S', $testint);
+        return $testint===current(unpack('v', $packed));
     }
 }
