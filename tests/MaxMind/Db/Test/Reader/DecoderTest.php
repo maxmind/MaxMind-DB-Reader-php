@@ -149,8 +149,6 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
         '-2147483647' => array( 0x4, 0x1, 0x80, 0x0, 0x0, 0x1),
     );
 
-    // XXX - Probably should test really long strings better. See x strings
-    // in other decoders
     private function strings()
     {
         $strings = array(
