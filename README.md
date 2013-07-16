@@ -1,11 +1,11 @@
 # MaxMind DB Reader PHP API #
 
-## Alpha Note ##
+## Beta Note ##
 
-This is a alpha release. The API may change before the first production
+This is a beta release. The API may change before the first production
 release.
 
-To provide feedback or get support during the alpha, please see the
+To provide feedback or get support during the beta, please see the
 [MaxMind Customer Community](https://getsatisfaction.com/maxmind).
 
 ## Description ##
@@ -23,7 +23,7 @@ To do this, add ```maxmind-db/reader``` to your ```composer.json``` file.
 ```json
 {
     "require": {
-        "maxmind-db/reader": "dev-master"
+        "maxmind-db/reader": "0.1.*"
     }
 }
 ```
