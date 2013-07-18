@@ -66,7 +66,7 @@ $databaseFile = 'GeoIP2-City.mmdb';
 
 $reader = new Reader($databaseFile);
 
-print_r ($reader->get($ipAddress));
+print_r($reader->get($ipAddress));
 //...
 ```
 
