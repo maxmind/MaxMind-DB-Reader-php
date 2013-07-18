@@ -64,10 +64,10 @@ use MaxMind\Db\Reader;
 $ipAddress = '24.24.24.24';
 $databaseFile = 'GeoIP2-City.mmdb';
 
-$reader = new Reader('GeoIP2-City.mmdb');
+$reader = new Reader($databaseFile);
 
-print_r $reader->get($ip);
-...
+print_r ($reader->get($ipAddress));
+//...
 ```
 
 ## Support ##
