@@ -1,5 +1,6 @@
 #include <php.h>
 #include <zend_interfaces.h>
+#include <gmp.h>
 #include <maxminddb.h>
 
 #define __STDC_FORMAT_MACROS

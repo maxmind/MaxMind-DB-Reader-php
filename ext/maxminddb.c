@@ -117,8 +117,22 @@ int entry_data(MMDB_entry_data_list_s **entry_data_list, zval *z_value)
         }
         break;
     case MMDB_DATA_TYPE_UINT128:
-        printf("in uint128\n");
-        // AS STRING? (*entry_data_list)->entry_data.uint128);
+        {
+            mpz_t integ;
+            mpz_init (integ);
+
+            int i;
+            for (i=0; i < 16; i++) {
+                mpz_t part;
+                mpz_init (part);
+
+                mpz_mul_2exp(integ, integ, 8);
+                mpz_add(integ, integ, part);
+            }
+            char* num_str = mpz_get_str(NULL, 10, integ);
+            ZVAL_STRING(z_value, num_str, 1);
+            efree(num_str);
+        }
         break;
     case MMDB_DATA_TYPE_INT32:
         ZVAL_LONG(z_value, (*entry_data_list)->entry_data.int32);
