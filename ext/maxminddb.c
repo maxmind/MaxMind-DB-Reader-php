@@ -6,7 +6,7 @@
 static zend_object_handlers maxminddb_obj_handlers;
 static zend_class_entry *maxminddb_ce;
 
-int throw_exception(char *exception_name, char *message, ...)
+static int throw_exception(char *exception_name TSRMLS_DC, char *message, ...)
 {
     char *error;
     va_list args;
@@ -31,7 +31,8 @@ int throw_exception(char *exception_name, char *message, ...)
     return;
 }
 
-int entry_data(MMDB_entry_data_list_s **entry_data_list, zval *z_value)
+static int entry_data(MMDB_entry_data_list_s **entry_data_list,
+                      zval *z_value TSRMLS_DC)
 {
     bool get_next = true;
 
@@ -50,14 +51,14 @@ int entry_data(MMDB_entry_data_list_s **entry_data_list, zval *z_value)
                     estrndup((char *)(*entry_data_list)->entry_data.utf8_string,
                              (*entry_data_list)->entry_data.data_size);
                 if (NULL == key) {
-                    throw_exception(PHP_MAXMINDDB_READER_EX_NS,
+                    throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
                                     "Invalid data type arguments");
                 }
 
                 (*entry_data_list) = (*entry_data_list)->next;
                 zval *new_value;
                 ALLOC_INIT_ZVAL(new_value);
-                entry_data(entry_data_list, new_value);
+                entry_data(entry_data_list, new_value TSRMLS_CC);
                 add_assoc_zval(z_value, key, new_value);
             }
         }
@@ -73,7 +74,7 @@ int entry_data(MMDB_entry_data_list_s **entry_data_list, zval *z_value)
                  size && (*entry_data_list); size--) {
                 zval *new_value;
                 ALLOC_INIT_ZVAL(new_value);
-                entry_data(entry_data_list, new_value);
+                entry_data(entry_data_list, new_value TSRMLS_CC);
                 add_next_index_zval(z_value, new_value);
             }
         }
@@ -140,7 +141,7 @@ int entry_data(MMDB_entry_data_list_s **entry_data_list, zval *z_value)
         break;
     default:
         {
-            throw_exception(PHP_MAXMINDDB_READER_EX_NS,
+            throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
                             "Invalid data type arguments: %d",
                             (*entry_data_list)->entry_data.type);
         }
@@ -158,7 +159,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct){
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &db_file,
                               &name_len) == FAILURE) {
-        throw_exception("InvalidArgumentException",
+        throw_exception("InvalidArgumentException" TSRMLS_CC,
                         "Invalid arguments");
     }
 
@@ -166,7 +167,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct){
     uint16_t status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
 
     if (MMDB_SUCCESS != status) {
-        throw_exception(PHP_MAXMINDDB_READER_EX_NS,
+        throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
                         "Error opening database");
         return;
     }
@@ -181,7 +182,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &ip_address,
                               &name_len) == FAILURE) {
-        throw_exception("InvalidArgumentException",
+        throw_exception("InvalidArgumentException" TSRMLS_CC,
                         "Invalid arguments");
     }
 
@@ -197,12 +198,12 @@ PHP_METHOD(MaxMind_Db_Reader, get){
                            &mmdb_error);
 
     if (MMDB_SUCCESS != gai_error) {
-        throw_exception("DomainException",
+        throw_exception("DomainException" TSRMLS_CC,
                         "Error resolving %s", ip_address);
     }
 
     if (MMDB_SUCCESS != mmdb_error) {
-        throw_exception(PHP_MAXMINDDB_READER_EX_NS,
+        throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
                         "Error looking up %s", ip_address);
     }
 
@@ -213,12 +214,12 @@ PHP_METHOD(MaxMind_Db_Reader, get){
         int status = MMDB_get_entry_data_list(&result.entry, &entry_data_list);
 
         if (MMDB_SUCCESS != status) {
-            throw_exception(PHP_MAXMINDDB_READER_EX_NS,
+            throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
                             "Error while looking up data for %s", ip_address);
         }
 
         if (NULL != entry_data_list) {
-            entry_data(&entry_data_list, return_value);
+            entry_data(&entry_data_list, return_value TSRMLS_CC);
         }
     } else {
         RETURN_NULL();
@@ -247,7 +248,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
     MMDB_entry_data_list_s *entry_data_list;
     MMDB_get_metadata_as_entry_data_list(mmdb_obj->mmdb, &entry_data_list);
 
-    entry_data(&entry_data_list, metadata_array);
+    entry_data(&entry_data_list, metadata_array TSRMLS_CC);
     zend_call_method_with_1_params(&return_value, *metadata_ce,
                                    &(*metadata_ce)->constructor,
                                    ZEND_CONSTRUCTOR_FUNC_NAME,
@@ -257,7 +258,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
     return;
 }
 
-void maxminddb_free_storage(void *object TSRMLS_DC)
+static void maxminddb_free_storage(void *object TSRMLS_DC)
 {
     maxminddb_obj *obj = (maxminddb_obj *)object;
     efree(obj->mmdb);
@@ -268,7 +269,8 @@ void maxminddb_free_storage(void *object TSRMLS_DC)
     efree(obj);
 }
 
-zend_object_value maxminddb_create_handler(zend_class_entry *type TSRMLS_DC)
+static zend_object_value maxminddb_create_handler(
+    zend_class_entry *type TSRMLS_DC)
 {
     zval *tmp;
     zend_object_value retval;
@@ -291,13 +293,13 @@ zend_object_value maxminddb_create_handler(zend_class_entry *type TSRMLS_DC)
 
 
 static zend_function_entry maxminddb_methods[] = {
-    PHP_ME(MaxMind_Db_Reader, __construct, NULL,
+    PHP_ME(MaxMind_Db_Reader, __construct,          NULL,
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(MaxMind_Db_Reader, get,         NULL,
+    PHP_ME(MaxMind_Db_Reader, get,                  NULL,
            ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, metadata,    NULL,
+    PHP_ME(MaxMind_Db_Reader, metadata,             NULL,
            ZEND_ACC_PUBLIC){
-        NULL,                 NULL,        NULL
+        NULL,                 NULL,                 NULL
     }
 };
 
