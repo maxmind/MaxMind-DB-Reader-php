@@ -243,79 +243,11 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
 
     zval *metadata_array;
     ALLOC_INIT_ZVAL(metadata_array);
-    array_init(metadata_array);
 
-    // XXX - replace with map from libmaxminddb when it supports it
-    zval *major_version;
-    ALLOC_INIT_ZVAL(major_version);
-    ZVAL_LONG(major_version,
-              mmdb_obj->mmdb->metadata.binary_format_major_version)
-    add_assoc_zval(metadata_array, "binary_format_major_version", major_version);
+    MMDB_entry_data_list_s *entry_data_list;
+    MMDB_get_metadata_as_entry_data_list(mmdb_obj->mmdb, &entry_data_list);
 
-    zval *minor_version;
-    ALLOC_INIT_ZVAL(minor_version);
-    ZVAL_LONG(minor_version,
-              mmdb_obj->mmdb->metadata.binary_format_minor_version)
-    add_assoc_zval(metadata_array, "binary_format_minor_version", minor_version);
-
-    zval *build_epoch;
-    ALLOC_INIT_ZVAL(build_epoch);
-    ZVAL_LONG(build_epoch, mmdb_obj->mmdb->metadata.build_epoch)
-    add_assoc_zval(metadata_array, "build_epoch", build_epoch);
-
-    zval *ip_version;
-    ALLOC_INIT_ZVAL(ip_version);
-    ZVAL_LONG(ip_version, mmdb_obj->mmdb->metadata.ip_version)
-    add_assoc_zval(metadata_array, "ip_version", ip_version);
-
-    zval *record_size;
-    ALLOC_INIT_ZVAL(record_size);
-    ZVAL_LONG(record_size, mmdb_obj->mmdb->metadata.record_size)
-    add_assoc_zval(metadata_array, "record_size", record_size);
-
-    zval *node_count;
-    ALLOC_INIT_ZVAL(node_count);
-    ZVAL_LONG(node_count, mmdb_obj->mmdb->metadata.node_count)
-    add_assoc_zval(metadata_array, "node_count", node_count);
-
-    zval *database_type;
-    ALLOC_INIT_ZVAL(database_type);
-    char *db_type_str = mmdb_obj->mmdb->metadata.database_type;
-    ZVAL_STRING(database_type, db_type_str, strlen(db_type_str));
-    add_assoc_zval(metadata_array, "database_type", database_type);
-
-
-    zval *descriptions;
-    ALLOC_INIT_ZVAL(descriptions);
-    array_init(descriptions);
-    size_t i;
-    for (i = 0; i < mmdb_obj->mmdb->metadata.description.count; i++) {
-        zval *description;
-        ALLOC_INIT_ZVAL(description);
-        const char *description_str =
-            mmdb_obj->mmdb->metadata.description.descriptions[i]->description;
-        ZVAL_STRING(description, description_str, strlen(description_str));
-        add_assoc_zval(
-            descriptions,
-            mmdb_obj->mmdb->metadata.description.descriptions[i]->language,
-            description);
-    }
-    add_assoc_zval(metadata_array, "description", descriptions);
-
-    zval *languages;
-    ALLOC_INIT_ZVAL(languages);
-    array_init(languages);
-    for (i = 0; i < mmdb_obj->mmdb->metadata.languages.count; i++) {
-        zval *language;
-        ALLOC_INIT_ZVAL(language);
-        const char *language_str = mmdb_obj->mmdb->metadata.languages.names[i];
-        ZVAL_STRING(language, language_str, strlen(language_str));
-        add_next_index_zval(languages, language);
-    }
-    add_assoc_zval(metadata_array, "languages", languages);
-
-    // END XXX
-
+    entry_data(&entry_data_list, metadata_array);
     zend_call_method_with_1_params(&return_value, *metadata_ce,
                                    &(*metadata_ce)->constructor,
                                    ZEND_CONSTRUCTOR_FUNC_NAME,
