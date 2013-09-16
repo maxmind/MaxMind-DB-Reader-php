@@ -9,6 +9,19 @@ before_install:
   - git submodule update --init --recursive
   - composer self-update
   - composer install --dev -n --prefer-source
+  - git clone git://github.com/maxmind/libmaxminddb
+  - cd libmaxminddb
+  - git checkout dave/major-refactor
+  - ./bootstrap
+  - ./configure
+  - make
+  - sudo make install
+  - cd ../ext
+  - phpize
+  - ./configure --enable-maxminddb
+  - make
+  - make test
+  - cd ..
   - pyrus install pear/PHP_CodeSniffer
   - phpenv rehash
 
@@ -16,6 +29,7 @@ script:
   - mkdir -p build/logs
   - phpcs --standard=PSR2 src/
   - phpunit -c phpunit.xml.dist
+  - phpunit -dextension=ext/modules/maxminddb -c phpunit.xml.dist
 
 after_script:
   - php vendor/bin/coveralls
