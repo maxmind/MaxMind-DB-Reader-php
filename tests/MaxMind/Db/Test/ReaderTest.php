@@ -13,6 +13,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
                 $fileName = 'maxmind-db/test-data/MaxMind-DB-test-ipv'
                     . $ipVersion . '-' . $recordSize . '.mmdb';
                 $reader = new Reader($fileName);
+
                 $this->checkMetadata($reader, $ipVersion, $recordSize);
 
                 if ($ipVersion == 4) {
@@ -22,6 +23,37 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
                 }
             }
         }
+    }
+
+    public function testDecoder()
+    {
+        $reader = new Reader('maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb');
+        $record = $reader->get('::1.1.1.0');
+
+        $this->assertEquals(array(1,2,3), $record['array']);
+        $this->assertEquals(true, $record['boolean']);
+        $this->assertEquals(pack('N', 42), $record['bytes']);
+        $this->assertEquals(42.123456, $record['double']);
+        $this->assertEquals(1.1000000238419, $record['float']);
+        $this->assertEquals(-268435456, $record['int32']);
+        $this->assertEquals(
+            array(
+                'mapX' => array(
+                    'arrayX' => array(7, 8,9),
+                    'utf8_stringX' => 'hello'
+                    ),
+                ),
+            $record['map']
+        );
+        $this->assertEquals(
+            '1329227995784915872903807060280344576',
+            $record['uint128']
+        );
+
+        $this->assertEquals(100, $record['uint16']);
+        $this->assertEquals(268435456, $record['uint32']);
+        $this->assertEquals('1152921504606846976', $record['uint64']);
+        $this->assertEquals('unicode! ☯ - ♫', $record['utf8_string']);
     }
 
     private function checkMetadata($reader, $ipVersion, $recordSize)
