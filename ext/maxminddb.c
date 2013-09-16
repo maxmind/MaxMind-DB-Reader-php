@@ -6,7 +6,7 @@
 static zend_object_handlers maxminddb_obj_handlers;
 static zend_class_entry *maxminddb_ce;
 
-int throw_exception(char *exception_name, char * message, ...)
+int throw_exception(char *exception_name, char *message, ...)
 {
     char *error;
     va_list args;
@@ -119,18 +119,18 @@ int entry_data(MMDB_entry_data_list_s **entry_data_list, zval *z_value)
     case MMDB_DATA_TYPE_UINT128:
         {
             mpz_t integ;
-            mpz_init (integ);
+            mpz_init(integ);
 
             int i;
-            for (i=0; i < 16; i++) {
+            for (i = 0; i < 16; i++) {
                 mpz_t part;
-                mpz_init (part);
+                mpz_init(part);
                 mpz_set_ui(part, (*entry_data_list)->entry_data.uint128[i]);
 
                 mpz_mul_2exp(integ, integ, 8);
                 mpz_add(integ, integ, part);
             }
-            char* num_str = mpz_get_str(NULL, 10, integ);
+            char *num_str = mpz_get_str(NULL, 10, integ);
             ZVAL_STRING(z_value, num_str, 1);
             efree(num_str);
         }
@@ -280,7 +280,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
 
     zval *database_type;
     ALLOC_INIT_ZVAL(database_type);
-    char * db_type_str = mmdb_obj->mmdb->metadata.database_type;
+    char *db_type_str = mmdb_obj->mmdb->metadata.database_type;
     ZVAL_STRING(database_type, db_type_str, strlen(db_type_str));
     add_assoc_zval(metadata_array, "database_type", database_type);
 
@@ -292,7 +292,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
     for (i = 0; i < mmdb_obj->mmdb->metadata.description.count; i++) {
         zval *description;
         ALLOC_INIT_ZVAL(description);
-        const char * description_str =
+        const char *description_str =
             mmdb_obj->mmdb->metadata.description.descriptions[i]->description;
         ZVAL_STRING(description, description_str, strlen(description_str));
         add_assoc_zval(
@@ -308,7 +308,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
     for (i = 0; i < mmdb_obj->mmdb->metadata.languages.count; i++) {
         zval *language;
         ALLOC_INIT_ZVAL(language);
-        const char * language_str = mmdb_obj->mmdb->metadata.languages.names[i];
+        const char *language_str = mmdb_obj->mmdb->metadata.languages.names[i];
         ZVAL_STRING(language, language_str, strlen(language_str));
         add_next_index_zval(languages, language);
     }
@@ -359,13 +359,13 @@ zend_object_value maxminddb_create_handler(zend_class_entry *type TSRMLS_DC)
 
 
 static zend_function_entry maxminddb_methods[] = {
-    PHP_ME(MaxMind_Db_Reader, __construct,          NULL,
+    PHP_ME(MaxMind_Db_Reader, __construct, NULL,
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(MaxMind_Db_Reader, get,                  NULL,
+    PHP_ME(MaxMind_Db_Reader, get,         NULL,
            ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, metadata,             NULL,
+    PHP_ME(MaxMind_Db_Reader, metadata,    NULL,
            ZEND_ACC_PUBLIC){
-        NULL,                 NULL,                 NULL
+        NULL,                 NULL,        NULL
     }
 };
 
