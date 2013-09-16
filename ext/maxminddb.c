@@ -125,6 +125,7 @@ int entry_data(MMDB_entry_data_list_s **entry_data_list, zval *z_value)
             for (i=0; i < 16; i++) {
                 mpz_t part;
                 mpz_init (part);
+                mpz_set_ui(part, (*entry_data_list)->entry_data.uint128[i]);
 
                 mpz_mul_2exp(integ, integ, 8);
                 mpz_add(integ, integ, part);

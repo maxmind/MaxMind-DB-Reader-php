@@ -1,3 +1,4 @@
+*~
 *.la
 *.lo
 *.o
@@ -13,7 +14,7 @@ autom4te.cache/
 build/
 composer.lock
 composer.phar
-config.*
+config.[^mw]*
 configure*
 core
 install-sh
