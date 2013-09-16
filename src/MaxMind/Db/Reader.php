@@ -28,7 +28,7 @@ class Reader
      *            the MaxMind DB file to use.
      * @param string $fileMode
      *            the mode to open the file with.
-     * @throws InvalidDatabaseException
+     * @throws \MaxMind\Db\InvalidDatabaseException
      *             if the database is invalid or there is an error reading
      *             from it.
      */
