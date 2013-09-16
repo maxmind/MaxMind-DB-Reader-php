@@ -308,7 +308,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
     for (i = 0; i < mmdb_obj->mmdb->metadata.languages.count; i++) {
         zval *language;
         ALLOC_INIT_ZVAL(language);
-        char * language_str = mmdb_obj->mmdb->metadata.languages.names[i];
+        const char * language_str = mmdb_obj->mmdb->metadata.languages.names[i];
         ZVAL_STRING(language, language_str, strlen(language_str));
         add_next_index_zval(languages, language);
     }
