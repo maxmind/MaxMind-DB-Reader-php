@@ -80,29 +80,16 @@ int entry_data(MMDB_entry_data_list_s **entry_data_list, zval *z_value)
         break;
     case MMDB_DATA_TYPE_UTF8_STRING:
         {
-            char *string =
-                estrndup((char *)(*entry_data_list)->entry_data.utf8_string,
-                         (*entry_data_list)->entry_data.data_size);
-            if (NULL == string) {
-                zend_error(E_ERROR, "Out of memory");
-            }
-            ZVAL_STRING(z_value, string, 0);
+            ZVAL_STRINGL(z_value,
+                         (char *)(*entry_data_list)->entry_data.utf8_string,
+                         (*entry_data_list)->entry_data.data_size,
+                         1);
         }
         break;
     case MMDB_DATA_TYPE_BYTES:
         {
-            // XXX - currently the PHP reader returns a binary string.
-            // We should probably do that here too.
-            int size = (*entry_data_list)->entry_data.data_size;
-            const char *bytes = (*entry_data_list)->entry_data.bytes;
-            array_init(z_value);
-            int i;
-            for (i = 0; i < size; i++) {
-                zval *new_value;
-                ALLOC_INIT_ZVAL(new_value);
-                ZVAL_LONG(new_value, (long)bytes[i]);
-                add_next_index_zval(z_value, new_value);
-            }
+            ZVAL_STRINGL(z_value, (char *)(*entry_data_list)->entry_data.bytes,
+                         (*entry_data_list)->entry_data.data_size, 1);
         }
         break;
     case MMDB_DATA_TYPE_DOUBLE:
@@ -121,8 +108,13 @@ int entry_data(MMDB_entry_data_list_s **entry_data_list, zval *z_value)
         ZVAL_BOOL(z_value, (*entry_data_list)->entry_data.boolean);
         break;
     case MMDB_DATA_TYPE_UINT64:
-        printf("in uint64\n");
-        // AS STRING? (*entry_data_list)->entry_data.uint64);
+        {
+            // We return it as a string because PHP uses signed longs
+            char *int_str;
+            spprintf(&int_str, 0, "%" PRIu64,
+                     (*entry_data_list)->entry_data.uint64 );
+            ZVAL_STRING(z_value, int_str, 0);
+        }
         break;
     case MMDB_DATA_TYPE_UINT128:
         printf("in uint128\n");

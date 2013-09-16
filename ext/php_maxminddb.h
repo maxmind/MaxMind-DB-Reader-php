@@ -2,6 +2,9 @@
 #include <zend_interfaces.h>
 #include <maxminddb.h>
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 #ifndef PHP_MAXMINDDB_H
 #define PHP_MAXMINDDB_H 1
 #define PHP_MAXMINDDB_VERSION "0.0.1"

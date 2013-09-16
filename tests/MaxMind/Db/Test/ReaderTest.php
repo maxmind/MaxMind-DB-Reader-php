@@ -45,15 +45,16 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
                 ),
             $record['map']
         );
-        $this->assertEquals(
-            '1329227995784915872903807060280344576',
-            $record['uint128']
-        );
 
         $this->assertEquals(100, $record['uint16']);
         $this->assertEquals(268435456, $record['uint32']);
         $this->assertEquals('1152921504606846976', $record['uint64']);
         $this->assertEquals('unicode! ☯ - ♫', $record['utf8_string']);
+
+        $this->assertEquals(
+            '1329227995784915872903807060280344576',
+            $record['uint128']
+        );
     }
 
     private function checkMetadata($reader, $ipVersion, $recordSize)
