@@ -3,6 +3,10 @@
 #include <gmp.h>
 #include <maxminddb.h>
 
+#ifdef ZTS
+#include <TSRM.h>
+#endif
+
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
