@@ -57,6 +57,145 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @expectedException DomainException
+     * @expectedExceptionMessage The value "not_ip" is not a valid IP address.
+     */
+    public function testIpValidation()
+    {
+        $reader = new Reader('maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb');
+        $reader->get('not_ip');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage The file "file-does-not-exist.mmdb" does not exist or is not readable.
+     */
+    public function testMissingDatabase()
+    {
+        new Reader('file-does-not-exist.mmdb');
+    }
+
+    /**
+     * @expectedException MaxMind\Db\Reader\InvalidDatabaseException
+     * @expectedExceptionMessage Error opening database file (README.md). Is this a valid MaxMind DB file?
+     */
+    public function testNonDatabase()
+    {
+        new Reader('README.md');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage The constructor takes exactly one argument.
+     */
+    public function testTooManyConstructorArgs()
+    {
+        new Reader('README.md', 1);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     *
+     * This test only matters for the extension.
+     */
+    public function testNoConstructorArgs()
+    {
+        if (extension_loaded('maxminddb')) {
+            new Reader();
+        } else {
+            throw new \InvalidArgumentException();
+        }
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Method takes exactly one argument.
+     */
+    public function testTooManyGetAgs()
+    {
+        $reader = new Reader(
+            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+        );
+        $reader->get('1.1.1.1', 'blah');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     *
+     * This test only matters for the extension.
+     */
+    public function testNoGetArgs()
+    {
+        if (extension_loaded('maxminddb')) {
+            $reader = new Reader(
+                'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+            );
+            $reader->get();
+        } else {
+            throw new \InvalidArgumentException();
+        }
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Method takes no arguments.
+     */
+    public function testMetadataAgs()
+    {
+        $reader = new Reader(
+            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+        );
+        $reader->metadata('blah');
+    }
+
+    public function testClose()
+    {
+        $reader = new Reader(
+            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+        );
+        $reader->close();
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Attempt to close a closed MaxMind DB.
+     */
+    public function testDoubleClose()
+    {
+        $reader = new Reader(
+            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+        );
+        $reader->close();
+        $reader->close();
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Attempt to read from a closed MaxMind DB.
+     */
+    public function testClosedGet()
+    {
+        $reader = new Reader(
+            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+        );
+        $reader->close();
+        $reader->get('1.1.1.1');
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Attempt to read from a closed MaxMind DB.
+     */
+    public function testClosedMetadata()
+    {
+        $reader = new Reader(
+            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+        );
+        $reader->close();
+        $reader->metadata();
+    }
+
     private function checkMetadata($reader, $ipVersion, $recordSize)
     {
         $metadata = $reader->metadata();
@@ -67,16 +206,21 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
             'major version'
         );
         $this->assertEquals(0, $metadata->binaryFormatMinorVersion);
-        $this->assertEquals($ipVersion, $metadata->ipVersion);
+        $this->assertEquals(1373571901, $metadata->buildEpoch);
         $this->assertEquals('Test', $metadata->databaseType);
-        $this->assertEquals('en', $metadata->languages[0]);
-        $this->assertEquals('zh', $metadata->languages[1]);
 
         $this->assertEquals(
             array('en' => 'Test Database', 'zh' => 'Test Database Chinese'),
             $metadata->description
         );
+
+        $this->assertEquals($ipVersion, $metadata->ipVersion);
+        $this->assertEquals(array('en', 'zh'), $metadata->languages);
+        $this->assertEquals($recordSize/4, $metadata->nodeByteSize);
+        $this->assertGreaterThan(36, $metadata->nodeCount);
+
         $this->assertEquals($recordSize, $metadata->recordSize);
+        $this->assertGreaterThan(200, $metadata->searchTreeSize);
     }
 
     private function checkIpV4(Reader $reader, $fileName)
@@ -116,7 +260,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         }
     }
 
-        // XXX - logic could be combined with above
+    // XXX - logic could be combined with above
     private function checkIpV6(Reader $reader, $fileName)
     {
         $subnets = array( '::1:ffff:ffff', '::2:0:0',

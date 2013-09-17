@@ -4,6 +4,7 @@ namespace MaxMind\Db;
 
 use MaxMind\Db\Reader\Decoder;
 use MaxMind\Db\Reader\Logger;
+use MaxMind\Db\Reader\InvalidDatabaseException;
 use MaxMind\Db\Reader\Metadata;
 
 /**
@@ -34,11 +35,21 @@ class Reader
      */
     public function __construct($database)
     {
+        if (func_num_args() != 1) {
+            throw new \InvalidArgumentException(
+                'The constructor takes exactly one argument.'
+            );
+        }
         $this->debug = getenv('MAXMIND_DB_READER_DEBUG');
+
+        if (!is_readable($database)) {
+            throw new \InvalidArgumentException(
+                "The file \"$database\" does not exist or is not readable."
+            );
+        }
         $this->fileHandle = fopen($database, 'r');
+
         $start = $this->findMetadataStart($database);
-
-
         $metadataDecoder = new Decoder($this->fileHandle, 0);
         list($metadataArray) = $metadataDecoder->decode($start);
         $this->metadata = new Metadata($metadataArray);
@@ -64,9 +75,21 @@ class Reader
      */
     public function get($ipAddress)
     {
-        if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
+        if (func_num_args() != 1) {
             throw new \InvalidArgumentException(
-                "$ipAddress is not a valid IP address"
+                'Method takes exactly one argument.'
+            );
+        }
+
+        if (!is_resource($this->fileHandle)) {
+            throw new \BadMethodCallException(
+                'Attempt to read from a closed MaxMind DB.'
+            );
+        }
+
+        if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
+            throw new \DomainException(
+                "The value \"$ipAddress\" is not a valid IP address."
             );
         }
         $pointer = $this->findAddressInTree($ipAddress);
@@ -215,8 +238,8 @@ class Reader
             return $fileSize - $i;
         }
         throw new InvalidDatabaseException(
-            'Could not find a MaxMind DB metadata marker in this file ('
-            . $filename . "). Is this a valid MaxMind DB file?"
+            "Error opening database file ($filename). " .
+            'Is this a valid MaxMind DB file?'
         );
     }
 
@@ -225,6 +248,20 @@ class Reader
      */
     public function metadata()
     {
+        if (func_num_args()) {
+            throw new \InvalidArgumentException(
+                'Method takes no arguments.'
+            );
+        }
+
+        // Not technically required, but this makes it consistent with
+        // C extension and it allows us to change our implementation later.
+        if (!is_resource($this->fileHandle)) {
+            throw new \BadMethodCallException(
+                'Attempt to read from a closed MaxMind DB.'
+            );
+        }
+
         return $this->metadata;
     }
 
@@ -236,6 +273,11 @@ class Reader
      */
     public function close()
     {
+        if (!is_resource($this->fileHandle)) {
+            throw new \BadMethodCallException(
+                'Attempt to close a closed MaxMind DB.'
+            );
+        }
         fclose($this->fileHandle);
     }
 }
