@@ -1,6 +1,10 @@
 #include <php.h>
 #include <zend_interfaces.h>
-#include <gmp.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <maxminddb.h>
 
 #ifdef ZTS
@@ -10,9 +14,10 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
+
 #ifndef PHP_MAXMINDDB_H
 #define PHP_MAXMINDDB_H 1
-#define PHP_MAXMINDDB_VERSION "0.0.1"
+#define PHP_MAXMINDDB_VERSION "0.2.0"
 #define PHP_MAXMINDDB_EXTNAME "maxminddb"
 #define PHP_MAXMINDDB_NS ZEND_NS_NAME("MaxMind", "Db")
 #define PHP_MAXMINDDB_READER_NS ZEND_NS_NAME(PHP_MAXMINDDB_NS, "Reader")

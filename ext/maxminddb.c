@@ -1,6 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 #include "php_maxminddb.h"
 
 static void handle_entry_data_list(MMDB_entry_data_list_s **entry_data_list,
@@ -289,19 +286,24 @@ static void handle_array(MMDB_entry_data_list_s **entry_data_list,
 static void handle_uint128(MMDB_entry_data_list_s **entry_data_list,
                            zval *z_value TSRMLS_DC)
 {
-    mpz_t integ;
-    mpz_init(integ);
-
+    char *num_str;
+    uint64_t high = 0;
+    uint64_t low = 0;
+#if MISSING_UINT128
     int i;
-    for (i = 0; i < 16; i++) {
-        mpz_t part;
-        mpz_init(part);
-        mpz_set_ui(part, (*entry_data_list)->entry_data.uint128[i]);
-
-        mpz_mul_2exp(integ, integ, 8);
-        mpz_add(integ, integ, part);
+    for (i = 0; i < 8; i++) {
+        high = (high << 8) | (*entry_data_list)->entry_data.uint128[i];
     }
-    char *num_str = mpz_get_str(NULL, 10, integ);
+
+    for (i = 8; i < 16; i++) {
+        low = (low << 8) | (*entry_data_list)->entry_data.uint128[i];
+    }
+#else
+    high = (*entry_data_list)->entry_data.uint128 >> 64;
+    low = (uint64_t) (*entry_data_list)->entry_data.uint128;
+#endif
+
+    spprintf(&num_str, 0, "0x%016" PRIX64 "%016" PRIX64, high, low);
     ZVAL_STRING(z_value, num_str, 1);
     efree(num_str);
 }

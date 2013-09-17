@@ -5,17 +5,11 @@ PHP_ARG_ENABLE(maxminddb,
 if test $PHP_MAXMINDDB != "no"; then
     PHP_CHECK_LIBRARY(maxminddb, MMDB_open)
 
-    PHP_CHECK_LIBRARY(gmp, __gmp_randinit_lc_2exp_size,
-        [],[
-            PHP_CHECK_LIBRARY(gmp, gmp_randinit_lc_2exp_size,
-            [],[
-                AC_MSG_ERROR([GNU MP Library version 4.1.2 or greater required.])
-            ],[])
-        ],
-        []
-    )
+    AC_CHECK_TYPE(
+        [unsigned __int128],
+        [AC_DEFINE([MISSING_UINT128], [0], [Missing the unsigned __int128 type])],
+        [AC_DEFINE([MISSING_UINT128], [1], [Missing the unsigned __int128 type])])
 
-    PHP_ADD_LIBRARY(gmp, $1, MAXMINDDB_SHARED_LIBADD)
     PHP_ADD_LIBRARY(maxminddb, 1, MAXMINDDB_SHARED_LIBADD)
     PHP_SUBST(MAXMINDDB_SHARED_LIBADD)
 
