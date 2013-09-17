@@ -11,7 +11,7 @@ static void handle_uint128(MMDB_entry_data_list_s **entry_data_list,
 static void handle_uint64(MMDB_entry_data_list_s **entry_data_list,
                           zval *z_value TSRMLS_DC);
 static int throw_exception(char *exception_name TSRMLS_DC, char *message, ...);
-static bool file_is_readable(const char * filename);
+static bool file_is_readable(const char *filename);
 
 #if PHP_VERSION_ID < 50399
 # define object_properties_init(zo, class_type)         \
@@ -300,7 +300,7 @@ static void handle_uint128(MMDB_entry_data_list_s **entry_data_list,
     }
 #else
     high = (*entry_data_list)->entry_data.uint128 >> 64;
-    low = (uint64_t) (*entry_data_list)->entry_data.uint128;
+    low = (uint64_t)(*entry_data_list)->entry_data.uint128;
 #endif
 
     spprintf(&num_str, 0, "0x%016" PRIX64 "%016" PRIX64, high, low);
@@ -343,7 +343,7 @@ static int throw_exception(char *exception_name TSRMLS_DC, char *message, ...)
     return;
 }
 
-static bool file_is_readable(const char * filename)
+static bool file_is_readable(const char *filename)
 {
     FILE *file = fopen(filename, "r");
     if (file) {
@@ -389,18 +389,16 @@ static zend_object_value maxminddb_create_handler(
     return retval;
 }
 
+/* *INDENT-OFF* */
 static zend_function_entry maxminddb_methods[] = {
-    PHP_ME(MaxMind_Db_Reader, __construct,          NULL,
+    PHP_ME(MaxMind_Db_Reader, __construct, NULL,
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(MaxMind_Db_Reader, close,                NULL,
-           ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, get,                  NULL,
-           ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, metadata,             NULL,
-           ZEND_ACC_PUBLIC){
-        NULL,                 NULL,                 NULL
-    }
+    PHP_ME(MaxMind_Db_Reader, close,    NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, get,      NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, metadata, NULL, ZEND_ACC_PUBLIC)
+    { NULL, NULL, NULL }
 };
+/* *INDENT-OFF* */
 
 PHP_MINIT_FUNCTION(maxminddb){
     zend_class_entry ce;
