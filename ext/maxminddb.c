@@ -124,8 +124,6 @@ PHP_METHOD(MaxMind_Db_Reader, get){
     } else {
         RETURN_NULL();
     }
-
-    return;
 }
 
 PHP_METHOD(MaxMind_Db_Reader, metadata){
@@ -137,7 +135,6 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
 
     maxminddb_obj *mmdb_obj = (maxminddb_obj *)zend_object_store_get_object(
         getThis() TSRMLS_CC);
-
 
     if (NULL == mmdb_obj->mmdb) {
         throw_exception("BadMethodCallException" TSRMLS_CC,
@@ -167,8 +164,6 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
                                    ZEND_CONSTRUCTOR_FUNC_NAME,
                                    NULL,
                                    metadata_array);
-
-    return;
 }
 
 PHP_METHOD(MaxMind_Db_Reader, close){
@@ -392,7 +387,6 @@ static zend_object_value maxminddb_create_handler(
     return retval;
 }
 
-
 static zend_function_entry maxminddb_methods[] = {
     PHP_ME(MaxMind_Db_Reader, __construct,          NULL,
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
@@ -406,13 +400,10 @@ static zend_function_entry maxminddb_methods[] = {
     }
 };
 
-
 PHP_MINIT_FUNCTION(maxminddb){
-
     zend_class_entry ce;
 
-    INIT_CLASS_ENTRY(ce, ZEND_NS_NAME(PHP_MAXMINDDB_NS,
-                                      "Reader"), maxminddb_methods);
+    INIT_CLASS_ENTRY(ce, PHP_MAXMINDDB_READER_NS, maxminddb_methods);
     maxminddb_ce = zend_register_internal_class(&ce TSRMLS_CC);
     maxminddb_ce->create_object = maxminddb_create_handler;
     maxminddb_ce->ce_flags |= ZEND_ACC_FINAL | ZEND_ACC_ABSTRACT;
