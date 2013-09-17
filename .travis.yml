@@ -30,7 +30,7 @@ script:
   - mkdir -p build/logs
   - phpcs --standard=PSR2 src/
   - phpunit -c phpunit.xml.dist
-  - phpunit -dextension=ext/modules/maxminddb.so -c phpunit.xml.dist
+  - php -dextension=ext/modules/maxminddb.so $(which phpunit) -c phpunit.xml.dist
 
 after_script:
   - php vendor/bin/coveralls
