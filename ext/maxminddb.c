@@ -3,6 +3,18 @@
 #endif
 #include "php_maxminddb.h"
 
+#if PHP_VERSION_ID < 50399
+# define object_properties_init(zo, class_type)         \
+    {                                                   \
+        zval *tmp;                                      \
+        zend_hash_copy((*zo).properties,                \
+                       &class_type->default_properties, \
+                       (copy_ctor_func_t)zval_add_ref,  \
+                       (void *)&tmp,                    \
+                       sizeof(zval *));                 \
+    }
+#endif
+
 static zend_object_handlers maxminddb_obj_handlers;
 static zend_class_entry *maxminddb_ce;
 
@@ -281,6 +293,7 @@ static zend_object_value maxminddb_create_handler(
 
     ALLOC_HASHTABLE(obj->std.properties);
     zend_hash_init(obj->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+
     object_properties_init(&(obj->std), type);
 
     retval.handle = zend_objects_store_put(obj, NULL,
@@ -293,13 +306,13 @@ static zend_object_value maxminddb_create_handler(
 
 
 static zend_function_entry maxminddb_methods[] = {
-    PHP_ME(MaxMind_Db_Reader, __construct,          NULL,
+    PHP_ME(MaxMind_Db_Reader, __construct, NULL,
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(MaxMind_Db_Reader, get,                  NULL,
+    PHP_ME(MaxMind_Db_Reader, get,         NULL,
            ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, metadata,             NULL,
+    PHP_ME(MaxMind_Db_Reader, metadata,    NULL,
            ZEND_ACC_PUBLIC){
-        NULL,                 NULL,                 NULL
+        NULL,                 NULL,        NULL
     }
 };
 
