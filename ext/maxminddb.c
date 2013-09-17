@@ -3,6 +3,19 @@
 #endif
 #include "php_maxminddb.h"
 
+static void handle_entry_data_list(MMDB_entry_data_list_s **entry_data_list,
+                                   zval *z_value TSRMLS_DC);
+static void handle_array(MMDB_entry_data_list_s **entry_data_list,
+                         zval *z_value TSRMLS_DC);
+static void handle_map(MMDB_entry_data_list_s **entry_data_list,
+                       zval *z_value TSRMLS_DC);
+static void handle_uint128(MMDB_entry_data_list_s **entry_data_list,
+                           zval *z_value TSRMLS_DC);
+static void handle_uint64(MMDB_entry_data_list_s **entry_data_list,
+                          zval *z_value TSRMLS_DC);
+static int throw_exception(char *exception_name TSRMLS_DC, char *message, ...);
+
+
 #if PHP_VERSION_ID < 50399
 # define object_properties_init(zo, class_type)         \
     {                                                   \
@@ -17,152 +30,6 @@
 
 static zend_object_handlers maxminddb_obj_handlers;
 static zend_class_entry *maxminddb_ce;
-
-static int throw_exception(char *exception_name TSRMLS_DC, char *message, ...)
-{
-    char *error;
-    va_list args;
-    zend_class_entry **exception_ce;
-
-    if (FAILURE ==
-        zend_lookup_class(exception_name, strlen(exception_name),
-                          &exception_ce TSRMLS_CC)) {
-        zend_error(E_ERROR, "Class %s not found", exception_name);
-    }
-
-    va_start(args, message);
-    vspprintf(&error, 0, message, args);
-    va_end(args);
-
-    if (!error ) {
-        zend_error(E_ERROR, "Out of memory");
-    }
-    zend_throw_exception(*exception_ce,
-                         error, 0 TSRMLS_CC);
-    efree(error);
-    return;
-}
-
-static int entry_data(MMDB_entry_data_list_s **entry_data_list,
-                      zval *z_value TSRMLS_DC)
-{
-    bool get_next = true;
-
-    switch ((*entry_data_list)->entry_data.type) {
-    case MMDB_DATA_TYPE_MAP:
-        {
-            get_next = false;
-            array_init(z_value);
-
-            uint32_t map_size = (*entry_data_list)->entry_data.data_size;
-            (*entry_data_list) = (*entry_data_list)->next;
-
-            int i;
-            for (i = 0; i < map_size; i++ ) {
-                char *key =
-                    estrndup((char *)(*entry_data_list)->entry_data.utf8_string,
-                             (*entry_data_list)->entry_data.data_size);
-                if (NULL == key) {
-                    throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
-                                    "Invalid data type arguments");
-                }
-
-                (*entry_data_list) = (*entry_data_list)->next;
-                zval *new_value;
-                ALLOC_INIT_ZVAL(new_value);
-                entry_data(entry_data_list, new_value TSRMLS_CC);
-                add_assoc_zval(z_value, key, new_value);
-            }
-        }
-        break;
-    case MMDB_DATA_TYPE_ARRAY:
-        {
-            get_next = false;
-            uint32_t size = (*entry_data_list)->entry_data.data_size;
-
-            array_init(z_value);
-
-            for ((*entry_data_list) = (*entry_data_list)->next;
-                 size && (*entry_data_list); size--) {
-                zval *new_value;
-                ALLOC_INIT_ZVAL(new_value);
-                entry_data(entry_data_list, new_value TSRMLS_CC);
-                add_next_index_zval(z_value, new_value);
-            }
-        }
-        break;
-    case MMDB_DATA_TYPE_UTF8_STRING:
-        {
-            ZVAL_STRINGL(z_value,
-                         (char *)(*entry_data_list)->entry_data.utf8_string,
-                         (*entry_data_list)->entry_data.data_size,
-                         1);
-        }
-        break;
-    case MMDB_DATA_TYPE_BYTES:
-        {
-            ZVAL_STRINGL(z_value, (char *)(*entry_data_list)->entry_data.bytes,
-                         (*entry_data_list)->entry_data.data_size, 1);
-        }
-        break;
-    case MMDB_DATA_TYPE_DOUBLE:
-        ZVAL_DOUBLE(z_value, (*entry_data_list)->entry_data.double_value);
-        break;
-    case MMDB_DATA_TYPE_FLOAT:
-        ZVAL_DOUBLE(z_value, (*entry_data_list)->entry_data.float_value);
-        break;
-    case MMDB_DATA_TYPE_UINT16:
-        ZVAL_LONG(z_value, (*entry_data_list)->entry_data.uint16);
-        break;
-    case MMDB_DATA_TYPE_UINT32:
-        ZVAL_LONG(z_value, (*entry_data_list)->entry_data.uint32);
-        break;
-    case MMDB_DATA_TYPE_BOOLEAN:
-        ZVAL_BOOL(z_value, (*entry_data_list)->entry_data.boolean);
-        break;
-    case MMDB_DATA_TYPE_UINT64:
-        {
-            // We return it as a string because PHP uses signed longs
-            char *int_str;
-            spprintf(&int_str, 0, "%" PRIu64,
-                     (*entry_data_list)->entry_data.uint64 );
-            ZVAL_STRING(z_value, int_str, 0);
-        }
-        break;
-    case MMDB_DATA_TYPE_UINT128:
-        {
-            mpz_t integ;
-            mpz_init(integ);
-
-            int i;
-            for (i = 0; i < 16; i++) {
-                mpz_t part;
-                mpz_init(part);
-                mpz_set_ui(part, (*entry_data_list)->entry_data.uint128[i]);
-
-                mpz_mul_2exp(integ, integ, 8);
-                mpz_add(integ, integ, part);
-            }
-            char *num_str = mpz_get_str(NULL, 10, integ);
-            ZVAL_STRING(z_value, num_str, 1);
-            efree(num_str);
-        }
-        break;
-    case MMDB_DATA_TYPE_INT32:
-        ZVAL_LONG(z_value, (*entry_data_list)->entry_data.int32);
-        break;
-    default:
-        {
-            throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
-                            "Invalid data type arguments: %d",
-                            (*entry_data_list)->entry_data.type);
-        }
-    }
-    if (get_next && *entry_data_list) {
-        (*entry_data_list) = (*entry_data_list)->next;
-    }
-    return 0;
-}
 
 PHP_METHOD(MaxMind_Db_Reader, __construct){
     char *db_file = NULL;
@@ -231,7 +98,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
         }
 
         if (NULL != entry_data_list) {
-            entry_data(&entry_data_list, return_value TSRMLS_CC);
+            handle_entry_data_list(&entry_data_list, return_value TSRMLS_CC);
         }
     } else {
         RETURN_NULL();
@@ -260,7 +127,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
     MMDB_entry_data_list_s *entry_data_list;
     MMDB_get_metadata_as_entry_data_list(mmdb_obj->mmdb, &entry_data_list);
 
-    entry_data(&entry_data_list, metadata_array TSRMLS_CC);
+    handle_entry_data_list(&entry_data_list, metadata_array TSRMLS_CC);
     zend_call_method_with_1_params(&return_value, *metadata_ce,
                                    &(*metadata_ce)->constructor,
                                    ZEND_CONSTRUCTOR_FUNC_NAME,
@@ -268,6 +135,166 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
                                    metadata_array);
 
     return;
+}
+
+static int throw_exception(char *exception_name TSRMLS_DC, char *message, ...)
+{
+    char *error;
+    va_list args;
+    zend_class_entry **exception_ce;
+
+    if (FAILURE ==
+        zend_lookup_class(exception_name, strlen(exception_name),
+                          &exception_ce TSRMLS_CC)) {
+        zend_error(E_ERROR, "Class %s not found", exception_name);
+    }
+
+    va_start(args, message);
+    vspprintf(&error, 0, message, args);
+    va_end(args);
+
+    if (!error ) {
+        zend_error(E_ERROR, "Out of memory");
+    }
+    zend_throw_exception(*exception_ce,
+                         error, 0 TSRMLS_CC);
+    efree(error);
+    return;
+}
+
+static void handle_entry_data_list(MMDB_entry_data_list_s **entry_data_list,
+                                   zval *z_value TSRMLS_DC)
+{
+    bool get_next = true;
+
+    switch ((*entry_data_list)->entry_data.type) {
+    case MMDB_DATA_TYPE_MAP:
+        {
+            get_next = false;
+            handle_map(entry_data_list, z_value TSRMLS_CC);
+        }
+        break;
+    case MMDB_DATA_TYPE_ARRAY:
+        {
+            get_next = false;
+            handle_array(entry_data_list, z_value TSRMLS_CC);
+        }
+        break;
+    case MMDB_DATA_TYPE_UTF8_STRING:
+        ZVAL_STRINGL(z_value,
+                     (char *)(*entry_data_list)->entry_data.utf8_string,
+                     (*entry_data_list)->entry_data.data_size,
+                     1);
+        break;
+    case MMDB_DATA_TYPE_BYTES:
+        ZVAL_STRINGL(z_value, (char *)(*entry_data_list)->entry_data.bytes,
+                     (*entry_data_list)->entry_data.data_size, 1);
+        break;
+    case MMDB_DATA_TYPE_DOUBLE:
+        ZVAL_DOUBLE(z_value, (*entry_data_list)->entry_data.double_value);
+        break;
+    case MMDB_DATA_TYPE_FLOAT:
+        ZVAL_DOUBLE(z_value, (*entry_data_list)->entry_data.float_value);
+        break;
+    case MMDB_DATA_TYPE_UINT16:
+        ZVAL_LONG(z_value, (*entry_data_list)->entry_data.uint16);
+        break;
+    case MMDB_DATA_TYPE_UINT32:
+        ZVAL_LONG(z_value, (*entry_data_list)->entry_data.uint32);
+        break;
+    case MMDB_DATA_TYPE_BOOLEAN:
+        ZVAL_BOOL(z_value, (*entry_data_list)->entry_data.boolean);
+        break;
+    case MMDB_DATA_TYPE_UINT64:
+        handle_uint64(entry_data_list, z_value TSRMLS_CC);
+        break;
+    case MMDB_DATA_TYPE_UINT128:
+        handle_uint128(entry_data_list, z_value TSRMLS_CC);
+        break;
+    case MMDB_DATA_TYPE_INT32:
+        ZVAL_LONG(z_value, (*entry_data_list)->entry_data.int32);
+        break;
+    default:
+        {
+            throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+                            "Invalid data type arguments: %d",
+                            (*entry_data_list)->entry_data.type);
+        }
+    }
+    if (get_next && *entry_data_list) {
+        (*entry_data_list) = (*entry_data_list)->next;
+    }
+}
+
+static void handle_map(MMDB_entry_data_list_s **entry_data_list,
+                       zval *z_value TSRMLS_DC)
+{
+    array_init(z_value);
+    uint32_t map_size = (*entry_data_list)->entry_data.data_size;
+    (*entry_data_list) = (*entry_data_list)->next;
+
+    int i;
+    for (i = 0; i < map_size; i++ ) {
+        char *key =
+            estrndup((char *)(*entry_data_list)->entry_data.utf8_string,
+                     (*entry_data_list)->entry_data.data_size);
+        if (NULL == key) {
+            throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+                            "Invalid data type arguments");
+        }
+
+        (*entry_data_list) = (*entry_data_list)->next;
+        zval *new_value;
+        ALLOC_INIT_ZVAL(new_value);
+        handle_entry_data_list(entry_data_list, new_value TSRMLS_CC);
+        add_assoc_zval(z_value, key, new_value);
+    }
+}
+
+static void handle_array(MMDB_entry_data_list_s **entry_data_list,
+                         zval *z_value TSRMLS_DC)
+{
+    uint32_t size = (*entry_data_list)->entry_data.data_size;
+
+    array_init(z_value);
+
+    for ((*entry_data_list) = (*entry_data_list)->next;
+         size && (*entry_data_list); size--) {
+        zval *new_value;
+        ALLOC_INIT_ZVAL(new_value);
+        handle_entry_data_list(entry_data_list, new_value TSRMLS_CC);
+        add_next_index_zval(z_value, new_value);
+    }
+}
+
+static void handle_uint128(MMDB_entry_data_list_s **entry_data_list,
+                           zval *z_value TSRMLS_DC)
+{
+    mpz_t integ;
+    mpz_init(integ);
+
+    int i;
+    for (i = 0; i < 16; i++) {
+        mpz_t part;
+        mpz_init(part);
+        mpz_set_ui(part, (*entry_data_list)->entry_data.uint128[i]);
+
+        mpz_mul_2exp(integ, integ, 8);
+        mpz_add(integ, integ, part);
+    }
+    char *num_str = mpz_get_str(NULL, 10, integ);
+    ZVAL_STRING(z_value, num_str, 1);
+    efree(num_str);
+}
+
+static void handle_uint64(MMDB_entry_data_list_s **entry_data_list,
+                          zval *z_value TSRMLS_DC)
+{
+    // We return it as a string because PHP uses signed longs
+    char *int_str;
+    spprintf(&int_str, 0, "%" PRIu64,
+             (*entry_data_list)->entry_data.uint64 );
+    ZVAL_STRING(z_value, int_str, 0);
 }
 
 static void maxminddb_free_storage(void *object TSRMLS_DC)
