@@ -70,6 +70,32 @@ print_r($reader->get($ipAddress));
 //...
 ```
 
+## Optional PHP C Extension ##
+
+MaxMind provides an optional C extension that is a drop-in replacement for
+for `MaxMind\Db\Reader`. In order to use this extension, you must install
+the Reader API as described above and install the extension as described
+below. If you are using an autoloader, no changes to your code should be
+necessary.
+
+### Installing Extension ###
+
+```
+cd ext
+phpize
+./configure
+make
+make test
+make install
+```
+
+You then must load your extension. The recommend method is to add the
+following to your `php.ini` file:
+
+```
+extension=maxminddb.so
+```
+
 ## Support ##
 
 Please report all issues with this code using the
