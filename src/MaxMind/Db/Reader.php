@@ -88,7 +88,7 @@ class Reader
         }
 
         if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
-            throw new \DomainException(
+            throw new \InvalidArgumentException(
                 "The value \"$ipAddress\" is not a valid IP address."
             );
         }

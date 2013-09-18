@@ -58,7 +58,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException DomainException
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage The value "not_ip" is not a valid IP address.
      */
     public function testIpValidation()
