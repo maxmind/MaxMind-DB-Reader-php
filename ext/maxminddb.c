@@ -51,13 +51,13 @@ PHP_METHOD(MaxMind_Db_Reader, __construct){
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &db_file,
                               &name_len) == FAILURE) {
-        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException",
                         "The constructor takes exactly one argument.");
         return;
     }
 
     if (!file_is_readable(db_file)) {
-        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException",
                         "The file \"%s\" does not exist or is not readable.",
                         db_file);
         return;
@@ -68,7 +68,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct){
 
     if (MMDB_SUCCESS != status) {
         THROW_EXCEPTION(
-            PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+            PHP_MAXMINDDB_READER_EX_NS,
             "Error opening database file (%s). Is this a valid MaxMind DB file?",
             db_file);
         efree(mmdb);
@@ -85,7 +85,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &ip_address,
                               &name_len) == FAILURE) {
-        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException",
                         "Method takes exactly one argument.");
         return;
     }
@@ -97,7 +97,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
     MMDB_s *mmdb = mmdb_obj->mmdb;
 
     if (NULL == mmdb) {
-        THROW_EXCEPTION("BadMethodCallException" TSRMLS_CC,
+        THROW_EXCEPTION("BadMethodCallException",
                         "Attempt to read from a closed MaxMind DB.");
         return;
     }
@@ -109,14 +109,14 @@ PHP_METHOD(MaxMind_Db_Reader, get){
                            &mmdb_error);
 
     if (MMDB_SUCCESS != gai_error) {
-        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException",
                         "The value \"%s\" is not a valid IP address.",
                         ip_address);
         return;
     }
 
     if (MMDB_SUCCESS != mmdb_error) {
-        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
                         "Error looking up %s", ip_address);
         return;
     }
@@ -127,7 +127,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
         int status = MMDB_get_entry_data_list(&result.entry, &entry_data_list);
 
         if (MMDB_SUCCESS != status) {
-            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
                             "Error while looking up data for %s", ip_address);
         } else if (NULL != entry_data_list) {
             handle_entry_data_list(entry_data_list, return_value TSRMLS_CC);
@@ -141,7 +141,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
 
 PHP_METHOD(MaxMind_Db_Reader, metadata){
     if (ZEND_NUM_ARGS() != 0) {
-        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException",
                         "Method takes no arguments.");
         return;
     }
@@ -151,7 +151,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
             getThis() TSRMLS_CC);
 
     if (NULL == mmdb_obj->mmdb) {
-        THROW_EXCEPTION("BadMethodCallException" TSRMLS_CC,
+        THROW_EXCEPTION("BadMethodCallException",
                         "Attempt to read from a closed MaxMind DB.");
         return;
     }
@@ -179,7 +179,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
 
 PHP_METHOD(MaxMind_Db_Reader, close){
     if (ZEND_NUM_ARGS() != 0) {
-        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException",
                         "Method takes no arguments.");
         return;
     }
@@ -188,7 +188,7 @@ PHP_METHOD(MaxMind_Db_Reader, close){
         getThis() TSRMLS_CC);
 
     if (NULL == mmdb_obj->mmdb) {
-        THROW_EXCEPTION("BadMethodCallException" TSRMLS_CC,
+        THROW_EXCEPTION("BadMethodCallException",
                         "Attempt to close a closed MaxMind DB.");
         return;
     }
@@ -242,7 +242,7 @@ static const MMDB_entry_data_list_s *handle_entry_data_list(
         ZVAL_LONG(z_value, entry_data_list->entry_data.int32);
         break;
     default:
-        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
                         "Invalid data type arguments: %d",
                         entry_data_list->entry_data.type);
         return NULL;
@@ -264,7 +264,7 @@ static const MMDB_entry_data_list_s *handle_map(
             estrndup((char *)entry_data_list->entry_data.utf8_string,
                      entry_data_list->entry_data.data_size);
         if (NULL == key) {
-            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
                             "Invalid data type arguments");
             return NULL;
         }
