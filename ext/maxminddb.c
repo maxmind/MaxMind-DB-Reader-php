@@ -17,7 +17,7 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
 static void throw_exception(const char *exception_name TSRMLS_DC,
                             const char *message,
                             ...);
-static zend_class_entry * lookup_class(const char *name);
+static zend_class_entry * lookup_class(const char *name TSRMLS_DC);
 static bool file_is_readable(const char *filename);
 
 #define CHECK_ALLOCATED(val)                  \
@@ -153,7 +153,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
     }
 
     const char *const name = ZEND_NS_NAME(PHP_MAXMINDDB_READER_NS, "Metadata");
-    zend_class_entry *metadata_ce = lookup_class(name);
+    zend_class_entry *metadata_ce = lookup_class(name TSRMLS_CC);
 
     object_init_ex(return_value, metadata_ce);
 
@@ -334,7 +334,7 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
 static void throw_exception(const char *exception_name TSRMLS_DC,
                             const char *message, ...)
 {
-    zend_class_entry *exception_ce = lookup_class(exception_name);
+    zend_class_entry *exception_ce = lookup_class(exception_name TSRMLS_CC);
 
     char *error;
     va_list args;
@@ -349,7 +349,7 @@ static void throw_exception(const char *exception_name TSRMLS_DC,
     efree(error);
 }
 
-static zend_class_entry * lookup_class(const char *name)
+static zend_class_entry * lookup_class(const char *name TSRMLS_DC)
 {
     zend_class_entry **ce;
     if (FAILURE ==
