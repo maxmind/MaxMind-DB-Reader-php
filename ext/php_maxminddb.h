@@ -1,10 +1,10 @@
-#include <php.h>
-#include <zend_interfaces.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#include <php.h>
+#include <zend_interfaces.h>
+#include "Zend/zend_exceptions.h"
 #include <maxminddb.h>
 
 #ifdef ZTS

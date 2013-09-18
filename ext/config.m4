@@ -5,6 +5,10 @@ PHP_ARG_ENABLE(maxminddb,
 if test $PHP_MAXMINDDB != "no"; then
     PHP_CHECK_LIBRARY(maxminddb, MMDB_open)
 
+    # Not using -Wextra as -Wunused-parameter and -Wmissing-field-initializers
+    # interfere with the PHP macros
+    CFLAGS="$CFLAGS -Wall -Werror -Wclobbered -Wempty-body -Wignored-qualifiers -Wmissing-parameter-type -Wold-style-declaration -Woverride-init -Wtype-limits -Wuninitialized -Wunused-but-set-parameter -Wsign-compare"
+
     AC_CHECK_TYPE(
         [unsigned __int128],
         [AC_DEFINE([MISSING_UINT128], [0], [Missing the unsigned __int128 type])],

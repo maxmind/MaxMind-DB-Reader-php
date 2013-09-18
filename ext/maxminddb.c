@@ -10,7 +10,7 @@ static void handle_uint128(MMDB_entry_data_list_s **entry_data_list,
                            zval *z_value TSRMLS_DC);
 static void handle_uint64(MMDB_entry_data_list_s **entry_data_list,
                           zval *z_value TSRMLS_DC);
-static int throw_exception(char *exception_name TSRMLS_DC, char *message, ...);
+static void throw_exception(char *exception_name TSRMLS_DC, char *message, ...);
 static bool file_is_readable(const char *filename);
 
 #if PHP_VERSION_ID < 50399
@@ -105,7 +105,6 @@ PHP_METHOD(MaxMind_Db_Reader, get){
 
     MMDB_entry_data_list_s *entry_data_list = NULL;
 
-    zval *z_value;
     if (result.found_entry) {
         int status = MMDB_get_entry_data_list(&result.entry, &entry_data_list);
 
@@ -248,7 +247,7 @@ static void handle_map(MMDB_entry_data_list_s **entry_data_list,
     uint32_t map_size = (*entry_data_list)->entry_data.data_size;
     (*entry_data_list) = (*entry_data_list)->next;
 
-    int i;
+    uint i;
     for (i = 0; i < map_size; i++ ) {
         char *key =
             estrndup((char *)(*entry_data_list)->entry_data.utf8_string,
@@ -318,7 +317,7 @@ static void handle_uint64(MMDB_entry_data_list_s **entry_data_list,
     ZVAL_STRING(z_value, int_str, 0);
 }
 
-static int throw_exception(char *exception_name TSRMLS_DC, char *message, ...)
+static void throw_exception(char *exception_name TSRMLS_DC, char *message, ...)
 {
     char *error;
     va_list args;
@@ -340,7 +339,6 @@ static int throw_exception(char *exception_name TSRMLS_DC, char *message, ...)
     zend_throw_exception(*exception_ce,
                          error, 0 TSRMLS_CC);
     efree(error);
-    return;
 }
 
 static bool file_is_readable(const char *filename)
@@ -369,7 +367,6 @@ static void maxminddb_free_storage(void *object TSRMLS_DC)
 static zend_object_value maxminddb_create_handler(
     zend_class_entry *type TSRMLS_DC)
 {
-    zval *tmp;
     zend_object_value retval;
 
     maxminddb_obj *obj = (maxminddb_obj *)emalloc(sizeof(maxminddb_obj));
