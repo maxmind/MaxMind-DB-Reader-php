@@ -14,9 +14,6 @@ static void handle_uint128(const MMDB_entry_data_list_s *entry_data_list,
                            zval *z_value TSRMLS_DC);
 static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC);
-static void throw_exception(const char *exception_name TSRMLS_DC,
-                            const char *message,
-                            ...);
 static zend_class_entry * lookup_class(const char *name TSRMLS_DC);
 static bool file_is_readable(const char *filename);
 
@@ -25,6 +22,13 @@ static bool file_is_readable(const char *filename);
         zend_error(E_ERROR, "Out of memory"); \
         return;                               \
     }                                         \
+
+#define THROW_EXCEPTION(name, message, args ... )                             \
+    {                                                                         \
+        zend_class_entry *exception_ce = lookup_class(name TSRMLS_CC);        \
+        zend_throw_exception_ex(exception_ce, 0 TSRMLS_CC, message, ## args); \
+    }                                                                         \
+
 
 #if PHP_VERSION_ID < 50399
 #define object_properties_init(zo, class_type)          \
@@ -47,13 +51,13 @@ PHP_METHOD(MaxMind_Db_Reader, __construct){
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &db_file,
                               &name_len) == FAILURE) {
-        throw_exception("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
                         "The constructor takes exactly one argument.");
         return;
     }
 
     if (!file_is_readable(db_file)) {
-        throw_exception("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
                         "The file \"%s\" does not exist or is not readable.",
                         db_file);
         return;
@@ -63,10 +67,11 @@ PHP_METHOD(MaxMind_Db_Reader, __construct){
     uint16_t status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
 
     if (MMDB_SUCCESS != status) {
-        throw_exception(
+        THROW_EXCEPTION(
             PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
             "Error opening database file (%s). Is this a valid MaxMind DB file?",
             db_file);
+        efree(mmdb);
         return;
     }
 
@@ -80,7 +85,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &ip_address,
                               &name_len) == FAILURE) {
-        throw_exception("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
                         "Method takes exactly one argument.");
         return;
     }
@@ -92,7 +97,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
     MMDB_s *mmdb = mmdb_obj->mmdb;
 
     if (NULL == mmdb) {
-        throw_exception("BadMethodCallException" TSRMLS_CC,
+        THROW_EXCEPTION("BadMethodCallException" TSRMLS_CC,
                         "Attempt to read from a closed MaxMind DB.");
         return;
     }
@@ -104,14 +109,14 @@ PHP_METHOD(MaxMind_Db_Reader, get){
                            &mmdb_error);
 
     if (MMDB_SUCCESS != gai_error) {
-        throw_exception("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
                         "The value \"%s\" is not a valid IP address.",
                         ip_address);
         return;
     }
 
     if (MMDB_SUCCESS != mmdb_error) {
-        throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
                         "Error looking up %s", ip_address);
         return;
     }
@@ -122,14 +127,13 @@ PHP_METHOD(MaxMind_Db_Reader, get){
         int status = MMDB_get_entry_data_list(&result.entry, &entry_data_list);
 
         if (MMDB_SUCCESS != status) {
-            throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
                             "Error while looking up data for %s", ip_address);
-            return;
-        }
-
-        if (NULL != entry_data_list) {
+        } else if (NULL != entry_data_list) {
             handle_entry_data_list(entry_data_list, return_value TSRMLS_CC);
         }
+
+        MMDB_free_entry_data_list(entry_data_list);
     } else {
         RETURN_NULL();
     }
@@ -137,7 +141,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
 
 PHP_METHOD(MaxMind_Db_Reader, metadata){
     if (ZEND_NUM_ARGS() != 0) {
-        throw_exception("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
                         "Method takes no arguments.");
         return;
     }
@@ -147,7 +151,7 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
             getThis() TSRMLS_CC);
 
     if (NULL == mmdb_obj->mmdb) {
-        throw_exception("BadMethodCallException" TSRMLS_CC,
+        THROW_EXCEPTION("BadMethodCallException" TSRMLS_CC,
                         "Attempt to read from a closed MaxMind DB.");
         return;
     }
@@ -164,16 +168,18 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
     MMDB_get_metadata_as_entry_data_list(mmdb_obj->mmdb, &entry_data_list);
 
     handle_entry_data_list(entry_data_list, metadata_array TSRMLS_CC);
+    MMDB_free_entry_data_list(entry_data_list);
     zend_call_method_with_1_params(&return_value, metadata_ce,
                                    &metadata_ce->constructor,
                                    ZEND_CONSTRUCTOR_FUNC_NAME,
                                    NULL,
                                    metadata_array);
+    zval_ptr_dtor(&metadata_array);
 }
 
 PHP_METHOD(MaxMind_Db_Reader, close){
     if (ZEND_NUM_ARGS() != 0) {
-        throw_exception("InvalidArgumentException" TSRMLS_CC,
+        THROW_EXCEPTION("InvalidArgumentException" TSRMLS_CC,
                         "Method takes no arguments.");
         return;
     }
@@ -182,11 +188,12 @@ PHP_METHOD(MaxMind_Db_Reader, close){
         getThis() TSRMLS_CC);
 
     if (NULL == mmdb_obj->mmdb) {
-        throw_exception("BadMethodCallException" TSRMLS_CC,
+        THROW_EXCEPTION("BadMethodCallException" TSRMLS_CC,
                         "Attempt to close a closed MaxMind DB.");
         return;
     }
     MMDB_close(mmdb_obj->mmdb);
+    efree(mmdb_obj->mmdb);
     mmdb_obj->mmdb = NULL;
 }
 
@@ -235,7 +242,7 @@ static const MMDB_entry_data_list_s *handle_entry_data_list(
         ZVAL_LONG(z_value, entry_data_list->entry_data.int32);
         break;
     default:
-        throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
                         "Invalid data type arguments: %d",
                         entry_data_list->entry_data.type);
         return NULL;
@@ -253,11 +260,11 @@ static const MMDB_entry_data_list_s *handle_map(
 
     uint i;
     for (i = 0; i < map_size && entry_data_list; i++ ) {
-        const char *const key =
+        char *key =
             estrndup((char *)entry_data_list->entry_data.utf8_string,
                      entry_data_list->entry_data.data_size);
         if (NULL == key) {
-            throw_exception(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
+            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS TSRMLS_CC,
                             "Invalid data type arguments");
             return NULL;
         }
@@ -268,6 +275,7 @@ static const MMDB_entry_data_list_s *handle_map(
         entry_data_list = handle_entry_data_list(entry_data_list,
                                                  new_value TSRMLS_CC);
         add_assoc_zval(z_value, key, new_value);
+        efree(key);
     }
     return entry_data_list;
 }
@@ -331,24 +339,6 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
     ZVAL_STRING(z_value, int_str, 0);
 }
 
-static void throw_exception(const char *exception_name TSRMLS_DC,
-                            const char *message, ...)
-{
-    zend_class_entry *exception_ce = lookup_class(exception_name TSRMLS_CC);
-
-    char *error;
-    va_list args;
-    va_start(args, message);
-    vspprintf(&error, 0, message, args);
-    va_end(args);
-
-    CHECK_ALLOCATED(error);
-
-    zend_throw_exception(exception_ce,
-                         error, 0 TSRMLS_CC);
-    efree(error);
-}
-
 static zend_class_entry * lookup_class(const char *name TSRMLS_DC)
 {
     zend_class_entry **ce;
@@ -375,6 +365,7 @@ static void maxminddb_free_storage(void *object TSRMLS_DC)
     maxminddb_obj *obj = (maxminddb_obj *)object;
     if (obj->mmdb != NULL) {
         MMDB_close(obj->mmdb);
+        efree(obj->mmdb);
     }
 
     zend_hash_destroy(obj->std.properties);
