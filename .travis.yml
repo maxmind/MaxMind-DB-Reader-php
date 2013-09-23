@@ -31,7 +31,7 @@ script:
   - phpcs --standard=PSR2 src/
   - phpunit -c phpunit.xml.dist
   - echo "extension = ext/modules/maxminddb.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - phpunit -c phpunit.xml.dist
+  - phpunit
 
 after_script:
   - php vendor/bin/coveralls
