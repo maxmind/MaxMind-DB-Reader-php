@@ -15,7 +15,6 @@ static void handle_uint128(const MMDB_entry_data_list_s *entry_data_list,
 static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC);
 static zend_class_entry * lookup_class(const char *name TSRMLS_DC);
-static bool file_is_readable(const char *filename);
 
 #define CHECK_ALLOCATED(val)                  \
     if (!val ) {                              \
@@ -56,7 +55,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct){
         return;
     }
 
-    if (!file_is_readable(db_file)) {
+    if (0 != access(db_file, R_OK)) {
         THROW_EXCEPTION("InvalidArgumentException",
                         "The file \"%s\" does not exist or is not readable.",
                         db_file);
@@ -348,16 +347,6 @@ static zend_class_entry * lookup_class(const char *name TSRMLS_DC)
         zend_error(E_ERROR, "Class %s not found", name);
     }
     return *ce;
-}
-
-static bool file_is_readable(const char *filename)
-{
-    FILE *file = fopen(filename, "r");
-    if (file) {
-        fclose(file);
-        return true;
-    }
-    return false;
 }
 
 static void maxminddb_free_storage(void *object TSRMLS_DC)
