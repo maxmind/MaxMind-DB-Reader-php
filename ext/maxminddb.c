@@ -394,7 +394,7 @@ static zend_function_entry maxminddb_methods[] = {
     PHP_ME(MaxMind_Db_Reader, metadata, NULL, ZEND_ACC_PUBLIC)
     { NULL, NULL, NULL }
 };
-/* *INDENT-OFF* */
+/* *INDENT-ON* */
 
 PHP_MINIT_FUNCTION(maxminddb){
     zend_class_entry ce;
