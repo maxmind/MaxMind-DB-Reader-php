@@ -8,7 +8,6 @@ use MaxMind\Db\Reader\Logger;
 class Decoder
 {
 
-    private $debug;
     private $fileStream;
     private $pointerBase;
     // This is only used for unit testing
@@ -43,7 +42,6 @@ class Decoder
         $this->pointerBase = $pointerBase;
         $this->pointerTestHack = $pointerTestHack;
 
-        $this->debug = getenv('MAXMIND_DB_DECODER_DEBUG');
         $this->switchByteOrder = $this->isPlatformLittleEndian();
     }
 
@@ -55,10 +53,6 @@ class Decoder
 
         $type = $this->types[$ctrlByte >> 5];
 
-        if ($this->debug) {
-            Logger::logByte('Control Byte', $ctrlByte);
-            Logger::log('Type', $type);
-        }
         // Pointers are a special case, we don't read the next $size bytes, we
         // use the size to determine the length of the pointer and then follow
         // it.
@@ -79,12 +73,6 @@ class Decoder
             list(, $nextByte) = unpack('C', $this->read($offset, 1));
 
             $typeNum = $nextByte + 7;
-
-            if ($this->debug) {
-                Logger::log('Offset', $offset);
-                Logger::log('Next Byte', $nextByte);
-                Logger::log('Type', $this->types[$typeNum]);
-            }
 
             if ($typeNum < 8) {
                 throw new InvalidDatabaseException(
@@ -110,11 +98,7 @@ class Decoder
         // next <code>size</code> bytes. For all other types, we do.
         $newOffset = $offset + $size;
         $bytes = $this->read($offset, $size);
-        if ($this->debug) {
-            Logger::log('Size', $size);
-            Logger::log('Number of bytes', strlen($bytes));
-            Logger::logBytes('Bytes to Decode', $bytes);
-        }
+
         switch ($type) {
             case 'map':
                 return $this->decodeMap($size, $offset);
@@ -154,11 +138,6 @@ class Decoder
         for ($i = 0; $i < $size; $i++) {
             list($value, $offset) = $this->decode($offset);
             array_push($array, $value);
-        }
-
-        if ($this->debug) {
-            Logger::log("Array size", $size);
-            Logger::log("Decoded array", serialize($array));
         }
 
         return array($array, $offset);
@@ -201,10 +180,6 @@ class Decoder
             $map[$key] = $value;
         }
 
-        if ($this->debug) {
-            Logger::log("Map size", $size);
-            Logger::log("Decoded map", serialize($map));
-        }
         return array($map, $offset);
     }
 
@@ -230,14 +205,6 @@ class Decoder
         $pointer = $unpacked + $this->pointerBase
             + $this->pointerValueOffset[$pointerSize];
 
-        if ($this->debug) {
-            Logger::log('Control Byte', $ctrlByte);
-            Logger::log('Pointer Offset', $offset);
-            Logger::log('Pointer Size', $pointerSize);
-            Logger::logBytes('Packed', $packed);
-            Logger::log('Unpacked', $unpacked);
-            Logger::log('Pointer', $pointer);
-        }
         return array($pointer, $offset);
     }
 

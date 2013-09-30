@@ -16,7 +16,6 @@ class Reader
     private $DATA_SECTION_SEPARATOR_SIZE = 16;
     private $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
 
-    private $debug;
     private $decoder;
     private $fileHandle;
     private $metadata;
@@ -40,7 +39,6 @@ class Reader
                 'The constructor takes exactly one argument.'
             );
         }
-        $this->debug = getenv('MAXMIND_DB_READER_DEBUG');
 
         if (!is_readable($database)) {
             throw new \InvalidArgumentException(
@@ -57,10 +55,6 @@ class Reader
             $this->fileHandle,
             $this->metadata->searchTreeSize + $this->DATA_SECTION_SEPARATOR_SIZE
         );
-
-        if ($this->debug) {
-            Logger::log(serialize($this->metadata));
-        }
     }
 
     /**
@@ -106,12 +100,6 @@ class Reader
         // XXX - could simplify. Done as a byte array to ease porting
         $rawAddress = array_merge(unpack('C*', inet_pton($ipAddress)));
 
-        if ($this->debug) {
-            Logger::log();
-            Logger::log("IP address", $ipAddress);
-            Logger::log("IP address", implode(',', $rawAddress));
-        }
-
         $isIp4AddressInIp6Db = count($rawAddress) == 4
                 && $this->metadata->ipVersion == 6;
         $ipStartBit = $isIp4AddressInIp6Db ? 96 : 0;
@@ -128,29 +116,15 @@ class Reader
             }
             $record = $this->readNode($nodeNum, $bit);
 
-            if ($this->debug) {
-                Logger::log("Bit #", $i);
-                Logger::log("Bit value", $bit);
-                Logger::log("Record", $bit == 1 ? "right" : "left");
-                Logger::log("Record value", $record);
-            }
-
             if ($record == $this->metadata->nodeCount) {
-                if ($this->debug) {
-                    Logger::log("Record is empty");
-                }
+                // Record is empty
                 return 0;
             } elseif ($record > $this->metadata->nodeCount) {
-                if ($this->debug) {
-                    Logger::log("Record is a data pointer");
-                }
+                // Record is a data pointer
                 return $record;
             }
 
-            if ($this->debug) {
-                Logger::log("Record is a node number");
-            }
-
+            // Record is a node number
             $nodeNum = $record;
         }
         throw new InvalidDatabaseException("Something bad happened");
@@ -197,16 +171,6 @@ class Reader
     {
         $resolved = $pointer - $this->metadata->nodeCount
                 + $this->metadata->searchTreeSize;
-
-        if ($this->debug) {
-            $treeSize = $this->metadata->searchTreeSize;
-            Logger::log(
-                'Resolved data pointer',
-                '( ' . $pointer . " - "
-                . $this->metadata->nodeCount . " ) + " . $treeSize . " = "
-                . $resolved
-            );
-        }
 
         // We only want the data from the decoder, not the offset where it was
         // found.
