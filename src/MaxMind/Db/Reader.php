@@ -101,11 +101,13 @@ class Reader
         // XXX - could simplify. Done as a byte array to ease porting
         $rawAddress = array_merge(unpack('C*', inet_pton($ipAddress)));
 
+        $bitCount = count($rawAddress) * 8;
+
         // The first node of the tree is always node 0, at the beginning of the
         // value
-        $nodeNum = $this->startNode(count($rawAddress) * 8);
+        $nodeNum = $this->startNode($bitCount);
 
-        for ($i = 0; $i < count($rawAddress) * 8; $i++) {
+        for ($i = 0; $i < $bitCount; $i++) {
             $tempBit = 0xFF & $rawAddress[$i / 8];
             $bit = 1 & ($tempBit >> 7 - ($i % 8));
 
