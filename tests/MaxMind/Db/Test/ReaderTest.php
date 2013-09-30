@@ -69,7 +69,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage The value "2001::" is not a valid IP address.
+     * @expectedExceptionMessage The value "2001::" is
      */
     public function testV6AddressV4Database()
     {
@@ -89,7 +89,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException MaxMind\Db\Reader\InvalidDatabaseException
-     * @expectedExceptionMessage Error while looking up data for 2001:220::. The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)
+     * @expectedExceptionMessage The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)
      */
     public function testBrokenDatabase()
     {

@@ -109,8 +109,10 @@ class Decoder
             case 'utf8_string':
                 return array($this->decodeString($bytes), $newOffset);
             case 'double':
+                $this->verifySize(8, $size);
                 return array($this->decodeDouble($bytes), $newOffset);
             case 'float':
+                $this->verifySize(4, $size);
                 return array($this->decodeFloat($bytes), $newOffset);
             case 'bytes':
                 return array($bytes, $newOffset);
@@ -128,6 +130,15 @@ class Decoder
                 throw new InvalidDatabaseException(
                     "Unknown or unexpected type: " + $type
                 );
+        }
+    }
+
+    private function verifySize($expected, $actual)
+    {
+        if ($expected != $actual) {
+            throw new InvalidDatabaseException(
+                "The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)"
+            );
         }
     }
 

@@ -87,10 +87,16 @@ class Reader
                 "The value \"$ipAddress\" is not a valid IP address."
             );
         }
+
+        if ($this->metadata->ipVersion == 4 && strrpos($ipAddress, ':')) {
+            throw new \InvalidArgumentException(
+                "The value \"$ipAddress\" is an IPv6 address but your " .
+                "database only supports IPv4."
+            );
+        }
         $pointer = $this->findAddressInTree($ipAddress);
         if ($pointer == 0) {
-            // FIXME - I think PHP might expect an exception, and the GeoIP2
-            // reader will behave that way anyway
+            // FIXME - consider throwing exception?
             return null;
         }
         return $this->resolveDataPointer($pointer);
