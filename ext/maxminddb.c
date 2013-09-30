@@ -116,26 +116,33 @@ PHP_METHOD(MaxMind_Db_Reader, get){
 
     if (MMDB_SUCCESS != mmdb_error) {
         THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                        "Error looking up %s", ip_address);
+                        "Error looking up %s. %s",
+                        ip_address,  MMDB_strerror(mmdb_error));
         return;
     }
 
     MMDB_entry_data_list_s *entry_data_list = NULL;
 
-    if (result.found_entry) {
-        int status = MMDB_get_entry_data_list(&result.entry, &entry_data_list);
-
-        if (MMDB_SUCCESS != status) {
-            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                            "Error while looking up data for %s", ip_address);
-        } else if (NULL != entry_data_list) {
-            handle_entry_data_list(entry_data_list, return_value TSRMLS_CC);
-        }
-
-        MMDB_free_entry_data_list(entry_data_list);
-    } else {
+    if (!result.found_entry) {
         RETURN_NULL();
     }
+
+    int status = MMDB_get_entry_data_list(&result.entry, &entry_data_list);
+
+    if (MMDB_SUCCESS != status) {
+        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
+                            "Error while looking up data for %s. %s",
+                            ip_address, MMDB_strerror(status));
+        return;
+    } else if (NULL == entry_data_list) {
+        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
+            "Error while looking up data for %s. Your database may be corrupt or you have found a bug in libmaxminddb.",
+            ip_address);
+        return;
+    }
+
+    handle_entry_data_list(entry_data_list, return_value TSRMLS_CC);
+    MMDB_free_entry_data_list(entry_data_list);
 }
 
 PHP_METHOD(MaxMind_Db_Reader, metadata){

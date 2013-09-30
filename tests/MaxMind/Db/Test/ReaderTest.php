@@ -10,7 +10,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     {
         foreach (array(24, 28, 32) as $recordSize) {
             foreach (array(4, 6) as $ipVersion) {
-                $fileName = 'maxmind-db/test-data/MaxMind-DB-test-ipv'
+                $fileName = 'tests/data/test-data/MaxMind-DB-test-ipv'
                     . $ipVersion . '-' . $recordSize . '.mmdb';
                 $reader = new Reader($fileName);
 
@@ -27,7 +27,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
     public function testDecoder()
     {
-        $reader = new Reader('maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb');
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
         $record = $reader->get('::1.1.1.0');
 
         $this->assertEquals(array(1,2,3), $record['array']);
@@ -69,12 +69,32 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage The value "2001::" is not a valid IP address.
+     */
+    public function testV6AddressV4Database()
+    {
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-ipv4-24.mmdb');
+        $reader->get('2001::');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage The value "not_ip" is not a valid IP address.
      */
     public function testIpValidation()
     {
-        $reader = new Reader('maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb');
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
         $reader->get('not_ip');
+    }
+
+    /**
+     * @expectedException MaxMind\Db\Reader\InvalidDatabaseException
+     * @expectedExceptionMessage Error while looking up data for 2001:220::. The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)
+     */
+    public function testBrokenDatabase()
+    {
+        $reader = new Reader('tests/data/test-data/GeoIP2-City-Test-Broken-Double-Format.mmdb');
+        $reader->get('2001:220::');
     }
 
     /**
@@ -125,7 +145,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     public function testTooManyGetAgs()
     {
         $reader = new Reader(
-            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+            'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
         $reader->get('1.1.1.1', 'blah');
     }
@@ -139,7 +159,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     {
         if (extension_loaded('maxminddb')) {
             $reader = new Reader(
-                'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+                'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
             );
             $reader->get();
         } else {
@@ -154,7 +174,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     public function testMetadataAgs()
     {
         $reader = new Reader(
-            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+            'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
         $reader->metadata('blah');
     }
@@ -162,7 +182,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     public function testClose()
     {
         $reader = new Reader(
-            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+            'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
         $reader->close();
     }
@@ -174,7 +194,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     public function testDoubleClose()
     {
         $reader = new Reader(
-            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+            'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
         $reader->close();
         $reader->close();
@@ -187,7 +207,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     public function testClosedGet()
     {
         $reader = new Reader(
-            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+            'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
         $reader->close();
         $reader->get('1.1.1.1');
@@ -200,7 +220,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     public function testClosedMetadata()
     {
         $reader = new Reader(
-            'maxmind-db/test-data/MaxMind-DB-test-decoder.mmdb'
+            'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
         $reader->close();
         $reader->metadata();

@@ -9,7 +9,7 @@ class PointerTest extends \PHPUnit_Framework_TestCase
 
     public function testWithPointers()
     {
-        $handle = fopen('maxmind-db/test-data/maps-with-pointers.raw', 'r');
+        $handle = fopen('tests/data/test-data/maps-with-pointers.raw', 'r');
         $decoder = new Decoder($handle, 0);
 
         $this->assertEquals(
