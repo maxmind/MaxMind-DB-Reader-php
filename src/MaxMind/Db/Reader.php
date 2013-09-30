@@ -18,6 +18,7 @@ class Reader
 
     private $decoder;
     private $fileHandle;
+    private $ipV4Start;
     private $metadata;
 
     /**
@@ -100,20 +101,14 @@ class Reader
         // XXX - could simplify. Done as a byte array to ease porting
         $rawAddress = array_merge(unpack('C*', inet_pton($ipAddress)));
 
-        $isIp4AddressInIp6Db = count($rawAddress) == 4
-                && $this->metadata->ipVersion == 6;
-        $ipStartBit = $isIp4AddressInIp6Db ? 96 : 0;
-
         // The first node of the tree is always node 0, at the beginning of the
         // value
-        $nodeNum = 0;
+        $nodeNum = $this->startNode(count($rawAddress) * 8);
 
-        for ($i = 0; $i < count($rawAddress) * 8 + $ipStartBit; $i++) {
-            $bit = 0;
-            if ($i >= $ipStartBit) {
-                $tempBit = 0xFF & $rawAddress[($i - $ipStartBit) / 8];
-                $bit = 1 & ($tempBit >> 7 - ($i % 8));
-            }
+        for ($i = 0; $i < count($rawAddress) * 8; $i++) {
+            $tempBit = 0xFF & $rawAddress[$i / 8];
+            $bit = 1 & ($tempBit >> 7 - ($i % 8));
+
             $record = $this->readNode($nodeNum, $bit);
 
             if ($record == $this->metadata->nodeCount) {
@@ -128,6 +123,38 @@ class Reader
             $nodeNum = $record;
         }
         throw new InvalidDatabaseException("Something bad happened");
+    }
+
+
+    private function startNode($length)
+    {
+        // Check if we are looking up an IPv4 address in an IPv6 tree. If this
+        // is the case, we can skip over the first 96 nodes.
+        if ($this->metadata->ipVersion == 6 && $length == 32) {
+            return $this->ipV4StartNode();
+        }
+        // The first node of the tree is always node 0, at the beginning of the
+        // value
+        return 0;
+    }
+
+    private function ipV4StartNode()
+    {
+        // This is a defensive check. There is no reason to call this when you
+        // have an IPv4 tree.
+        if ($this->metadata->ipVersion == 4) {
+            return 0;
+        }
+
+        if ($this->ipV4Start != 0) {
+            return $this->ipV4Start;
+        }
+        $nodeNum = 0;
+        for ($i = 0; $i < 96; $i++) {
+            $nodeNum = $this->readNode($nodeNum, 0);
+        }
+        $this->ipV4Start = $nodeNum;
+        return $nodeNum;
     }
 
     private function readNode($nodeNumber, $index)
