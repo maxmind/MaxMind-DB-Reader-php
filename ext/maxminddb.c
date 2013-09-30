@@ -304,7 +304,7 @@ static void handle_uint128(const MMDB_entry_data_list_s *entry_data_list,
 {
     uint64_t high = 0;
     uint64_t low = 0;
-#if MISSING_UINT128
+#if MMDB_UINT128_IS_BYTE_ARRAY
     int i;
     for (i = 0; i < 8; i++) {
         high = (high << 8) | entry_data_list->entry_data.uint128[i];
