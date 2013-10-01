@@ -105,24 +105,23 @@ class Reader
 
         // The first node of the tree is always node 0, at the beginning of the
         // value
-        $nodeNum = $this->startNode($bitCount);
+        $node = $this->startNode($bitCount);
 
         for ($i = 0; $i < $bitCount; $i++) {
+            if ($node >= $this->metadata->nodeCount) {
+                break;
+            }
             $tempBit = 0xFF & $rawAddress[$i / 8];
             $bit = 1 & ($tempBit >> 7 - ($i % 8));
 
-            $record = $this->readNode($nodeNum, $bit);
-
-            if ($record == $this->metadata->nodeCount) {
-                // Record is empty
-                return 0;
-            } elseif ($record > $this->metadata->nodeCount) {
-                // Record is a data pointer
-                return $record;
-            }
-
-            // Record is a node number
-            $nodeNum = $record;
+            $node = $this->readNode($node, $bit);
+        }
+        if ($node == $this->metadata->nodeCount) {
+            // Record is empty
+            return 0;
+        } elseif ($node > $this->metadata->nodeCount) {
+            // Record is a data pointer
+            return $node;
         }
         throw new InvalidDatabaseException("Something bad happened");
     }
@@ -153,13 +152,8 @@ class Reader
         }
         $node = 0;
 
-        for ($i = 0; $i < 96; $i++) {
-            $nextNode = $this->readNode($node, 0);
-            // We stop early if we find a leaf node.
-            if ($nextNode >= $this->metadata->nodeCount) {
-                break;
-            }
-            $node = $nextNode;
+        for ($i = 0; $i < 96 && $node < $this->metadata->nodeCount; $i++) {
+            $node = $this->readNode($node, 0);
         }
         $this->ipV4Start = $node;
         return $node;
