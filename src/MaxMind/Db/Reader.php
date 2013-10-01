@@ -151,12 +151,18 @@ class Reader
         if ($this->ipV4Start != 0) {
             return $this->ipV4Start;
         }
-        $nodeNum = 0;
+        $node = 0;
+
         for ($i = 0; $i < 96; $i++) {
-            $nodeNum = $this->readNode($nodeNum, 0);
+            $nextNode = $this->readNode($node, 0);
+            // We stop early if we find a leaf node.
+            if ($nextNode >= $this->metadata->nodeCount) {
+                break;
+            }
+            $node = $nextNode;
         }
-        $this->ipV4Start = $nodeNum;
-        return $nodeNum;
+        $this->ipV4Start = $node;
+        return $node;
     }
 
     private function readNode($nodeNumber, $index)
