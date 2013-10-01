@@ -57,6 +57,15 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    public function testNoIpV4SearchTree()
+    {
+        $reader = new Reader(
+            'maxmind-db/test-data/MaxMind-DB-no-ipv4-search-tree.mmdb'
+        );
+        $this->assertEquals('::/64', $reader->get('1.1.1.1'));
+    }
+
+
     /**
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage The value "not_ip" is not a valid IP address.
@@ -206,7 +215,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
             'major version'
         );
         $this->assertEquals(0, $metadata->binaryFormatMinorVersion);
-        $this->assertEquals(1373571901, $metadata->buildEpoch);
+        $this->assertGreaterThan(1373571901, $metadata->buildEpoch);
         $this->assertEquals('Test', $metadata->databaseType);
 
         $this->assertEquals(

@@ -48,7 +48,7 @@ class Reader
         $this->fileHandle = fopen($database, 'r');
 
         $start = $this->findMetadataStart($database);
-        $metadataDecoder = new Decoder($this->fileHandle, 0);
+        $metadataDecoder = new Decoder($this->fileHandle, $start);
         list($metadataArray) = $metadataDecoder->decode($start);
         $this->metadata = new Metadata($metadataArray);
         $this->decoder = new Decoder(
