@@ -60,7 +60,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     public function testNoIpV4SearchTree()
     {
         $reader = new Reader(
-            'maxmind-db/test-data/MaxMind-DB-no-ipv4-search-tree.mmdb'
+            'tests/data/test-data/MaxMind-DB-no-ipv4-search-tree.mmdb'
         );
         $this->assertEquals('::/64', $reader->get('1.1.1.1'));
         $this->assertEquals('::/64', $reader->get('192.1.1.1'));
