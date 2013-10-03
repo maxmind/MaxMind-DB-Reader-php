@@ -66,7 +66,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         $record = $reader->get('::');
 
         $this->assertEquals(false, $record['boolean']);
-        $this->assertEquals(null, $record['bytes']);
+        $this->assertEquals('', $record['bytes']);
         $this->assertEquals('', $record['utf8_string']);
 
         $this->assertEquals(array(), $record['array']);
