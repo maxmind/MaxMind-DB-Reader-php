@@ -34,7 +34,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(true, $record['boolean']);
         $this->assertEquals(pack('N', 42), $record['bytes']);
         $this->assertEquals(42.123456, $record['double']);
-        $this->assertEquals(1.1000000238419, $record['float']);
+        $this->assertEquals(1.1, $record['float'], 'float', 0.000001);
         $this->assertEquals(-268435456, $record['int32']);
         $this->assertEquals(
             array(
