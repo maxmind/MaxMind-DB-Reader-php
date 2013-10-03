@@ -30,12 +30,12 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
         $record = $reader->get('::1.1.1.0');
 
-        $this->assertEquals(array(1,2,3), $record['array']);
         $this->assertEquals(true, $record['boolean']);
         $this->assertEquals(pack('N', 42), $record['bytes']);
-        $this->assertEquals(42.123456, $record['double']);
-        $this->assertEquals(1.1, $record['float'], 'float', 0.000001);
-        $this->assertEquals(-268435456, $record['int32']);
+        $this->assertEquals('unicode! ☯ - ♫', $record['utf8_string']);
+
+        $this->assertEquals(array(1,2,3), $record['array']);
+
         $this->assertEquals(
             array(
                 'mapX' => array(
@@ -46,15 +46,39 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
             $record['map']
         );
 
+        $this->assertEquals(42.123456, $record['double']);
+        $this->assertEquals(1.1, $record['float'], 'float', 0.000001);
+
+        $this->assertEquals(-268435456, $record['int32']);
         $this->assertEquals(100, $record['uint16']);
         $this->assertEquals(268435456, $record['uint32']);
         $this->assertEquals('1152921504606846976', $record['uint64']);
-        $this->assertEquals('unicode! ☯ - ♫', $record['utf8_string']);
 
         $this->assertEquals(
             '1329227995784915872903807060280344576',
             $record['uint128']
         );
+    }
+
+    public function testZeros()
+    {
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
+        $record = $reader->get('::');
+
+        $this->assertEquals(false, $record['boolean']);
+        $this->assertEquals(null, $record['bytes']);
+        $this->assertEquals('', $record['utf8_string']);
+
+        $this->assertEquals(array(), $record['array']);
+        $this->assertEquals(array(), $record['map']);
+
+        $this->assertEquals(0, $record['double']);
+        $this->assertEquals(0, $record['float'], 'float', 0.000001);
+        $this->assertEquals(0, $record['int32']);
+        $this->assertEquals(0, $record['uint16']);
+        $this->assertEquals(0, $record['uint32']);
+        $this->assertEquals(0, $record['uint64']);
+        $this->assertEquals(0, $record['uint128']);
     }
 
     public function testNoIpV4SearchTree()
@@ -65,7 +89,6 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('::/64', $reader->get('1.1.1.1'));
         $this->assertEquals('::/64', $reader->get('192.1.1.1'));
     }
-
 
     /**
      * @expectedException InvalidArgumentException
