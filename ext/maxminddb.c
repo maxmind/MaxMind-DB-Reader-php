@@ -348,7 +348,7 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
     ZVAL_STRING(z_value, int_str, 0);
 }
 
-static zend_class_entry * lookup_class(const char *name TSRMLS_DC)
+static zend_class_entry *lookup_class(const char *name TSRMLS_DC)
 {
     zend_class_entry **ce;
     if (FAILURE ==
