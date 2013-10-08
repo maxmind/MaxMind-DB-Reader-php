@@ -22,11 +22,11 @@ static zend_class_entry * lookup_class(const char *name TSRMLS_DC);
         return;                               \
     }                                         \
 
-#define THROW_EXCEPTION(name, message, args ... )                             \
-    {                                                                         \
-        zend_class_entry *exception_ce = lookup_class(name TSRMLS_CC);        \
-        zend_throw_exception_ex(exception_ce, 0 TSRMLS_CC, message, ## args); \
-    }                                                                         \
+#define THROW_EXCEPTION(name, ... )                                      \
+    {                                                                    \
+        zend_class_entry *exception_ce = lookup_class(name TSRMLS_CC);   \
+        zend_throw_exception_ex(exception_ce, 0 TSRMLS_CC, __VA_ARGS__); \
+    }                                                                    \
 
 
 #if PHP_VERSION_ID < 50399
@@ -117,7 +117,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
     if (MMDB_SUCCESS != mmdb_error) {
         THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
                         "Error looking up %s. %s",
-                        ip_address,  MMDB_strerror(mmdb_error));
+                        ip_address, MMDB_strerror(mmdb_error));
         return;
     }
 
@@ -131,11 +131,12 @@ PHP_METHOD(MaxMind_Db_Reader, get){
 
     if (MMDB_SUCCESS != status) {
         THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                            "Error while looking up data for %s. %s",
-                            ip_address, MMDB_strerror(status));
+                        "Error while looking up data for %s. %s",
+                        ip_address, MMDB_strerror(status));
         return;
     } else if (NULL == entry_data_list) {
-        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
+        THROW_EXCEPTION(
+            PHP_MAXMINDDB_READER_EX_NS,
             "Error while looking up data for %s. Your database may be corrupt or you have found a bug in libmaxminddb.",
             ip_address);
         return;
