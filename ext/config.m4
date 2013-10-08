@@ -7,7 +7,7 @@ if test $PHP_MAXMINDDB != "no"; then
 
     # Not using -Wextra as -Wunused-parameter and -Wmissing-field-initializers
     # interfere with the PHP macros
-    CFLAGS="$CFLAGS -Wall -Werror -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c99 -pedantic"
+    CFLAGS="$CFLAGS -Wall -Werror -Wextra -Wno-unused-parameter -Wno-missing-field-initializers"
 
     PHP_ADD_LIBRARY(maxminddb, 1, MAXMINDDB_SHARED_LIBADD)
     PHP_SUBST(MAXMINDDB_SHARED_LIBADD)
