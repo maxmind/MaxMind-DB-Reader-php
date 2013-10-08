@@ -101,7 +101,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
         return;
     }
 
-    int gai_error = MMDB_SUCCESS;
+    int gai_error = 0;
     int mmdb_error = MMDB_SUCCESS;
     MMDB_lookup_result_s result =
         MMDB_lookup_string(mmdb, ip_address, &gai_error,
