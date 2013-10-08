@@ -19,7 +19,7 @@ before_install:
   - sudo ldconfig
   - cd ../ext
   - phpize
-  - ./configure --enable-maxminddb
+  - CFLAGS="-Werror" ./configure --enable-maxminddb
   - make
   - NO_INTERACTION=1 make test
   - cd ..
