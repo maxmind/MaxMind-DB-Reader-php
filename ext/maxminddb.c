@@ -133,6 +133,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
         THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
                         "Error while looking up data for %s. %s",
                         ip_address, MMDB_strerror(status));
+        MMDB_free_entry_data_list(entry_data_list);
         return;
     } else if (NULL == entry_data_list) {
         THROW_EXCEPTION(
@@ -254,7 +255,7 @@ static const MMDB_entry_data_list_s *handle_entry_data_list(
                         entry_data_list->entry_data.type);
         return NULL;
     }
-    return entry_data_list->next;
+    return entry_data_list;
 }
 
 static const MMDB_entry_data_list_s *handle_map(
@@ -263,10 +264,11 @@ static const MMDB_entry_data_list_s *handle_map(
 {
     array_init(z_value);
     const uint32_t map_size = entry_data_list->entry_data.data_size;
-    entry_data_list = entry_data_list->next;
 
     uint i;
     for (i = 0; i < map_size && entry_data_list; i++ ) {
+        entry_data_list = entry_data_list->next;
+
         char *key =
             estrndup((char *)entry_data_list->entry_data.utf8_string,
                      entry_data_list->entry_data.data_size);
@@ -294,10 +296,10 @@ static const MMDB_entry_data_list_s *handle_array(
     const uint32_t size = entry_data_list->entry_data.data_size;
 
     array_init(z_value);
-    entry_data_list = entry_data_list->next;
 
     uint i;
     for (i = 0; i < size && entry_data_list; i++) {
+        entry_data_list = entry_data_list->next;
         zval *new_value;
         ALLOC_INIT_ZVAL(new_value);
         entry_data_list = handle_entry_data_list(entry_data_list,
