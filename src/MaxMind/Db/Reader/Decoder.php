@@ -94,11 +94,6 @@ class Decoder
 
     private function decodeByType($type, $offset, $size)
     {
-        // MAP, ARRAY, and BOOLEAN do not use $newOffset as we don't read the
-        // next <code>size</code> bytes. For all other types, we do.
-        $newOffset = $offset + $size;
-        $bytes = $this->read($offset, $size);
-
         switch ($type) {
             case 'map':
                 return $this->decodeMap($size, $offset);
@@ -106,6 +101,11 @@ class Decoder
                 return $this->decodeArray($size, $offset);
             case 'boolean':
                 return array($this->decodeBoolean($size), $offset);
+        }
+
+        $newOffset = $offset + $size;
+        $bytes = $this->read($offset, $size);
+        switch ($type) {
             case 'utf8_string':
                 return array($this->decodeString($bytes), $newOffset);
             case 'double':
@@ -267,8 +267,16 @@ class Decoder
         if ($numberOfBytes == 0) {
             return '';
         }
-        fseek($this->fileStream, $offset);
-        return fread($this->fileStream, $numberOfBytes);
+        if (fseek($this->fileStream, $offset) == 0) {
+            $value = fread($this->fileStream, $numberOfBytes);
+            if (strlen($value) === $numberOfBytes) {
+                return $value;
+            }
+        }
+        throw new InvalidDatabaseException(
+            "The MaxMind DB file's data section contains bad data "
+            . "(unknown data type or corrupt data)"
+        );
     }
 
     private function sizeFromCtrlByte($ctrlByte, $offset)

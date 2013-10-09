@@ -18,6 +18,7 @@ class Reader
 
     private $decoder;
     private $fileHandle;
+    private $fileSize;
     private $ipV4Start;
     private $metadata;
 
@@ -46,7 +47,18 @@ class Reader
                 "The file \"$database\" does not exist or is not readable."
             );
         }
-        $this->fileHandle = fopen($database, 'r');
+        $this->fileHandle = @fopen($database, 'r');
+        if ($this->fileHandle === false) {
+            throw new \InvalidArgumentException(
+                "Error opening \"$database\"."
+            );
+        }
+        $this->fileSize = @filesize($database);
+        if ($this->fileSize === false) {
+            throw new \UnexpectedValueException(
+                "Error determining the size of \"$database\"."
+            );
+        }
 
         $start = $this->findMetadataStart($database);
         $metadataDecoder = new Decoder($this->fileHandle, $start);
@@ -172,26 +184,22 @@ class Reader
         // XXX - probably could condense this.
         switch ($this->metadata->recordSize) {
             case 24:
-                fseek($this->fileHandle, $baseOffset + $index * 3);
-                $bytes = fread($this->fileHandle, 3);
+                $bytes = $this->read($baseOffset + $index * 3, 3);
                 list(, $node) = unpack('N', "\x00" . $bytes);
                 return $node;
             case 28:
-                fseek($this->fileHandle, $baseOffset + 3);
-                list(, $middle) = unpack('C', fgetc($this->fileHandle));
+                $middleByte = $this->read($baseOffset + 3, 1);
+                list(, $middle) = unpack('C', $middleByte);
                 if ($index == 0) {
                     $middle = (0xF0 & $middle) >> 4;
                 } else {
                     $middle = 0x0F & $middle;
                 }
-
-                fseek($this->fileHandle, $baseOffset + $index * 4);
-                $bytes = fread($this->fileHandle, 3);
+                $bytes = $this->read($baseOffset + $index * 4, 3);
                 list(, $node) = unpack('N', chr($middle) . $bytes);
                 return $node;
             case 32:
-                fseek($this->fileHandle, $baseOffset + $index * 4);
-                $bytes = fread($this->fileHandle, 4);
+                $bytes = $this->read($baseOffset + $index * 4, 4);
                 list(, $node) = unpack('N', $bytes);
                 return $node;
             default:
@@ -202,13 +210,29 @@ class Reader
         }
     }
 
+    private function read($offset, $numberOfBytes)
+    {
+        if (fseek($this->fileHandle, $offset) == 0) {
+            $value = fread($this->fileHandle, $numberOfBytes);
+            if (strlen($value) === $numberOfBytes) {
+                return $value;
+            }
+        }
+        throw new InvalidDatabaseException(
+            "The MaxMind DB file's search tree is corrupt"
+        );
+    }
+
     private function resolveDataPointer($pointer)
     {
         $resolved = $pointer - $this->metadata->nodeCount
                 + $this->metadata->searchTreeSize;
+        if ($resolved > $this->fileSize) {
+            throw new InvalidDatabaseException(
+                "The MaxMind DB file's search tree is corrupt"
+            );
+        }
 
-        // We only want the data from the decoder, not the offset where it was
-        // found.
         list($data) = $this->decoder->decode($resolved);
         return $data;
     }

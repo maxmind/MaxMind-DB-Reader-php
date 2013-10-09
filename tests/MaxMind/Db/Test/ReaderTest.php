@@ -121,6 +121,26 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException MaxMind\Db\Reader\InvalidDatabaseException
+     * @expectedExceptionMessage The MaxMind DB file's search tree is corrupt
+     */
+    public function testBrokenSearchTreePointer()
+    {
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-broken-pointers-24.mmdb');
+        $reader->get('1.1.1.32');
+    }
+
+    /**
+     * @expectedException MaxMind\Db\Reader\InvalidDatabaseException
+     * @expectedExceptionMessage The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)
+     */
+    public function testBrokenDataPointer()
+    {
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-broken-pointers-24.mmdb');
+        $reader->get('1.1.1.16');
+    }
+
+    /**
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage The file "file-does-not-exist.mmdb" does not exist or is not readable.
      */
