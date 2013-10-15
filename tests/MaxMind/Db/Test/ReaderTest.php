@@ -92,7 +92,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage The value "2001::" is
+     * @expectedExceptionMessage Error looking up 2001::. You attempted to look up an IPv6 address in an IPv4-only database
      */
     public function testV6AddressV4Database()
     {

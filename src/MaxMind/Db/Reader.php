@@ -102,8 +102,8 @@ class Reader
 
         if ($this->metadata->ipVersion == 4 && strrpos($ipAddress, ':')) {
             throw new \InvalidArgumentException(
-                "The value \"$ipAddress\" is an IPv6 address but your " .
-                "database only supports IPv4."
+                "Error looking up $ipAddress. You attempted to look up an"
+                . " IPv6 address in an IPv4-only database."
             );
         }
         $pointer = $this->findAddressInTree($ipAddress);

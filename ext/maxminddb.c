@@ -115,7 +115,13 @@ PHP_METHOD(MaxMind_Db_Reader, get){
     }
 
     if (MMDB_SUCCESS != mmdb_error) {
-        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
+        char *exception_name;
+        if (MMDB_IPV6_LOOKUP_IN_IPV4_DATABASE_ERROR == mmdb_error) {
+            exception_name = "InvalidArgumentException";
+        } else {
+            exception_name = PHP_MAXMINDDB_READER_EX_NS;
+        }
+        THROW_EXCEPTION(exception_name,
                         "Error looking up %s. %s",
                         ip_address, MMDB_strerror(mmdb_error));
         return;
