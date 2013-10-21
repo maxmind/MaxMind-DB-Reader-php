@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-0.2.0 (2013-09-XX)
+0.2.0 (2013-10-21)
 ------------------
 
 * Added optional C extension for using libmaxminddb in place of the pure PHP
