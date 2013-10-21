@@ -3,7 +3,6 @@
 namespace MaxMind\Db\Reader;
 
 use MaxMind\Db\Reader\InvalidDatabaseException;
-use MaxMind\Db\Reader\Logger;
 
 class Decoder
 {
@@ -15,16 +14,16 @@ class Decoder
     private $switchByteOrder;
 
     private $types = array(
-        0  => 'extended',
-        1  => 'pointer',
-        2  => 'utf8_string',
-        3  => 'double',
-        4  => 'bytes',
-        5  => 'uint16',
-        6  => 'uint32',
-        7  => 'map',
-        8  => 'int32',
-        9  => 'uint64',
+        0 => 'extended',
+        1 => 'pointer',
+        2 => 'utf8_string',
+        3 => 'double',
+        4 => 'bytes',
+        5 => 'uint16',
+        6 => 'uint32',
+        7 => 'map',
+        8 => 'int32',
+        9 => 'uint64',
         10 => 'uint128',
         11 => 'array',
         12 => 'container',
@@ -128,7 +127,7 @@ class Decoder
                 return array($this->decodeUint128($bytes), $newOffset);
             default:
                 throw new InvalidDatabaseException(
-                    "Unknown or unexpected type: " + $type
+                    "Unknown or unexpected type: " . $type
                 );
         }
     }
@@ -210,7 +209,7 @@ class Decoder
 
         $packed = $pointerSize == 4
             ? $buffer
-            : ( pack('C', $ctrlByte & 0x7) ) . $buffer;
+            : (pack('C', $ctrlByte & 0x7)) . $buffer;
 
         $unpacked = $this->decodeUint32($packed);
         $pointer = $unpacked + $this->pointerBase
@@ -244,7 +243,7 @@ class Decoder
 
     private function decodeBigUint($bytes, $size)
     {
-        $numberOfLongs = $size/4;
+        $numberOfLongs = $size / 4;
         $integer = 0;
         $bytes = $this->zeroPadLeft($bytes, $size);
         $unpacked = array_merge(unpack("N$numberOfLongs", $bytes));
@@ -313,6 +312,6 @@ class Decoder
     {
         $testint = 0x00FF;
         $packed = pack('S', $testint);
-        return $testint===current(unpack('v', $packed));
+        return $testint === current(unpack('v', $packed));
     }
 }

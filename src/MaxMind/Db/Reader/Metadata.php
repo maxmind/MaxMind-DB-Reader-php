@@ -2,8 +2,6 @@
 
 namespace MaxMind\Db\Reader;
 
-use MaxMind\Db\Reader\Decoder;
-
 /**
  * This class provides the metadata for the database. This is primarily
  * meant for internal use.
@@ -25,7 +23,7 @@ class Metadata
     public function __construct($metadata)
     {
         $this->binaryFormatMajorVersion =
-        $metadata['binary_format_major_version'];
+            $metadata['binary_format_major_version'];
         $this->binaryFormatMinorVersion =
             $metadata['binary_format_minor_version'];
         $this->buildEpoch = $metadata['build_epoch'];

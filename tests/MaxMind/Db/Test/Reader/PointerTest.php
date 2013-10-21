@@ -18,7 +18,7 @@ class PointerTest extends \PHPUnit_Framework_TestCase
         );
 
         $this->assertEquals(
-            array(array('long_key'=> 'long_value2'), 37),
+            array(array('long_key' => 'long_value2'), 37),
             $decoder->decode(22)
         );
 

@@ -3,7 +3,6 @@
 namespace MaxMind\Db;
 
 use MaxMind\Db\Reader\Decoder;
-use MaxMind\Db\Reader\Logger;
 use MaxMind\Db\Reader\InvalidDatabaseException;
 use MaxMind\Db\Reader\Metadata;
 
@@ -28,9 +27,8 @@ class Reader
      *
      * @param string $database
      *            the MaxMind DB file to use.
-     * @param string $fileMode
-     *            the mode to open the file with.
-     * @throws \MaxMind\Db\InvalidDatabaseException
+     * @throws \InvalidArgumentException for invalid database path or unknown arguments
+     * @throws \MaxMind\Db\Reader\InvalidDatabaseException
      *             if the database is invalid or there is an error reading
      *             from it.
      */
@@ -75,7 +73,9 @@ class Reader
      *
      * @param string $ipAddress
      *            the IP address to look up.
-     * @return the record for the IP address.
+     * @return array the record for the IP address.
+     * @throws \BadMethodCallException if this method is called on a closed database.
+     * @throws \InvalidArgumentException if something other than a single IP address is passed to the method.
      * @throws InvalidDatabaseException
      *             if the database is invalid or there is an error reading
      *             from it.
@@ -108,7 +108,6 @@ class Reader
         }
         $pointer = $this->findAddressInTree($ipAddress);
         if ($pointer == 0) {
-            // FIXME - consider throwing exception?
             return null;
         }
         return $this->resolveDataPointer($pointer);
@@ -129,7 +128,7 @@ class Reader
             if ($node >= $this->metadata->nodeCount) {
                 break;
             }
-            $tempBit = 0xFF & $rawAddress[$i / 8];
+            $tempBit = 0xFF & $rawAddress[$i >> 3];
             $bit = 1 & ($tempBit >> 7 - ($i % 8));
 
             $node = $this->readNode($node, $bit);
@@ -205,7 +204,7 @@ class Reader
             default:
                 throw new InvalidDatabaseException(
                     'Unknown record size: '
-                    + $this->metadata->recordSize
+                    . $this->metadata->recordSize
                 );
         }
     }
@@ -226,7 +225,7 @@ class Reader
     private function resolveDataPointer($pointer)
     {
         $resolved = $pointer - $this->metadata->nodeCount
-                + $this->metadata->searchTreeSize;
+            + $this->metadata->searchTreeSize;
         if ($resolved > $this->fileSize) {
             throw new InvalidDatabaseException(
                 "The MaxMind DB file's search tree is corrupt"
@@ -267,6 +266,8 @@ class Reader
     }
 
     /**
+     * @throws \InvalidArgumentException if arguments are passed to the method.
+     * @throws \BadMethodCallException if the database has been closed.
      * @return Metadata object for the database.
      */
     public function metadata()
@@ -291,7 +292,7 @@ class Reader
     /**
      * Closes the MaxMind DB and returns resources to the system.
      *
-     * @throws Exception
+     * @throws \Exception
      *             if an I/O error occurs.
      */
     public function close()

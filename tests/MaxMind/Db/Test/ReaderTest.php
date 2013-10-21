@@ -34,15 +34,15 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(pack('N', 42), $record['bytes']);
         $this->assertEquals('unicode! ☯ - ♫', $record['utf8_string']);
 
-        $this->assertEquals(array(1,2,3), $record['array']);
+        $this->assertEquals(array(1, 2, 3), $record['array']);
 
         $this->assertEquals(
             array(
                 'mapX' => array(
-                    'arrayX' => array(7, 8,9),
+                    'arrayX' => array(7, 8, 9),
                     'utf8_stringX' => 'hello'
-                    ),
                 ),
+            ),
             $record['map']
         );
 
@@ -289,7 +289,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals($ipVersion, $metadata->ipVersion);
         $this->assertEquals(array('en', 'zh'), $metadata->languages);
-        $this->assertEquals($recordSize/4, $metadata->nodeByteSize);
+        $this->assertEquals($recordSize / 4, $metadata->nodeByteSize);
         $this->assertGreaterThan(36, $metadata->nodeCount);
 
         $this->assertEquals($recordSize, $metadata->recordSize);
@@ -336,8 +336,8 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
     // XXX - logic could be combined with above
     private function checkIpV6(Reader $reader, $fileName)
     {
-        $subnets = array( '::1:ffff:ffff', '::2:0:0',
-                '::2:0:40', '::2:0:50', '::2:0:58' );
+        $subnets = array('::1:ffff:ffff', '::2:0:0',
+            '::2:0:40', '::2:0:50', '::2:0:58');
 
         foreach ($subnets as $address) {
             $this->assertEquals(
@@ -363,8 +363,8 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
             $this->assertEquals(
                 array('ip' => $valueAddress),
                 $reader->get($keyAddress),
-                'found expected data record for ' + $keyAddress + ' in '
-                + $fileName
+                'found expected data record for ' . $keyAddress . ' in '
+                . $fileName
             );
         }
 
