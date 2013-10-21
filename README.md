@@ -20,7 +20,7 @@ To do this, add ```maxmind-db/reader``` to your ```composer.json``` file.
 ```json
 {
     "require": {
-        "maxmind-db/reader": "0.1.*"
+        "maxmind-db/reader": "0.2.*"
     }
 }
 ```
@@ -69,11 +69,10 @@ print_r($reader->get($ipAddress));
 
 ## Optional PHP C Extension ##
 
-MaxMind provides an optional C extension that is a drop-in replacement for
-for `MaxMind\Db\Reader`. In order to use this extension, you must install
-the Reader API as described above and install the extension as described
-below. If you are using an autoloader, no changes to your code should be
-necessary.
+MaxMind provides an optional C extension that is a drop-in replacement for for
+`MaxMind\Db\Reader`. In order to use this extension, you must install the
+Reader API as described above and install the extension as described below. If
+you are using an autoloader, no changes to your code should be necessary.
 
 ### Installing Extension ###
 
@@ -95,13 +94,11 @@ extension=maxminddb.so
 
 ## Support ##
 
-Please report all issues with this code using the
-[GitHub issue tracker]
+Please report all issues with this code using the [GitHub issue tracker]
 (https://github.com/maxmind/MaxMind-DB-Reader-php/issues).
 
-If you are having an issue with a MaxMind service that is not specific
-to the client API, please see
-[our support page](http://www.maxmind.com/en/support).
+If you are having an issue with a MaxMind service that is not specific to the
+client API, please see [our support page](http://www.maxmind.com/en/support).
 
 ## Requirements  ##
 
@@ -110,7 +107,7 @@ supported.
 
 ## Contributing ##
 
-Patches and pull requests are encouraged. All code should follow the
+Patches and pull requests are encouraged. All code should follow the PSR-1 and
 PSR-2 style guidelines. Please include unit tests whenever possible.
 
 ## Versioning ##

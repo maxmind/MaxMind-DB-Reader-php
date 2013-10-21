@@ -4,7 +4,7 @@ CHANGELOG
 0.2.0 (2013-09-XX)
 ------------------
 
-* Added optional extension for using libmaxminddb in place of the pure PHP
+* Added optional C extension for using libmaxminddb in place of the pure PHP
   reader.
 * Improved error handling in pure PHP reader.
 
