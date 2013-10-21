@@ -5,9 +5,6 @@
 This is a beta release. The API may change before the first production
 release.
 
-To provide feedback or get support during the beta, please see the
-[MaxMind Customer Community](https://getsatisfaction.com/maxmind).
-
 ## Description ##
 
 This is the pure PHP API for reading MaxMind DB files. MaxMind DB is a binary
