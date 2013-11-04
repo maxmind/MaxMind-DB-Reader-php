@@ -1,5 +1,4 @@
-/*
- * MaxMind, Inc., licenses this file to you under the Apache License, Version
+/* MaxMind, Inc., licenses this file to you under the Apache License, Version
  * 2.0 (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
@@ -13,6 +12,35 @@
  */
 
 #include "php_maxminddb.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <php.h>
+#include "Zend/zend_exceptions.h"
+#include <maxminddb.h>
+
+#ifdef ZTS
+#include <TSRM.h>
+#endif
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
+#define PHP_MAXMINDDB_NS ZEND_NS_NAME("MaxMind", "Db")
+#define PHP_MAXMINDDB_READER_NS ZEND_NS_NAME(PHP_MAXMINDDB_NS, "Reader")
+#define PHP_MAXMINDDB_READER_EX_NS        \
+    ZEND_NS_NAME(PHP_MAXMINDDB_READER_NS, \
+                 "InvalidDatabaseException")
+
+typedef struct _maxminddb_obj {
+    zend_object std;
+    MMDB_s *mmdb;
+} maxminddb_obj;
+
+
+PHP_FUNCTION(maxminddb);
 
 static const MMDB_entry_data_list_s *handle_entry_data_list(
     const MMDB_entry_data_list_s *entry_data_list,
@@ -432,7 +460,7 @@ PHP_MINIT_FUNCTION(maxminddb){
     INIT_CLASS_ENTRY(ce, PHP_MAXMINDDB_READER_NS, maxminddb_methods);
     maxminddb_ce = zend_register_internal_class(&ce TSRMLS_CC);
     maxminddb_ce->create_object = maxminddb_create_handler;
-    maxminddb_ce->ce_flags |= ZEND_ACC_FINAL | ZEND_ACC_ABSTRACT;
+    maxminddb_ce->ce_flags |= ZEND_ACC_FINAL;
     memcpy(&maxminddb_obj_handlers,
            zend_get_std_object_handlers(), sizeof(zend_object_handlers));
     maxminddb_obj_handlers.clone_obj = NULL;
