@@ -76,6 +76,11 @@ you are using an autoloader, no changes to your code should be necessary.
 
 ### Installing Extension ###
 
+First install [libmaxminddb](https://github.com/maxmind/libmaxminddb) as
+described in its [README.md
+file](https://github.com/maxmind/libmaxminddb/blob/master/README.md#installing-from-a-tarball).
+After successfully installing libmaxmindb, run the following commands:
+
 ```
 cd ext
 phpize
