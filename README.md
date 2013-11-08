@@ -79,7 +79,8 @@ you are using an autoloader, no changes to your code should be necessary.
 First install [libmaxminddb](https://github.com/maxmind/libmaxminddb) as
 described in its [README.md
 file](https://github.com/maxmind/libmaxminddb/blob/master/README.md#installing-from-a-tarball).
-After successfully installing libmaxmindb, run the following commands:
+After successfully installing libmaxmindb, run the following commands from the
+top-level directory of this distribution:
 
 ```
 cd ext
