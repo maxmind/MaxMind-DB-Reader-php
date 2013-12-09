@@ -263,19 +263,39 @@ class Decoder
 
     private function read($offset, $numberOfBytes)
     {
+        static $cache = array();
+
         if ($numberOfBytes == 0) {
             return '';
         }
-        if (fseek($this->fileStream, $offset) == 0) {
-            $value = fread($this->fileStream, $numberOfBytes);
-            if (strlen($value) === $numberOfBytes) {
-                return $value;
+
+        if (!isset($cache[$offset]) || strlen($cache[$offset]) < $numberOfBytes) {
+            if ($offset == ftell($this->fileStream) || fseek($this->fileStream, $offset) == 0) {
+                $value = fread($this->fileStream, $numberOfBytes);
+                if (strlen($value) === $numberOfBytes) {
+                    $cache[$offset] = $value;
+                }
+            }
+
+            if (!isset($cache[$offset])) {
+                throw new InvalidDatabaseException(
+                    "The MaxMind DB file's data section contains bad data "
+                    . "(unknown data type or corrupt data)"
+                );
             }
         }
-        throw new InvalidDatabaseException(
-            "The MaxMind DB file's data section contains bad data "
-            . "(unknown data type or corrupt data)"
-        );
+
+        $cachedLen = strlen($cache[$offset]);
+
+        if ($cachedLen < $numberOfBytes) {
+            throw new InvalidDatabaseException(
+                "The MaxMind DB file's data section contains bad data "
+                . "(smaller cache than expected)"
+            );
+        }
+
+        return $cachedLen > $numberOfBytes ?
+            substr($cache[$offset], 0, $numberOfBytes) : $cache[$offset];
     }
 
     private function sizeFromCtrlByte($ctrlByte, $offset)
