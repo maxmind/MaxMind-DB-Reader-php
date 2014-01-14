@@ -98,13 +98,7 @@ following to your `php.ini` file:
 extension=maxminddb.so
 ```
 
-Note: You may need to install additional tools to run phpize. On Debian based systems, this is done via
-
-```
-sudo apt-get install php5-dev
-```
-
-For other platforms, search for installation instructions.
+Note: You may need to install the PHP development package on your OS such as php5-dev for Debian-based systems or php-devel for RedHat/Fedora-based ones.
 
 ## Support ##
 
