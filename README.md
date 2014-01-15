@@ -88,7 +88,7 @@ phpize
 ./configure
 make
 make test
-make install
+sudo make install
 ```
 
 You then must load your extension. The recommend method is to add the
@@ -97,6 +97,8 @@ following to your `php.ini` file:
 ```
 extension=maxminddb.so
 ```
+
+Note: You may need to install the PHP development package on your OS such as php5-dev for Debian-based systems or php-devel for RedHat/Fedora-based ones.
 
 ## Support ##
 
