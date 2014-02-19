@@ -1,10 +1,5 @@
 # MaxMind DB Reader PHP API #
 
-## Beta Note ##
-
-This is a beta release. The API may change before the first production
-release.
-
 ## Description ##
 
 This is the pure PHP API for reading MaxMind DB files. MaxMind DB is a binary
@@ -20,7 +15,7 @@ To do this, add ```maxmind-db/reader``` to your ```composer.json``` file.
 ```json
 {
     "require": {
-        "maxmind-db/reader": "0.2.*"
+        "maxmind-db/reader": "0.3.*"
     }
 }
 ```
@@ -64,7 +59,8 @@ $databaseFile = 'GeoIP2-City.mmdb';
 $reader = new Reader($databaseFile);
 
 print_r($reader->get($ipAddress));
-//...
+
+$reader->close()
 ```
 
 ## Optional PHP C Extension ##
@@ -110,7 +106,7 @@ client API, please see [our support page](http://www.maxmind.com/en/support).
 
 ## Requirements  ##
 
-This library requires PHP 5.3 or greater (built with BC Math enabled). Older
+This library requires PHP 5.3 or greater (with BC Math enabled). Older
 versions of PHP are not supported.
 
 ## Contributing ##
