@@ -183,22 +183,22 @@ class Reader
         // XXX - probably could condense this.
         switch ($this->metadata->recordSize) {
             case 24:
-                $bytes = $this->read($baseOffset + $index * 3, 3);
+                $bytes = Reader\read($this->fileHandle, $baseOffset + $index * 3, 3);
                 list(, $node) = unpack('N', "\x00" . $bytes);
                 return $node;
             case 28:
-                $middleByte = $this->read($baseOffset + 3, 1);
+                $middleByte = Reader\read($this->fileHandle, $baseOffset + 3, 1);
                 list(, $middle) = unpack('C', $middleByte);
                 if ($index == 0) {
                     $middle = (0xF0 & $middle) >> 4;
                 } else {
                     $middle = 0x0F & $middle;
                 }
-                $bytes = $this->read($baseOffset + $index * 4, 3);
+                $bytes = Reader\read($this->fileHandle, $baseOffset + $index * 4, 3);
                 list(, $node) = unpack('N', chr($middle) . $bytes);
                 return $node;
             case 32:
-                $bytes = $this->read($baseOffset + $index * 4, 4);
+                $bytes = Reader\read($this->fileHandle, $baseOffset + $index * 4, 4);
                 list(, $node) = unpack('N', $bytes);
                 return $node;
             default:
@@ -207,19 +207,6 @@ class Reader
                     . $this->metadata->recordSize
                 );
         }
-    }
-
-    private function read($offset, $numberOfBytes)
-    {
-        if (fseek($this->fileHandle, $offset) == 0) {
-            $value = fread($this->fileHandle, $numberOfBytes);
-            if (strlen($value) === $numberOfBytes) {
-                return $value;
-            }
-        }
-        throw new InvalidDatabaseException(
-            "The MaxMind DB file's search tree is corrupt"
-        );
     }
 
     private function resolveDataPointer($pointer)

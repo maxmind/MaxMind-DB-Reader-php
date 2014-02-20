@@ -47,7 +47,7 @@ class Decoder
 
     public function decode($offset)
     {
-        list(, $ctrlByte) = unpack('C', $this->read($offset, 1));
+        list(, $ctrlByte) = unpack('C', read($this->fileStream, $offset, 1));
         $offset++;
 
         $type = $this->types[$ctrlByte >> 5];
@@ -69,7 +69,7 @@ class Decoder
         }
 
         if ($type == 'extended') {
-            list(, $nextByte) = unpack('C', $this->read($offset, 1));
+            list(, $nextByte) = unpack('C', read($this->fileStream, $offset, 1));
 
             $typeNum = $nextByte + 7;
 
@@ -103,7 +103,7 @@ class Decoder
         }
 
         $newOffset = $offset + $size;
-        $bytes = $this->read($offset, $size);
+        $bytes = read($this->fileStream, $offset, $size);
         switch ($type) {
             case 'utf8_string':
                 return array($this->decodeString($bytes), $newOffset);
@@ -204,7 +204,7 @@ class Decoder
     {
         $pointerSize = (($ctrlByte >> 3) & 0x3) + 1;
 
-        $buffer = $this->read($offset, $pointerSize);
+        $buffer = read($this->fileStream, $offset, $pointerSize);
         $offset = $offset + $pointerSize;
 
         $packed = $pointerSize == 4
@@ -261,28 +261,11 @@ class Decoder
         return $bytes;
     }
 
-    private function read($offset, $numberOfBytes)
-    {
-        if ($numberOfBytes == 0) {
-            return '';
-        }
-        if (fseek($this->fileStream, $offset) == 0) {
-            $value = fread($this->fileStream, $numberOfBytes);
-            if (strlen($value) === $numberOfBytes) {
-                return $value;
-            }
-        }
-        throw new InvalidDatabaseException(
-            "The MaxMind DB file's data section contains bad data "
-            . "(unknown data type or corrupt data)"
-        );
-    }
-
     private function sizeFromCtrlByte($ctrlByte, $offset)
     {
         $size = $ctrlByte & 0x1f;
         $bytesToRead = $size < 29 ? 0 : $size - 28;
-        $bytes = $this->read($offset, $bytesToRead);
+        $bytes = read($this->fileStream, $offset, $bytesToRead);
         $decoded = $this->decodeUint32($bytes);
 
         if ($size == 29) {
@@ -313,5 +296,33 @@ class Decoder
         $testint = 0x00FF;
         $packed = pack('S', $testint);
         return $testint === current(unpack('v', $packed));
+    }
+}
+
+function read($stream, $offset, $numberOfBytes)
+{
+    if ($numberOfBytes == 0) {
+        return '';
+    }
+    if (fseek($stream, $offset) == 0) {
+        $value = fread($stream, $numberOfBytes);
+        if (strlen($value) === $numberOfBytes) {
+            return $value;
+        }
+    }
+    throw new InvalidDatabaseException(
+        "The MaxMind DB file contains bad data"
+    );
+}
+
+if (\strlen("俄罗斯") == 3) {
+    function strlen(&$string)
+    {
+        return \mb_strlen($string, '8bit');
+    }
+} else {
+    function strlen(&$string)
+    {
+        return \strlen($string);
     }
 }
