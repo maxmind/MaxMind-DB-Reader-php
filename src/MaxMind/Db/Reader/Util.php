@@ -14,7 +14,7 @@ class Util
         }
         if (fseek($stream, $offset) == 0) {
             $value = fread($stream, $numberOfBytes);
-            if (strlen($value) === $numberOfBytes) {
+            if (static::stringLength($value) === $numberOfBytes) {
                 return $value;
             }
         }

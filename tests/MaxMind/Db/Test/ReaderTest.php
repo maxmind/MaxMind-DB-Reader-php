@@ -132,7 +132,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException MaxMind\Db\Reader\InvalidDatabaseException
-     * @expectedExceptionMessage The MaxMind DB file contains bad data
+     * @expectedExceptionMessage contains bad data
      */
     public function testBrokenDataPointer()
     {
