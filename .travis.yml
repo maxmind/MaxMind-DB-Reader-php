@@ -29,6 +29,7 @@ script:
   - mkdir -p build/logs
   - phpcs --standard=PSR2 src/
   - phpunit -c .coveralls-phpunit.xml.dist
+  - echo "mbstring.internal_encoding=utf-8" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - echo "mbstring.func_overload = 7" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - phpunit
   - echo "extension = ext/modules/maxminddb.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
