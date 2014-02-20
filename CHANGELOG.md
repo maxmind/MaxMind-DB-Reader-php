@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.3.1 (2014-??-??)
+------------------
+
+* The API now works when `mbstring.func_overload` is set.
+
 0.3.0 (2014-02-19)
 ------------------
 
