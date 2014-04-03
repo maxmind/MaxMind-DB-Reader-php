@@ -4,36 +4,13 @@ php:
   - 5.3
   - 5.4
   - 5.5
+  - hhvm
 
 before_install:
-  - git submodule update --init --recursive
-  - composer self-update
-  - composer install --dev -n --prefer-source
-  - git clone git://github.com/maxmind/libmaxminddb
-  - cd libmaxminddb
-  - ./bootstrap
-  - ./configure
-  - make
-  - sudo make install
-  - sudo ldconfig
-  - cd ../ext
-  - phpize
-  - ./configure --with-maxminddb --enable-maxminddb-debug
-  - make
-  - NO_INTERACTION=1 make test
-  - cd ..
-  - pyrus install pear/PHP_CodeSniffer
-  - phpenv rehash
+  - ./.travis-install.sh
 
 script:
-  - mkdir -p build/logs
-  - phpcs --standard=PSR2 src/
-  - phpunit -c .coveralls-phpunit.xml.dist
-  - echo "mbstring.internal_encoding=utf-8" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - echo "mbstring.func_overload = 7" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - phpunit
-  - echo "extension = ext/modules/maxminddb.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - phpunit
+  - ./.travis-test.sh
 
 after_script:
   - php vendor/bin/coveralls
