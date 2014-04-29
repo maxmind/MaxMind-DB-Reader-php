@@ -129,9 +129,8 @@ class Decoder
             case 'int32':
                 return array($this->decodeInt32($bytes), $newOffset);
             case 'uint64':
-                return array($this->decodeUint64($bytes), $newOffset);
             case 'uint128':
-                return array($this->decodeUint128($bytes), $newOffset);
+                return array($this->decodeBigUint($bytes), $newOffset);
             default:
                 throw new InvalidDatabaseException(
                     "Unknown or unexpected type: " . $type
@@ -238,25 +237,18 @@ class Decoder
         return $int;
     }
 
-    private function decodeUint64($bytes)
-    {
-        return $this->decodeBigUint($bytes, 8);
-    }
-
-    private function decodeUint128($bytes)
-    {
-        return $this->decodeBigUint($bytes, 16);
-    }
-
-    private function decodeBigUint($bytes, $size)
+    private function decodeBigUint($bytes)
     {
         $maxUintBytes = log(PHP_INT_MAX, 2) / 8;
-        $numberOfLongs = $size / 4;
         $byteLength = Util::stringLength($bytes);
 
-        $integer = 0;
-        $paddedBytes = $this->zeroPadLeft($bytes, $size);
+
+        $numberOfLongs = ceil($byteLength / 4);
+        $paddedLength = $numberOfLongs * 4;
+        $paddedBytes = $this->zeroPadLeft($bytes, $paddedLength);
         $unpacked = array_merge(unpack("N$numberOfLongs", $paddedBytes));
+
+        $integer = 0;
         foreach ($unpacked as $part) {
             # We only use gmp or bcmath if the final value is too big
             if ($byteLength <= $maxUintBytes) {
