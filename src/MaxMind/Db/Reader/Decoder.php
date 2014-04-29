@@ -123,9 +123,8 @@ class Decoder
             case 'bytes':
                 return array($bytes, $newOffset);
             case 'uint16':
-                return array($this->decodeUint16($bytes), $newOffset);
             case 'uint32':
-                return array($this->decodeUint32($bytes), $newOffset);
+                return array($this->decodeUint($bytes), $newOffset);
             case 'int32':
                 return array($this->decodeInt32($bytes), $newOffset);
             case 'uint64':
@@ -217,21 +216,14 @@ class Decoder
             ? $buffer
             : (pack('C', $ctrlByte & 0x7)) . $buffer;
 
-        $unpacked = $this->decodeUint32($packed);
+        $unpacked = $this->decodeUint($packed);
         $pointer = $unpacked + $this->pointerBase
             + $this->pointerValueOffset[$pointerSize];
 
         return array($pointer, $offset);
     }
 
-
-    private function decodeUint16($bytes)
-    {
-        // No big-endian unsigned short format
-        return $this->decodeUint32($bytes);
-    }
-
-    private function decodeUint32($bytes)
+    private function decodeUint($bytes)
     {
         list(, $int) = unpack('N', $this->zeroPadLeft($bytes, 4));
         return $int;
@@ -241,7 +233,9 @@ class Decoder
     {
         $maxUintBytes = log(PHP_INT_MAX, 2) / 8;
         $byteLength = Util::stringLength($bytes);
-
+        if ($byteLength == 0) {
+            return 0;
+        }
 
         $numberOfLongs = ceil($byteLength / 4);
         $paddedLength = $numberOfLongs * 4;
@@ -279,7 +273,7 @@ class Decoder
         $size = $ctrlByte & 0x1f;
         $bytesToRead = $size < 29 ? 0 : $size - 28;
         $bytes = Util::read($this->fileStream, $offset, $bytesToRead);
-        $decoded = $this->decodeUint32($bytes);
+        $decoded = $this->decodeUint($bytes);
 
         if ($size == 29) {
             $size = 29 + $decoded;
