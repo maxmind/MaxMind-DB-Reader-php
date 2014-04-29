@@ -250,13 +250,27 @@ class Decoder
 
     private function decodeBigUint($bytes, $size)
     {
+        $maxUintBytes = log(PHP_INT_MAX, 2) / 8;
         $numberOfLongs = $size / 4;
+        $byteLength = Util::stringLength($bytes);
+
         $integer = 0;
-        $bytes = $this->zeroPadLeft($bytes, $size);
-        $unpacked = array_merge(unpack("N$numberOfLongs", $bytes));
+        $paddedBytes = $this->zeroPadLeft($bytes, $size);
+        $unpacked = array_merge(unpack("N$numberOfLongs", $paddedBytes));
         foreach ($unpacked as $part) {
-            // No bitwise operators with bcmath :'-(
-            $integer = bcadd(bcmul($integer, bcpow(2, 32)), $part);
+            # We only use gmp or bcmath if the final value is too big
+            if ($byteLength <= $maxUintBytes) {
+                $integer = ($integer << 32) + $part;
+            } elseif (extension_loaded('gmp')) {
+                $integer = gmp_strval(gmp_add(gmp_mul($integer, gmp_pow(2, 32)), $part));
+            } elseif (extension_loaded('bcmath')) {
+                // No bitwise operators with bcmath :'-(
+                $integer = bcadd(bcmul($integer, bcpow(2, 32)), $part);
+            } else {
+                throw new RuntimeException(
+                    'The gmp or bcmath extension must be installed to read this database.'
+                );
+            }
         }
         return $integer;
     }
