@@ -106,8 +106,11 @@ client API, please see [our support page](http://www.maxmind.com/en/support).
 
 ## Requirements  ##
 
-This library requires PHP 5.3 or greater (with BC Math enabled). Older
-versions of PHP are not supported.
+This library requires PHP 5.3 or greater. Older versions of PHP are not
+supported.
+
+The GMP or BCMath extension may be required to read some databases
+using the pure PHP API.
 
 ## Contributing ##
 
