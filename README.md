@@ -107,7 +107,8 @@ client API, please see [our support page](http://www.maxmind.com/en/support).
 ## Requirements  ##
 
 This library requires PHP 5.3 or greater. Older versions of PHP are not
-supported.
+supported. The pure PHP reader included with this library is works and is
+tested with HHVM.
 
 The GMP or BCMath extension may be required to read some databases
 using the pure PHP API.
@@ -123,6 +124,6 @@ The MaxMind DB Reader PHP API uses [Semantic Versioning](http://semver.org/).
 
 ## Copyright and License ##
 
-This software is Copyright (c) 2013 by MaxMind, Inc.
+This software is Copyright (c) 2014 by MaxMind, Inc.
 
 This is free software, licensed under the Apache License, Version 2.0.

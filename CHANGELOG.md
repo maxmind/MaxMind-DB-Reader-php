@@ -9,7 +9,7 @@ CHANGELOG
   it will try to use GMP and then BCMath. If both of those fail, it will
   throw an exception. No databases released by MaxMind currently use big
   integers.
-* The API now official supports HHVM.
+* The API now officially supports HHVM when using the pure PHP reader.
 
 0.3.0 (2014-02-19)
 ------------------
