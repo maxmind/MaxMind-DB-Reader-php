@@ -1,10 +1,15 @@
 CHANGELOG
 =========
 
-0.3.1 (2014-??-??)
+0.3.1 (2014-05-01)
 ------------------
 
 * The API now works when `mbstring.func_overload` is set.
+* BCMath is no longer required. If the decoder encounters a big integer,
+  it will try to use GMP and then BCMath. If both of those fail, it will
+  throw an exception. No databases released by MaxMind currently use big
+  integers.
+* The API now official supports HHVM.
 
 0.3.0 (2014-02-19)
 ------------------
