@@ -7,11 +7,9 @@ file format that stores data indexed by IP address subnets (IPv4 or IPv6).
 
 ## Installation ##
 
-## Install via Composer ##
-
 We recommend installing this package with [Composer](http://getcomposer.org/).
 
-### Downloading Composer ###
+### Download Composer ###
 
 To download Composer, run in the root directory of your project:
 
