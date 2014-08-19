@@ -253,7 +253,7 @@ class Decoder
                 // No bitwise operators with bcmath :'-(
                 $integer = bcadd(bcmul($integer, bcpow(2, 32)), $part);
             } else {
-                throw new RuntimeException(
+                throw new \RuntimeException(
                     'The gmp or bcmath extension must be installed to read this database.'
                 );
             }
