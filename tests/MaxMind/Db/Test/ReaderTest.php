@@ -54,9 +54,16 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(268435456, $record['uint32']);
         $this->assertEquals('1152921504606846976', $record['uint64']);
 
+        $uint128 = $record['uint128'];
+
+        // For the C extension, which returns a hexadecimal
+        if (extension_loaded('gmp')) {
+            $uint128 = gmp_strval($uint128);
+        }
+
         $this->assertEquals(
             '1329227995784915872903807060280344576',
-            gmp_strval($record['uint128'], 10)
+            $uint128
         );
     }
 
