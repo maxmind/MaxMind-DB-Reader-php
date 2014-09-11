@@ -252,9 +252,9 @@ class Decoder
             if ($byteLength <= $maxUintBytes) {
                 $integer = ($integer << 32) + $part;
             } elseif (extension_loaded('gmp')) {
-                $integer = gmp_strval(gmp_add(gmp_mul($integer, $twoTo32 ), $part));
+                $integer = gmp_strval(gmp_add(gmp_mul($integer, $twoTo32), $part));
             } elseif (extension_loaded('bcmath')) {
-                $integer = bcadd(bcmul($integer, $twoTo32 ), $part);
+                $integer = bcadd(bcmul($integer, $twoTo32), $part);
             } else {
                 throw new \RuntimeException(
                     'The gmp or bcmath extension must be installed to read this database.'
