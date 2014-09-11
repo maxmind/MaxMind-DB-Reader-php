@@ -56,7 +56,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals(
             '1329227995784915872903807060280344576',
-            $record['uint128']
+            gmp_strval($record['uint128'], 10)
         );
     }
 

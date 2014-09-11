@@ -243,15 +243,18 @@ class Decoder
         $unpacked = array_merge(unpack("N$numberOfLongs", $paddedBytes));
 
         $integer = 0;
+
+        // 2^32
+        $twoTo32 = '4294967296';
+
         foreach ($unpacked as $part) {
-            # We only use gmp or bcmath if the final value is too big
+            // We only use gmp or bcmath if the final value is too big
             if ($byteLength <= $maxUintBytes) {
                 $integer = ($integer << 32) + $part;
             } elseif (extension_loaded('gmp')) {
-                $integer = gmp_strval(gmp_add(gmp_mul($integer, gmp_pow(2, 32)), $part));
+                $integer = gmp_strval(gmp_add(gmp_mul($integer, $twoTo32 ), $part));
             } elseif (extension_loaded('bcmath')) {
-                // No bitwise operators with bcmath :'-(
-                $integer = bcadd(bcmul($integer, bcpow(2, 32)), $part);
+                $integer = bcadd(bcmul($integer, $twoTo32 ), $part);
             } else {
                 throw new \RuntimeException(
                     'The gmp or bcmath extension must be installed to read this database.'

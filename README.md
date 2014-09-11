@@ -91,7 +91,21 @@ following to your `php.ini` file:
 extension=maxminddb.so
 ```
 
-Note: You may need to install the PHP development package on your OS such as php5-dev for Debian-based systems or php-devel for RedHat/Fedora-based ones.
+Note: You may need to install the PHP development package on your OS such as
+php5-dev for Debian-based systems or php-devel for RedHat/Fedora-based ones.
+
+## 128-bit Integer Support ##
+
+The MaxMind DB format includes 128-bit unsigned integer as a type. Although
+no MaxMind-distributed database currently makes use of this type, both the
+pure PHP reader and the C extension support this type. The pure PHP reader
+requires gmp or bcmath to read databases with 128-bit unsigned integers.
+
+The integer is currently returned as a hexadecimal string (prefixed with "0x")
+by the C extension and a decimal string (no prefix) by the pure PHP reader.
+Any change to make the reader implementations always return either a
+hexadecimal or decimal representation of the integer will NOT be considered a
+breaking change.
 
 ## Support ##
 
