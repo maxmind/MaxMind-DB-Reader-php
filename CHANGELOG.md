@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.3.3 (2014-09-15)
+------------------
+
+* Clarified behavior of 128-bit type in documentation.
+* Updated phpunit and fixed some test breakage from the newer version.
+
 0.3.2 (2014-09-10)
 ------------------
 
