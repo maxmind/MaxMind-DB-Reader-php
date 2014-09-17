@@ -18,6 +18,6 @@ then
   make
   NO_INTERACTION=1 make test
   cd ..
+  pyrus install pear/PHP_CodeSniffer
 fi
-pyrus install pear/PHP_CodeSniffer
 phpenv rehash
