@@ -8,7 +8,12 @@ php:
   - hhvm
 
 before_install:
-  - ./.travis-install.sh
+  - ./.travis-install-prereqs.sh
+
+install:
+  - ./.travis-build.sh
+  - phpenv rehash
+
 
 script:
   - ./.travis-test.sh
@@ -33,6 +38,5 @@ addons:
       name: "maxmind/MaxMind-DB-Reader-php"
       description: "Build submitted via Travis CI"
     notification_email: dev@maxmind.com
-    build_command_prepend: "cd ext; phpize; ./configure --with-maxminddb --enable-maxminddb-debug; make clean"
-    build_command:   "make -j 4"
+    build_command:   "./.travis-build.sh"
     branch_pattern: .*coverity.*
