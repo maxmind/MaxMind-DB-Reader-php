@@ -33,6 +33,6 @@ addons:
       name: "maxmind/MaxMind-DB-Reader-php"
       description: "Build submitted via Travis CI"
     notification_email: dev@maxmind.com
-    build_command_prepend: "phpize; ./configure --with-maxminddb --enable-maxminddb-debug; make clean"
+    build_command_prepend: "cd ext; phpize; ./configure --with-maxminddb --enable-maxminddb-debug; make clean"
     build_command:   "make -j 4"
     branch_pattern: .*coverity.*
