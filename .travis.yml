@@ -22,3 +22,17 @@ notifications:
       - dev@maxmind.com
     on_success: change
     on_failure: always
+
+env:
+  global:
+   - secure: "RMIBN2tNKlrGA07coRW4B9m9jCobrYxDkEq3T3jGoGtXgQe/Mr3bI/4zQo7U3bvVTSF90lzkWbxATY45GQXRxWC7Ed2HI2jwUF96CXecdRhKiE9x051HsvXakvbODPLocV7/2LOZqz+eXCUeazLgRaSrIhAqMddFqMQSSM5STlc="
+
+addons:
+  coverity_scan:
+    project:
+      name: "maxmind/MaxMind-DB-Reader-php"
+      description: "Build submitted via Travis CI"
+    notification_email: dev@maxmind.com
+    build_command_prepend: "phpize; ./configure --with-maxminddb --enable-maxminddb-debug; make clean"
+    build_command:   "make -j 4"
+    branch_pattern: .*coverity.*
