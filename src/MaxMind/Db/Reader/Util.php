@@ -14,7 +14,11 @@ class Util
         }
         if (fseek($stream, $offset) == 0) {
             $value = fread($stream, $numberOfBytes);
-            if (static::stringLength($value) === $numberOfBytes) {
+
+            // We check that the number of bytes read is equal to the number
+            // asked for. We use ftell as getting the length of $value is
+            // much slower.
+            if (ftell($stream) - $offset === $numberOfBytes) {
                 return $value;
             }
         }
