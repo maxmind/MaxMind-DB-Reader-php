@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 git submodule update --init --recursive
 composer self-update
 composer install --dev -n --prefer-source
