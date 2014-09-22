@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+1.0.0 (2014-09-22)
+------------------
+
+* First production release.
+* In the pure PHP reader, a string length test after `fread()` was replaced
+  with the difference between the start pointer and the end pointer. This
+  provided a 15% speed increase.
+
 0.3.3 (2014-09-15)
 ------------------
 
