@@ -283,7 +283,6 @@ class Decoder
         } elseif ($size == 30) {
             $size = 285 + $decoded;
         } elseif ($size > 30) {
-
             $size = ($decoded & (0x0FFFFFFF >> (32 - (8 * $bytesToRead))))
                 + 65821;
         }
