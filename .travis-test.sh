@@ -1,6 +1,7 @@
 #!/bin/sh
 
 set -e
+set -x
 
 mkdir -p build/logs
 phpunit -c .coveralls-phpunit.xml.dist
