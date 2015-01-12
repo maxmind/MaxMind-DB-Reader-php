@@ -7,6 +7,7 @@
 *.sw?
 .deps
 .gh-pages
+/.idea
 .libs/
 _site
 ac*.m4
@@ -27,5 +28,6 @@ modules/
 phpunit.xml
 run-tests.php
 t.php
+/test.php
 tmp-php.ini
 vendor/
