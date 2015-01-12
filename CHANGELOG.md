@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+1.0.1 (2015-01-12)
+------------------
+
+* In the last several releases, the version number in the extension was
+  incorrect. This release is being done to correct it. No other code changes
+  are included.
+
 1.0.0 (2014-09-22)
 ------------------
 
