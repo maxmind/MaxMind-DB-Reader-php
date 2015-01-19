@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.0.2 (2015-01-??)
+1.0.2 (2015-01-19)
 ------------------
 
 * Previously the MaxMind DB extension would cause a segfault if the Reader
