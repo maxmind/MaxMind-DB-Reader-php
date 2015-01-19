@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+1.0.2 (2015-01-??)
+------------------
+
+* Previously the MaxMind DB extension would cause a segfault if the Reader
+  object's destructor was called without first having called the constructor.
+  (Reported by Matthias Saou & Juan Peri. GitHub #20.)
+
 1.0.1 (2015-01-12)
 ------------------
 
