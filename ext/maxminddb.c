@@ -415,8 +415,10 @@ static void maxminddb_free_storage(void *object TSRMLS_DC)
         efree(obj->mmdb);
     }
 
-    zend_hash_destroy(obj->std.properties);
-    FREE_HASHTABLE(obj->std.properties);
+    if (obj->std.properties != NULL) {
+        zend_hash_destroy(obj->std.properties);
+        FREE_HASHTABLE(obj->std.properties);
+    }
 
     efree(obj);
 }
