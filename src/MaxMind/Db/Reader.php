@@ -13,8 +13,9 @@ use MaxMind\Db\Reader\Util;
  */
 class Reader
 {
-    private $DATA_SECTION_SEPARATOR_SIZE = 16;
-    private $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
+    private static $DATA_SECTION_SEPARATOR_SIZE = 16;
+    private static $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
+    private static $METADATA_START_MARKER_LENGTH = 14;
 
     private $decoder;
     private $fileHandle;
@@ -65,7 +66,7 @@ class Reader
         $this->metadata = new Metadata($metadataArray);
         $this->decoder = new Decoder(
             $this->fileHandle,
-            $this->metadata->searchTreeSize + $this->DATA_SECTION_SEPARATOR_SIZE
+            $this->metadata->searchTreeSize + self::$DATA_SECTION_SEPARATOR_SIZE
         );
     }
 
@@ -234,8 +235,8 @@ class Reader
         $handle = $this->fileHandle;
         $fstat = fstat($handle);
         $fileSize = $fstat['size'];
-        $marker = $this->METADATA_START_MARKER;
-        $markerLength = Util::stringLength($marker);
+        $marker = self::$METADATA_START_MARKER;
+        $markerLength = self::$METADATA_START_MARKER_LENGTH;
 
         for ($i = 0; $i < $fileSize - $markerLength + 1; $i++) {
             for ($j = 0; $j < $markerLength; $j++) {

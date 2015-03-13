@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+1.0.3 (2015-XX-XX)
+------------------
+
+* All uses of `strlen` were removed. This should prevent issues in situations
+  where the function was overloaded or otherwise broken.
+
 1.0.2 (2015-01-19)
 ------------------
 
