@@ -129,7 +129,7 @@ class Decoder
                 return array($this->decodeInt32($bytes), $newOffset);
             case 'uint64':
             case 'uint128':
-                return array($this->decodeBigUint($bytes), $newOffset);
+                return array($this->decodeBigUint($bytes, $size), $newOffset);
             default:
                 throw new InvalidDatabaseException(
                     "Unknown or unexpected type: " . $type
@@ -229,10 +229,10 @@ class Decoder
         return $int;
     }
 
-    private function decodeBigUint($bytes)
+    private function decodeBigUint($bytes, $byteLength)
     {
         $maxUintBytes = log(PHP_INT_MAX, 2) / 8;
-        $byteLength = Util::stringLength($bytes);
+
         if ($byteLength == 0) {
             return 0;
         }
