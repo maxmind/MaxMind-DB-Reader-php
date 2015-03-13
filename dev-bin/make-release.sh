@@ -2,11 +2,6 @@
 
 set -e
 
-if [ -n "$(git status --porcelain)" ]; then
-    echo ". is not clean." >&2
-    exit 1
-fi
-
 VERSION=$(perl -MFile::Slurp::Tiny=read_file -MDateTime <<EOF
 use v5.16;
 my \$log = read_file(q{CHANGELOG.md});
@@ -20,9 +15,13 @@ perl -pi -e "s/(?<=#define PHP_MAXMINDDB_VERSION \")\d+\.\d+\.\d+(?=\")/$VERSION
 
 git diff
 
-git commit -m "Bumped version to $VERSION" -a
+if [ -n "$(git status --porcelain)" ]; then
+    git commit -m "Bumped version to $VERSION" -a
+fi
 
-git tag -a -m "Release for $VERSION" "v$VERSION"
+TAG="v$VERSION"
+echo "Creating tag $TAG"
+git tag -a -m "Release for $VERSION" "$TAG"
 
 
 read -p "Push to origin? (y/n) " SHOULD_PUSH
