@@ -29,6 +29,10 @@ notifications:
     on_success: change
     on_failure: always
 
+matrix:
+  allow_failures:
+    - php: nightly
+
 env:
   global:
    - secure: "RMIBN2tNKlrGA07coRW4B9m9jCobrYxDkEq3T3jGoGtXgQe/Mr3bI/4zQo7U3bvVTSF90lzkWbxATY45GQXRxWC7Ed2HI2jwUF96CXecdRhKiE9x051HsvXakvbODPLocV7/2LOZqz+eXCUeazLgRaSrIhAqMddFqMQSSM5STlc="

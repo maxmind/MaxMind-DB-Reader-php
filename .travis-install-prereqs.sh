@@ -15,5 +15,9 @@ then
   make
   sudo make install
   sudo ldconfig
+fi
+
+if [ "hhvm" != $TRAVIS_PHP_VERSION ] && [ "nightly" != $TRAVIS_PHP_VERSION ]
+then
   pyrus install pear/PHP_CodeSniffer
 fi
