@@ -15,7 +15,7 @@ then
     phpunit
 fi
 
-if [ "hhvm" != $TRAVIS_PHP_VERSION ] && [ "nightly" != $TRAVIS_PHP_VERSION ]
+if [ "hhvm" != $TRAVIS_PHP_VERSION ] && [ "7.0" != $TRAVIS_PHP_VERSION ]
 then
     phpcs --standard=PSR2 src/
 fi
