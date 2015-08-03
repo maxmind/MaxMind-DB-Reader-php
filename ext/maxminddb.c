@@ -457,6 +457,7 @@ static zend_class_entry *lookup_class(const char *name TSRMLS_DC)
 #ifdef ZEND_ENGINE_3
     zend_string *n = zend_string_init(name, strlen(name), 0);
     zend_class_entry *ce = zend_lookup_class(n);
+    zend_string_release(n);
     if( NULL == ce ) {
         zend_error(E_ERROR, "Class %s not found", name);
     }
@@ -481,6 +482,9 @@ static void maxminddb_free_storage(free_obj_t *object TSRMLS_DC)
     }
 
     zend_object_std_dtor(&obj->std TSRMLS_CC);
+#ifndef ZEND_ENGINE_3
+    efree(object);
+#endif
 }
 
 #ifdef ZEND_ENGINE_3
