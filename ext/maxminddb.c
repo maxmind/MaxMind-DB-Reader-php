@@ -40,11 +40,13 @@
 #define _ZVAL_STRING ZVAL_STRING
 #define _ZVAL_STRINGL ZVAL_STRINGL
 typedef size_t strsize_t;
+typedef zend_object free_obj_t;
 #else
 #define Z_MAXMINDDB_P(zv) (maxminddb_obj *) zend_object_store_get_object(zv TSRMLS_CC)
 #define _ZVAL_STRING(a, b) ZVAL_STRING(a, b, 1)
 #define _ZVAL_STRINGL(a, b, c) ZVAL_STRINGL(a, b, c, 1)
 typedef int strsize_t;
+typedef void free_obj_t;
 #endif
 
 #ifdef ZEND_ENGINE_3
@@ -470,50 +472,23 @@ static zend_class_entry *lookup_class(const char *name TSRMLS_DC)
 #endif
 }
 
-#ifdef ZEND_ENGINE_3
-static void maxminddb_free_storage(zend_object *object TSRMLS_DC)
+static void maxminddb_free_storage(free_obj_t *object TSRMLS_DC)
 {
-    maxminddb_obj *obj = php_maxminddb_fetch_object(object TSRMLS_CC);
+    maxminddb_obj *obj = php_maxminddb_fetch_object((zend_object *)object TSRMLS_CC);
     if (obj->mmdb != NULL) {
         MMDB_close(obj->mmdb);
         efree(obj->mmdb);
     }
 
-    if (obj->std.properties != NULL) {
-        zend_hash_destroy(obj->std.properties);
-        FREE_HASHTABLE(obj->std.properties);
-    }
-
-    //efree(obj);
+    zend_object_std_dtor(&obj->std TSRMLS_CC);
 }
-#else
-static void maxminddb_free_storage(void *object TSRMLS_DC)
-{
-    maxminddb_obj *obj = php_maxminddb_fetch_object(object TSRMLS_CC);
-    if (obj->mmdb != NULL) {
-        MMDB_close(obj->mmdb);
-        efree(obj->mmdb);
-    }
-
-    if (obj->std.properties != NULL) {
-        zend_hash_destroy(obj->std.properties);
-        FREE_HASHTABLE(obj->std.properties);
-    }
-
-    efree(obj);
-}
-#endif
 
 #ifdef ZEND_ENGINE_3
 static zend_object *maxminddb_create_handler(
     zend_class_entry *type TSRMLS_DC)
 {
-    maxminddb_obj *obj = (maxminddb_obj *) ecalloc(1, sizeof(maxminddb_obj));
+    maxminddb_obj *obj = (maxminddb_obj *)ecalloc(1, sizeof(maxminddb_obj));
     zend_object_std_init(&obj->std, type TSRMLS_CC);
-
-    ALLOC_HASHTABLE(obj->std.properties);
-    zend_hash_init(obj->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-
     object_properties_init(&(obj->std), type);
 
     obj->std.handlers = &maxminddb_obj_handlers;
@@ -527,11 +502,7 @@ static zend_object_value maxminddb_create_handler(
     zend_object_value retval;
 
     maxminddb_obj *obj = (maxminddb_obj *)ecalloc(1, sizeof(maxminddb_obj));
-    obj->std.ce = type;
-
-    ALLOC_HASHTABLE(obj->std.properties);
-    zend_hash_init(obj->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-
+	zend_object_std_init(&obj->std, type TSRMLS_CC);
     object_properties_init(&(obj->std), type);
 
     retval.handle = zend_objects_store_put(obj, NULL,
