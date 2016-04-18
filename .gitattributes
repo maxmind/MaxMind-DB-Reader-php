@@ -1,0 +1,6 @@
+/dev-bin/ export-ignore
+/examples/ export-ignore
+/ext/.uncrustify.cfg export-ignore
+/tests/ export-ignore
+/.* export-ignore
+/phpunit.xml.dist export-ignore
