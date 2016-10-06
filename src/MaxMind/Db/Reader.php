@@ -237,7 +237,7 @@ class Reader
         $fstat = fstat($handle);
         $fileSize = $fstat['size'];
         $marker = self::$METADATA_START_MARKER;
-        $markerLength = self::$METADATA_START_MARKER_LENGTH;    
+        $markerLength = self::$METADATA_START_MARKER_LENGTH;
         $metadataMaxLengthExcludingMarker
             = min(self::$METADATA_MAX_SIZE, $fileSize) - $markerLength;
 
