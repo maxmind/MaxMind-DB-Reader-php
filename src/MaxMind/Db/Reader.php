@@ -237,13 +237,11 @@ class Reader
         $fstat = fstat($handle);
         $fileSize = $fstat['size'];
         $marker = self::$METADATA_START_MARKER;
-        $markerLength = self::$METADATA_START_MARKER_LENGTH;       
-        $maxMetadataLengthExcludingMarker = min(
-            self::$METADATA_MAX_SIZE - $markerLength,
-            $fileSize - $markerLength
-        );
+        $markerLength = self::$METADATA_START_MARKER_LENGTH;    
+        $metadataMaxLengthExcludingMarker
+            = min(self::$METADATA_MAX_SIZE, $fileSize) - $markerLength;
 
-        for ($i = 0; $i <= $maxMetadataLengthExcludingMarker; $i++) {
+        for ($i = 0; $i <= $metadataMaxLengthExcludingMarker; $i++) {
             for ($j = 0; $j < $markerLength; $j++) {
                 fseek($handle, $fileSize - $i - $j - 1);
                 $matchBit = fgetc($handle);
