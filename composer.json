@@ -21,8 +21,8 @@
         "squizlabs/php_codesniffer": "2.*"
     },
     "autoload": {
-        "psr-0": {
-            "MaxMind": "src/"
+        "psr-4": {
+            "MaxMind\\Db\\": "src/MaxMind/Db"
         }
     }
 }
