@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+1.1.3 (2016-11-21)
+------------------
+
+* Suggest relevant extensions when installing with Composer. GitHub #37.
+
 1.1.2 (2016-10-05)
 ------------------
 
