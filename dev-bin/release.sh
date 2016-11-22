@@ -32,13 +32,10 @@ rm -fr vendor
 
 perl -pi -e "s/(?<=#define PHP_MAXMINDDB_VERSION \")\d+\.\d+\.\d+(?=\")/$version/" ext/php_maxminddb.h
 
+php composer.phar self-update
 php composer.phar update
 
 ./vendor/bin/phpunit
-
-php composer.phar self-update
-php composer.phar update --no-dev
-
 
 echo $'\nDiff:'
 git diff
@@ -51,9 +48,9 @@ echo $'\nRelease notes:'
 echo "$notes"
 
 
-read -p "Push to origin? (y/n) " SHOULD_PUSH
+read -p "Push to origin? (y/n) " should_push
 
-if [ "$SHOULD_PUSH" != "y" ]; then
+if [ "$should_push" != "y" ]; then
     echo "Aborting"
     exit 1
 fi
