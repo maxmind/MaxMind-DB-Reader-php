@@ -61,7 +61,6 @@ message="$version
 
 $notes"
 
-hub release create -m "$message" "$tag"
-
 git push
-git push --tags
+
+hub release create -m "$message" "$tag"
