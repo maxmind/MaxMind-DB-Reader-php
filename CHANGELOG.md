@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+1.2.3 (2017-01-19)
+------------------
+
+* Fix incorrect version in `ext/php_maxminddb.h`. GitHub #48.
+
 1.1.2 (2016-11-22)
 ------------------
 
