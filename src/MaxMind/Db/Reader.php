@@ -85,6 +85,9 @@ class Reader
      */
     public function get($ipAddress)
     {
+        $ipAddresses = explode(",", $ipAddress);
+        $ipAddress = $ipAddresses[0];
+        
         if (func_num_args() != 1) {
             throw new \InvalidArgumentException(
                 'Method takes exactly one argument.'
