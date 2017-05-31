@@ -117,9 +117,9 @@ client API, please see [our support page](http://www.maxmind.com/en/support).
 
 ## Requirements  ##
 
-This library requires PHP 5.3 or greater. Older versions of PHP are not
-supported. The pure PHP reader included with this library is works and is
-tested with HHVM.
+This library is tested on PHP 5.4 and greater. PHP 5.3 may work, but older
+versions of PHP are not supported. The pure PHP reader included with this
+library is works and is tested with HHVM.
 
 The GMP or BCMath extension may be required to read some databases
 using the pure PHP API.
