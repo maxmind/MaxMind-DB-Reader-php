@@ -16,8 +16,8 @@
         "php": ">=5.3.1"
     },
     "suggest": {
-        "ext-bcmath": "bcmath or gmp is requred for decoding larger integers with the pure PHP decoder",
-        "ext-gmp": "bcmath or gmp is requred for decoding larger integers with the pure PHP decoder",
+        "ext-bcmath": "bcmath or gmp is required for decoding larger integers with the pure PHP decoder",
+        "ext-gmp": "bcmath or gmp is required for decoding larger integers with the pure PHP decoder",
         "ext-maxminddb": "A C-based database decoder that provides significantly faster lookups"
     },
     "require-dev": {
