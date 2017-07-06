@@ -9,6 +9,7 @@
 .gh-pages
 /.idea
 .libs/
+.php_cs.cache
 _site
 ac*.m4
 autom4te.cache/
