@@ -16,4 +16,7 @@ then
     ./vendor/bin/phpunit
 fi
 
-./vendor/bin/phpcs --standard=PSR2 src/
+if [[ $TRAVIS_PHP_VERSION = '7.1' ]]; then
+    vendor/bin/php-cs-fixer fix --verbose --diff --dry-run --config=.php_cs
+    vendor/bin/phpcs --standard=PSR2 src/
+fi
