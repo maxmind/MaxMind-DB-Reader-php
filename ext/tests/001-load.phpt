@@ -2,7 +2,7 @@
 Check for maxminddb presence
 --SKIPIF--
 <?php if (!extension_loaded('maxminddb')) {
-    print 'skip';
+    echo 'skip';
 } ?>
 --FILE--
 <?php 
