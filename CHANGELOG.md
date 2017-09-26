@@ -5,6 +5,9 @@ CHANGELOG
 ------------------
 
 * PHP 5.4 is now required.
+* The `Reader` class for the `maxminddb` extension is no longer final.
+  This was change to match the behavior of the pure PHP class.
+  Reported and fixed by venyii. GitHub #52 & #54.
 
 1.1.3 (2017-01-19)
 ------------------
