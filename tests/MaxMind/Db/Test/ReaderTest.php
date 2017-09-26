@@ -288,6 +288,12 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         $reader->metadata();
     }
 
+    public function testReaderIsNotFinal()
+    {
+        $reflectionClass = new \ReflectionClass('MaxMind\Db\Reader');
+        $this->assertFalse($reflectionClass->isFinal());
+    }
+
     private function checkMetadata($reader, $ipVersion, $recordSize)
     {
         $metadata = $reader->metadata();

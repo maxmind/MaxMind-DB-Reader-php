@@ -535,7 +535,6 @@ PHP_MINIT_FUNCTION(maxminddb){
     INIT_CLASS_ENTRY(ce, PHP_MAXMINDDB_READER_NS, maxminddb_methods);
     maxminddb_ce = zend_register_internal_class(&ce TSRMLS_CC);
     maxminddb_ce->create_object = maxminddb_create_handler;
-    maxminddb_ce->ce_flags |= ZEND_ACC_FINAL;
     memcpy(&maxminddb_obj_handlers,
            zend_get_std_object_handlers(), sizeof(zend_object_handlers));
     maxminddb_obj_handlers.clone_obj = NULL;

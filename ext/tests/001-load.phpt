@@ -5,7 +5,7 @@ Check for maxminddb presence
     echo 'skip';
 } ?>
 --FILE--
-<?php 
+<?php
 echo 'maxminddb extension is available';
 ?>
 --EXPECT--
