@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+x.y.z (yyyy-mm-dd)
+------------------
+
+* A custom `autoload.php` file is provided for composerless installation
+  (Github issue #56).
+
 1.2.0 (2017-10-27)
 ------------------
 
