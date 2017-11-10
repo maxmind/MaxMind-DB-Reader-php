@@ -5,7 +5,7 @@
 This is the PHP API for reading MaxMind DB files. MaxMind DB is a binary file
 format that stores data indexed by IP address subnets (IPv4 or IPv6).
 
-## Installation ##
+## Installation (Composer) ##
 
 We recommend installing this package with [Composer](http://getcomposer.org/).
 
@@ -38,6 +38,23 @@ from your code:
 
 ```php
 require 'vendor/autoload.php';
+```
+
+## Installation (Standalone) ##
+
+If you don't want to use Composer for some reason, a custom
+`autoload.php` is provided for you in the project root. To use the
+library, simply include that file,
+
+```php
+require('/path/to/MaxMind-DB-Reader-php/autoload.php');
+```
+
+and then instantiate the reader class normally:
+
+```php
+use MaxMind\Db\Reader;
+$reader = new Reader('example.mmdb');
 ```
 
 ## Usage ##
