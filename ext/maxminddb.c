@@ -127,7 +127,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct){
         return;
     }
 
-    if (0 != access(db_file, R_OK)) {
+    if (0 != php_check_open_basedir(db_file TSRMLS_CC) || 0 != access(db_file, R_OK)) {
         THROW_EXCEPTION("InvalidArgumentException",
                         "The file \"%s\" does not exist or is not readable.",
                         db_file);

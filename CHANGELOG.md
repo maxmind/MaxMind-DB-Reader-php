@@ -1,11 +1,18 @@
 CHANGELOG
 =========
 
-x.y.z (yyyy-mm-dd)
+1.3.0
 ------------------
 
-* A custom `autoload.php` file is provided for composerless installation
-  (Github issue #56).
+* IMPORTANT: The `maxminddb` extension now obeys `open_basedir`. If
+  `open_basedir` is set, you _must_ store the database within the
+  specified directory. Placing the file outside of this directory
+  will result in an exception. Please test your integration before
+  upgrading the extension. This does not affect the pure PHP
+  implementation, which has always had this restriction. Reported
+  by Benoît Burnichon. GitHub #61.
+* A custom `autoload.php` file is provided for installations without
+  Composer. GitHub #56.
 
 1.2.0 (2017-10-27)
 ------------------
