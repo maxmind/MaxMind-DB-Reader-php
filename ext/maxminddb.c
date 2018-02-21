@@ -120,7 +120,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct){
     strsize_t name_len;
     zval * _this_zval = NULL;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os", 
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
             &_this_zval, maxminddb_ce, &db_file, &name_len) == FAILURE) {
         THROW_EXCEPTION("InvalidArgumentException",
                         "The constructor takes exactly one argument.");
@@ -155,7 +155,7 @@ PHP_METHOD(MaxMind_Db_Reader, get){
     strsize_t name_len;
     zval * _this_zval = NULL;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os", 
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
             &_this_zval, maxminddb_ce, &ip_address, &name_len) == FAILURE) {
         THROW_EXCEPTION("InvalidArgumentException",
                         "Method takes exactly one argument.");
@@ -284,7 +284,7 @@ PHP_METHOD(MaxMind_Db_Reader, close){
         return;
     }
 
-    maxminddb_obj *mmdb_obj = 
+    maxminddb_obj *mmdb_obj =
 	(maxminddb_obj *)Z_MAXMINDDB_P(getThis());
 
     if (NULL == mmdb_obj->mmdb) {
