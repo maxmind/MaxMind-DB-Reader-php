@@ -18,19 +18,25 @@ php:
   - '5.6'
   - '7.0'
   - '7.1'
+  - '7.2'
   - hhvm
 env:
   global:
-    - secure: RMIBN2tNKlrGA07coRW4B9m9jCobrYxDkEq3T3jGoGtXgQe/Mr3bI/4zQo7U3bvVTSF90lzkWbxATY45GQXRxWC7Ed2HI2jwUF96CXecdRhKiE9x051HsvXakvbODPLocV7/2LOZqz+eXCUeazLgRaSrIhAqMddFqMQSSM5STlc=
+    - secure: "RMIBN2tNKlrGA07coRW4B9m9jCobrYxDkEq3T3jGoGtXgQe/Mr3bI/4zQo7U3bvVTSF90lzkWbxATY45GQXRxWC7Ed2HI2jwUF96CXecdRhKiE9x051HsvXakvbODPLocV7/2LOZqz+eXCUeazLgRaSrIhAqMddFqMQSSM5STlc="
+    - secure: "c/961zYzYtZlUK4wznM6xzvk0fmVTYKRQc1FkWcBZTU6sSnq+8iGYc58HVFDcZQfe6pOTdGXd4rUyWwQFPnXegYVv7tFsmKWqofejaWDdzkF6gYJSd8CLOUF4oeunoUO4NM9nbQRDURd/iekXeeryyNjw1YNAbmNhIXr5zzeHrs="
 before_install:
   - ./.travis-install-prereqs.sh
+  - "if [[ $TRAVIS_PHP_VERSION == '7.2' ]]; then sudo apt install -y nodejs; npm install -g snyk; fi"
 install:
   - ./.travis-build.sh
   - phpenv rehash
+  - "if [[ $TRAVIS_PHP_VERSION == '7.2' ]]; then snyk test --org=maxmind; fi"
 script:
   - ./.travis-test.sh
 after_script:
   - php vendor/bin/coveralls
+after_success:
+  - "if [[ $TRAVIS_BRANCH == 'master' && $TRAVIS_PULL_REQUEST == 'false' && $TRAVIS_PHP_VERSION == '7.2' ]]; then snyk monitor --org=maxmind --project-name=maxmind/MaxMind-DB-Reader-php; fi"
 notifications:
   email:
     on_failure: always
