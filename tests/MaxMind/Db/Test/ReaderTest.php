@@ -60,7 +60,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         $uint128 = $record['uint128'];
 
         // For the C extension, which returns a hexadecimal
-        if (extension_loaded('gmp')) {
+        if (\extension_loaded('gmp')) {
             $uint128 = gmp_strval($uint128);
         } else {
             $this->markTestIncomplete('Requires gmp extension to check value of uint128');
@@ -77,7 +77,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
         $record = $reader->get('::');
 
-        $this->assertSame(false, $record['boolean']);
+        $this->assertFalse($record['boolean']);
         $this->assertSame('', $record['bytes']);
         $this->assertSame('', $record['utf8_string']);
 
@@ -92,7 +92,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('0', $record['uint64'] . '');
 
         $uint128 = $record['uint128'];
-        if (extension_loaded('gmp')) {
+        if (\extension_loaded('gmp')) {
             $uint128 = gmp_strval($uint128);
         } else {
             $this->markTestIncomplete('Requires gmp extension to check value of uint128');
@@ -193,7 +193,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
      */
     public function testNoConstructorArgs()
     {
-        if (extension_loaded('maxminddb')) {
+        if (\extension_loaded('maxminddb')) {
             new Reader();
         } else {
             throw new \InvalidArgumentException();
@@ -219,7 +219,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
      */
     public function testNoGetArgs()
     {
-        if (extension_loaded('maxminddb')) {
+        if (\extension_loaded('maxminddb')) {
             $reader = new Reader(
                 'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
             );
@@ -323,7 +323,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
     private function checkIpV4(Reader $reader, $fileName)
     {
-        for ($i = 0; $i <= 5; $i++) {
+        for ($i = 0; $i <= 5; ++$i) {
             $address = '1.1.1.' . pow(2, $i);
             $this->assertSame(
                 ['ip' => $address],

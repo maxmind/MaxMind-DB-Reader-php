@@ -255,10 +255,10 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
             10872 => [0x2, $ctrlByte, 0x2a, 0x78],
         ];
 
-        for ($power = 1; $power <= $bits / 8; $power++) {
+        for ($power = 1; $power <= $bits / 8; ++$power) {
             $expected = bcsub(bcpow(2, 8 * $power), 1);
             $input = [$power, $ctrlByte];
-            for ($i = 2; $i < 2 + $power; $i++) {
+            for ($i = 2; $i < 2 + $power; ++$i) {
                 $input[$i] = 0xff;
             }
             $uints[$expected] = $input;
@@ -355,7 +355,7 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
     {
         $name = $name || $expected;
         $description = "decoded $type - $name";
-        $handle = fopen('php://memory', 'rw');
+        $handle = fopen('php://memory', 'rwb');
 
         foreach ($input as $byte) {
             fwrite($handle, pack('C', $byte));
