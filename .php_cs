@@ -29,6 +29,7 @@ return PhpCsFixer\Config::create()
     ])
     ->setFinder(
         PhpCsFixer\Finder::create()
+            ->exclude('ext')
             ->in(__DIR__)
     )
 ;

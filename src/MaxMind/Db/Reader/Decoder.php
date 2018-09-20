@@ -47,7 +47,7 @@ class Decoder
             'C',
             Util::read($this->fileStream, $offset, 1)
         );
-        $offset++;
+        ++$offset;
 
         $type = $this->types[$ctrlByte >> 5];
 
@@ -85,7 +85,7 @@ class Decoder
             }
 
             $type = $this->types[$typeNum];
-            $offset++;
+            ++$offset;
         }
 
         list($size, $offset) = $this->sizeFromCtrlByte($ctrlByte, $offset);
@@ -147,7 +147,7 @@ class Decoder
     {
         $array = [];
 
-        for ($i = 0; $i < $size; $i++) {
+        for ($i = 0; $i < $size; ++$i) {
             list($value, $offset) = $this->decode($offset);
             array_push($array, $value);
         }
@@ -188,7 +188,7 @@ class Decoder
     {
         $map = [];
 
-        for ($i = 0; $i < $size; $i++) {
+        for ($i = 0; $i < $size; ++$i) {
             list($key, $offset) = $this->decode($offset);
             list($value, $offset) = $this->decode($offset);
             $map[$key] = $value;
@@ -251,9 +251,9 @@ class Decoder
             // We only use gmp or bcmath if the final value is too big
             if ($byteLength <= $maxUintBytes) {
                 $integer = ($integer << 32) + $part;
-            } elseif (extension_loaded('gmp')) {
+            } elseif (\extension_loaded('gmp')) {
                 $integer = gmp_strval(gmp_add(gmp_mul($integer, $twoTo32), $part));
-            } elseif (extension_loaded('bcmath')) {
+            } elseif (\extension_loaded('bcmath')) {
                 $integer = bcadd(bcmul($integer, $twoTo32), $part);
             } else {
                 throw new \RuntimeException(

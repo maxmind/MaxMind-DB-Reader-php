@@ -38,7 +38,7 @@ class Reader
      */
     public function __construct($database)
     {
-        if (func_num_args() !== 1) {
+        if (\func_num_args() !== 1) {
             throw new \InvalidArgumentException(
                 'The constructor takes exactly one argument.'
             );
@@ -88,13 +88,13 @@ class Reader
      */
     public function get($ipAddress)
     {
-        if (func_num_args() !== 1) {
+        if (\func_num_args() !== 1) {
             throw new \InvalidArgumentException(
                 'Method takes exactly one argument.'
             );
         }
 
-        if (!is_resource($this->fileHandle)) {
+        if (!\is_resource($this->fileHandle)) {
             throw new \BadMethodCallException(
                 'Attempt to read from a closed MaxMind DB.'
             );
@@ -125,13 +125,13 @@ class Reader
         // XXX - could simplify. Done as a byte array to ease porting
         $rawAddress = array_merge(unpack('C*', inet_pton($ipAddress)));
 
-        $bitCount = count($rawAddress) * 8;
+        $bitCount = \count($rawAddress) * 8;
 
         // The first node of the tree is always node 0, at the beginning of the
         // value
         $node = $this->startNode($bitCount);
 
-        for ($i = 0; $i < $bitCount; $i++) {
+        for ($i = 0; $i < $bitCount; ++$i) {
             if ($node >= $this->metadata->nodeCount) {
                 break;
             }
@@ -175,7 +175,7 @@ class Reader
         }
         $node = 0;
 
-        for ($i = 0; $i < 96 && $node < $this->metadata->nodeCount; $i++) {
+        for ($i = 0; $i < 96 && $node < $this->metadata->nodeCount; ++$i) {
             $node = $this->readNode($node, 0);
         }
         $this->ipV4Start = $node;
@@ -203,7 +203,7 @@ class Reader
                     $middle = 0x0F & $middle;
                 }
                 $bytes = Util::read($this->fileHandle, $baseOffset + $index * 4, 3);
-                list(, $node) = unpack('N', chr($middle) . $bytes);
+                list(, $node) = unpack('N', \chr($middle) . $bytes);
 
                 return $node;
             case 32:
@@ -249,8 +249,8 @@ class Reader
         $metadataMaxLengthExcludingMarker
             = min(self::$METADATA_MAX_SIZE, $fileSize) - $markerLength;
 
-        for ($i = 0; $i <= $metadataMaxLengthExcludingMarker; $i++) {
-            for ($j = 0; $j < $markerLength; $j++) {
+        for ($i = 0; $i <= $metadataMaxLengthExcludingMarker; ++$i) {
+            for ($j = 0; $j < $markerLength; ++$j) {
                 fseek($handle, $fileSize - $i - $j - 1);
                 $matchBit = fgetc($handle);
                 if ($matchBit !== $marker[$markerLength - $j - 1]) {
@@ -274,7 +274,7 @@ class Reader
      */
     public function metadata()
     {
-        if (func_num_args()) {
+        if (\func_num_args()) {
             throw new \InvalidArgumentException(
                 'Method takes no arguments.'
             );
@@ -282,7 +282,7 @@ class Reader
 
         // Not technically required, but this makes it consistent with
         // C extension and it allows us to change our implementation later.
-        if (!is_resource($this->fileHandle)) {
+        if (!\is_resource($this->fileHandle)) {
             throw new \BadMethodCallException(
                 'Attempt to read from a closed MaxMind DB.'
             );
@@ -299,7 +299,7 @@ class Reader
      */
     public function close()
     {
-        if (!is_resource($this->fileHandle)) {
+        if (!\is_resource($this->fileHandle)) {
             throw new \BadMethodCallException(
                 'Attempt to close a closed MaxMind DB.'
             );
