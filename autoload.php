@@ -36,7 +36,8 @@ function mmdb_autoload($class)
         $path = $path . '.php';
 
         /* $path should now contain the path to a PHP file defining $class */
-        @include $path;
+        if(file_exists($path))
+            include $path;
     }
 }
 
