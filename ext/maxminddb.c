@@ -115,6 +115,10 @@ static inline maxminddb_obj *php_maxminddb_fetch_object(zend_object *obj TSRMLS_
 #endif
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_maxmindbreader_construct, 0, 0, 1)
+    ZEND_ARG_INFO(0, db_file)
+ZEND_END_ARG_INFO()
+
 PHP_METHOD(MaxMind_Db_Reader, __construct){
     char *db_file = NULL;
     strsize_t name_len;
@@ -149,6 +153,10 @@ PHP_METHOD(MaxMind_Db_Reader, __construct){
     maxminddb_obj *mmdb_obj = Z_MAXMINDDB_P(getThis());
     mmdb_obj->mmdb = mmdb;
 }
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_maxmindbreader_get, 0, 0, 1)
+    ZEND_ARG_INFO(0, ip_address)
+ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, get){
     char *ip_address = NULL;
@@ -224,6 +232,9 @@ PHP_METHOD(MaxMind_Db_Reader, get){
     handle_entry_data_list(entry_data_list, return_value TSRMLS_CC);
     MMDB_free_entry_data_list(entry_data_list);
 }
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_maxmindbreader_void, 0, 0, 0)
+ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, metadata){
     if (ZEND_NUM_ARGS() != 0) {
@@ -520,11 +531,11 @@ static zend_object_value maxminddb_create_handler(
 
 /* *INDENT-OFF* */
 static zend_function_entry maxminddb_methods[] = {
-    PHP_ME(MaxMind_Db_Reader, __construct, NULL,
+    PHP_ME(MaxMind_Db_Reader, __construct, arginfo_maxmindbreader_construct,
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(MaxMind_Db_Reader, close,    NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, get,      NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, metadata, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, close,    arginfo_maxmindbreader_void, ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, get,      arginfo_maxmindbreader_get,  ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, metadata, arginfo_maxmindbreader_void, ZEND_ACC_PUBLIC)
     { NULL, NULL, NULL }
 };
 /* *INDENT-ON* */
