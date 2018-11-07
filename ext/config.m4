@@ -12,13 +12,13 @@ if test $PHP_MAXMINDDB != "no"; then
     AC_MSG_CHECKING(for libmaxminddb)
     if test -x "$PKG_CONFIG" && $PKG_CONFIG --exists libmaxminddb; then
         dnl retrieve build options from pkg-config
-        if $PKG_CONFIG libzip --atleast-version 0; then
+        if $PKG_CONFIG libmaxminddb --atleast-version 1.0.0; then
             LIBMAXMINDDB_INC=`$PKG_CONFIG libmaxminddb --cflags`
             LIBMAXMINDDB_LIB=`$PKG_CONFIG libmaxminddb --libs`
             LIBMAXMINDDB_VER=`$PKG_CONFIG libmaxminddb --modversion`
             AC_MSG_RESULT(found version $LIBMAXMINDDB_VER)
         else
-            AC_MSG_ERROR(system libmaxminddb must be upgraded to version >= 0)
+            AC_MSG_ERROR(system libmaxminddb must be upgraded to version >= 1.0.0)
         fi
         PHP_EVAL_LIBLINE($LIBMAXMINDDB_LIB, MAXMINDDB_SHARED_LIBADD)
         PHP_EVAL_INCLINE($LIBMAXMINDDB_INC)
