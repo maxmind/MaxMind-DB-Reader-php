@@ -20,6 +20,7 @@
 #include <php.h>
 #include <zend.h>
 #include "Zend/zend_exceptions.h"
+#include "ext/standard/info.h"
 #include <maxminddb.h>
 
 #ifdef ZTS
@@ -546,6 +547,17 @@ PHP_MINIT_FUNCTION(maxminddb){
     return SUCCESS;
 }
 
+static PHP_MINFO_FUNCTION(maxminddb)
+{
+    php_info_print_table_start();
+
+    php_info_print_table_row(2, "MaxMind DB Reader", "enabled");
+    php_info_print_table_row(2, "maxminddb extension version", PHP_MAXMINDDB_VERSION);
+    php_info_print_table_row(2, "libmaxminddb library version", MMDB_lib_version());
+
+    php_info_print_table_end();
+}
+
 zend_module_entry maxminddb_module_entry = {
     STANDARD_MODULE_HEADER,
     PHP_MAXMINDDB_EXTNAME,
@@ -554,7 +566,7 @@ zend_module_entry maxminddb_module_entry = {
     NULL,
     NULL,
     NULL,
-    NULL,
+    PHP_MINFO(maxminddb),
     PHP_MAXMINDDB_VERSION,
     STANDARD_MODULE_PROPERTIES
 };
