@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+1.4.0
+------------------
+
+* The `maxminddb` extension now has the arginfo when using reflection.
+  PR by Remi Collet. GitHub #75.
+* The `maxminddb` extension now provides `MINFO()` function that
+  displays the extension version and the libmaxminddb version. PR by
+  Remi Collet. GitHub #74.
+* The `maxminddb` `configure` script now uses `pkg-config` when
+  available to get libmaxmindb build info. PR by Remi Collet.
+  GitHub #73.
+
 1.3.0 (2018-02-21)
 ------------------
 
