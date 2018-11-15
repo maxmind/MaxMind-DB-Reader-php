@@ -121,12 +121,12 @@ class Decoder
                 return [$bytes, $newOffset];
             case 'uint16':
             case 'uint32':
-                return [$this->decodeUint($bytes), $newOffset];
+                return [$this->decodeUint($bytes, $size, 0), $newOffset];
             case 'int32':
                 return [$this->decodeInt32($bytes), $newOffset];
             case 'uint64':
             case 'uint128':
-                return [$this->decodeBigUint($bytes, $size), $newOffset];
+                return [$this->decodeUint($bytes, $size, 0), $newOffset];
             default:
                 throw new InvalidDatabaseException(
                     'Unknown or unexpected type: ' . $type
@@ -215,46 +215,32 @@ class Decoder
             ? $buffer
             : (pack('C', $ctrlByte & 0x7)) . $buffer;
 
-        $unpacked = $this->decodeUint($packed);
-        $pointer = $unpacked + $this->pointerBase
-            + $this->pointerValueOffset[$pointerSize];
+        $base = $this->pointerBase + $this->pointerValueOffset[$pointerSize];
+        $pointer = $this->decodeUint($packed, $pointerSize, $base);
 
         return [$pointer, $offset];
     }
 
-    private function decodeUint($bytes)
-    {
-        list(, $int) = unpack('N', $this->zeroPadLeft($bytes, 4));
-
-        return $int;
-    }
-
-    private function decodeBigUint($bytes, $byteLength)
+    private function decodeUint($bytes, $byteLength, $base)
     {
         $maxUintBytes = log(PHP_INT_MAX, 2) / 8;
 
         if ($byteLength === 0) {
-            return 0;
+            return $base;
         }
 
-        $numberOfLongs = ceil($byteLength / 4);
-        $paddedLength = $numberOfLongs * 4;
-        $paddedBytes = $this->zeroPadLeft($bytes, $paddedLength);
-        $unpacked = array_merge(unpack("N$numberOfLongs", $paddedBytes));
+        $unpacked = array_merge(unpack('C*', $bytes));
 
         $integer = 0;
-
-        // 2^32
-        $twoTo32 = '4294967296';
 
         foreach ($unpacked as $part) {
             // We only use gmp or bcmath if the final value is too big
             if ($byteLength <= $maxUintBytes) {
-                $integer = ($integer << 32) + $part;
+                $integer = ($integer << 8) + $part;
             } elseif (\extension_loaded('gmp')) {
-                $integer = gmp_strval(gmp_add(gmp_mul($integer, $twoTo32), $part));
+                $integer = gmp_add(gmp_mul($integer, 256), $part);
             } elseif (\extension_loaded('bcmath')) {
-                $integer = bcadd(bcmul($integer, $twoTo32), $part);
+                $integer = bcadd(bcmul($integer, 256), $part);
             } else {
                 throw new \RuntimeException(
                     'The gmp or bcmath extension must be installed to read this database.'
@@ -262,7 +248,20 @@ class Decoder
             }
         }
 
-        return $integer;
+        if ($base > 0) {
+            $byteLength = $byteLength + log($base, 2) / 8;
+        }
+
+        if ($byteLength <= $maxUintBytes) {
+            return $integer + $base;
+        } elseif (\extension_loaded('gmp')) {
+            return gmp_strval(gmp_add($integer, $base));
+        } elseif (\extension_loaded('bcmath')) {
+            return bcadd($integer, $base);
+        }
+        throw new \RuntimeException(
+            'The gmp or bcmath extension must be installed to read this database.'
+        );
     }
 
     private function decodeString($bytes)
@@ -277,7 +276,7 @@ class Decoder
         $size = $ctrlByte & 0x1f;
         $bytesToRead = $size < 29 ? 0 : $size - 28;
         $bytes = Util::read($this->fileStream, $offset, $bytesToRead);
-        $decoded = $this->decodeUint($bytes);
+        $decoded = $this->decodeUint($bytes, $bytesToRead, 0);
 
         if ($size === 29) {
             $size = 29 + $decoded;

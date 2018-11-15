@@ -54,7 +54,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertSame(-268435456, $record['int32']);
         $this->assertSame(100, $record['uint16']);
-        $this->assertSame(268435456, $record['uint32']);
+        $this->assertSame(PHP_INT_MAX < 4294967295 ? '268435456' : 268435456, $record['uint32']);
         $this->assertSame('1152921504606846976', $record['uint64']);
 
         $uint128 = $record['uint128'];
