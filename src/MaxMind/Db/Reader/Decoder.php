@@ -306,14 +306,15 @@ class Decoder
 
         $bytesToRead = $size - 28;
         $bytes = Util::read($this->fileStream, $offset, $bytesToRead);
-        $decoded = $this->decodeUint($bytes, $bytesToRead, 0);
 
         if ($size === 29) {
-            $size = 29 + $decoded;
+            $size = 29 + \ord($bytes);
         } elseif ($size === 30) {
-            $size = 285 + $decoded;
+            list(, $adjust) = unpack('n', $bytes);
+            $size = 285 + $adjust;
         } elseif ($size > 30) {
-            $size = ($decoded & (0x0FFFFFFF >> (32 - (8 * $bytesToRead))))
+            list(, $adjust) = unpack('N', "\x00" . $bytes);
+            $size = ($adjust & (0x0FFFFFFF >> (32 - (8 * $bytesToRead))))
                 + 65821;
         }
 
