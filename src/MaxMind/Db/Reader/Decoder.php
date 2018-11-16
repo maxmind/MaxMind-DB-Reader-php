@@ -261,11 +261,11 @@ class Decoder
             return $base;
         }
 
-        $unpacked = unpack('C*', $bytes);
-
         $integer = 0;
 
-        foreach ($unpacked as $part) {
+        for ($i = 0; $i < $byteLength; ++$i) {
+            $part = \ord($bytes[$i]);
+
             // We only use gmp or bcmath if the final value is too big
             if ($byteLength <= _MM_MAX_INT_BYTES) {
                 $integer = ($integer << 8) + $part;
