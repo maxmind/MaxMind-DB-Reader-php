@@ -12,24 +12,22 @@ class Decoder
     private $pointerTestHack;
     private $switchByteOrder;
 
-    private $types = [
-        0 => 'extended',
-        1 => 'pointer',
-        2 => 'utf8_string',
-        3 => 'double',
-        4 => 'bytes',
-        5 => 'uint16',
-        6 => 'uint32',
-        7 => 'map',
-        8 => 'int32',
-        9 => 'uint64',
-        10 => 'uint128',
-        11 => 'array',
-        12 => 'container',
-        13 => 'end_marker',
-        14 => 'boolean',
-        15 => 'float',
-    ];
+    const _EXTENDED = 0;
+    const _POINTER = 1;
+    const _UTF8_STRING = 2;
+    const _DOUBLE = 3;
+    const _BYTES = 4;
+    const _UINT16 = 5;
+    const _UINT32 = 6;
+    const _MAP = 7;
+    const _INT32 = 8;
+    const _UINT64 = 9;
+    const _UINT128 = 10;
+    const _ARRAY = 11;
+    const _CONTAINER = 12;
+    const _END_MARKER = 13;
+    const _BOOLEAN = 14;
+    const _FLOAT = 15;
 
     public function __construct(
         $fileStream,
@@ -51,12 +49,12 @@ class Decoder
         );
         ++$offset;
 
-        $type = $this->types[$ctrlByte >> 5];
+        $type = $ctrlByte >> 5;
 
         // Pointers are a special case, we don't read the next $size bytes, we
         // use the size to determine the length of the pointer and then follow
         // it.
-        if ($type === 'pointer') {
+        if ($type === self::_POINTER) {
             list($pointer, $offset) = $this->decodePointer($ctrlByte, $offset);
 
             // for unit testing
@@ -69,24 +67,23 @@ class Decoder
             return [$result, $offset];
         }
 
-        if ($type === 'extended') {
+        if ($type === self::_EXTENDED) {
             list(, $nextByte) = unpack(
                 'C',
                 Util::read($this->fileStream, $offset, 1)
             );
 
-            $typeNum = $nextByte + 7;
+            $type = $nextByte + 7;
 
-            if ($typeNum < 8) {
+            if ($type < 8) {
                 throw new InvalidDatabaseException(
                     'Something went horribly wrong in the decoder. An extended type '
                     . 'resolved to a type number < 8 ('
-                    . $this->types[$typeNum]
+                    . $type
                     . ')'
                 );
             }
 
-            $type = $this->types[$typeNum];
             ++$offset;
         }
 
@@ -98,35 +95,35 @@ class Decoder
     private function decodeByType($type, $offset, $size)
     {
         switch ($type) {
-            case 'map':
+            case self::_MAP:
                 return $this->decodeMap($size, $offset);
-            case 'array':
+            case self::_ARRAY:
                 return $this->decodeArray($size, $offset);
-            case 'boolean':
+            case self::_BOOLEAN:
                 return [$this->decodeBoolean($size), $offset];
         }
 
         $newOffset = $offset + $size;
         $bytes = Util::read($this->fileStream, $offset, $size);
         switch ($type) {
-            case 'bytes':
-            case 'utf8_string':
+            case self::_BYTES:
+            case self::_UTF8_STRING:
                 return [$bytes, $newOffset];
-            case 'double':
+            case self::_DOUBLE:
                 $this->verifySize(8, $size);
 
                 return [$this->decodeDouble($bytes), $newOffset];
-            case 'float':
+            case self::_FLOAT:
                 $this->verifySize(4, $size);
 
                 return [$this->decodeFloat($bytes), $newOffset];
-            case 'uint16':
-            case 'uint32':
+            case self::_UINT16:
+            case self::_UINT32:
                 return [$this->decodeUint($bytes, $size, 0), $newOffset];
-            case 'int32':
+            case self::_INT32:
                 return [$this->decodeInt32($bytes), $newOffset];
-            case 'uint64':
-            case 'uint128':
+            case self::_UINT64:
+            case self::_UINT128:
                 return [$this->decodeUint($bytes, $size, 0), $newOffset];
             default:
                 throw new InvalidDatabaseException(
