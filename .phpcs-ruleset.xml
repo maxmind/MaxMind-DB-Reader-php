@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<ruleset name="APSR2">
+  <description>Adjusted PSR2</description>
+  <rule ref="PSR2" />
+  <rule ref="PSR1.Files.SideEffects">
+     <exclude-pattern>Decoder.php</exclude-pattern>
+  </rule>
+ </ruleset>

@@ -18,5 +18,5 @@ fi
 
 if [ $RUN_LINTER ]; then
     vendor/bin/php-cs-fixer fix --verbose --diff --dry-run --config=.php_cs
-    vendor/bin/phpcs --standard=PSR2 src/
+    vendor/bin/phpcs --standard=.phpcs-ruleset.xml src/
 fi
