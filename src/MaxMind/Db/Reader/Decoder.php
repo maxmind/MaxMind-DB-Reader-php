@@ -299,7 +299,12 @@ class Decoder
     private function sizeFromCtrlByte($ctrlByte, $offset)
     {
         $size = $ctrlByte & 0x1f;
-        $bytesToRead = $size < 29 ? 0 : $size - 28;
+
+        if ($size < 29) {
+            return [$size, $offset];
+        }
+
+        $bytesToRead = $size - 28;
         $bytes = Util::read($this->fileStream, $offset, $bytesToRead);
         $decoded = $this->decodeUint($bytes, $bytesToRead, 0);
 
