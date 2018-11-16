@@ -160,7 +160,12 @@ class Decoder
 
     private function decodeDouble($bits)
     {
-        // XXX - Assumes IEEE 754 double on platform
+        // This assumes IEEE 754 doubles, but most (all?) modern platforms
+        // use them.
+        //
+        // We are not using the "E" format as that was only added in
+        // 7.0.15 and 7.1.1. As such, we must switch byte order on
+        // little endian machines.
         list(, $double) = unpack('d', $this->maybeSwitchByteOrder($bits));
 
         return $double;
@@ -168,7 +173,12 @@ class Decoder
 
     private function decodeFloat($bits)
     {
-        // XXX - Assumes IEEE 754 floats on platform
+        // This assumes IEEE 754 floats, but most (all?) modern platforms
+        // use them.
+        //
+        // We are not using the "G" format as that was only added in
+        // 7.0.15 and 7.1.1. As such, we must switch byte order on
+        // little endian machines.
         list(, $float) = unpack('f', $this->maybeSwitchByteOrder($bits));
 
         return $float;
