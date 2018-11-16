@@ -109,8 +109,9 @@ class Decoder
         $newOffset = $offset + $size;
         $bytes = Util::read($this->fileStream, $offset, $size);
         switch ($type) {
+            case 'bytes':
             case 'utf8_string':
-                return [$this->decodeString($bytes), $newOffset];
+                return [$bytes, $newOffset];
             case 'double':
                 $this->verifySize(8, $size);
 
@@ -119,8 +120,6 @@ class Decoder
                 $this->verifySize(4, $size);
 
                 return [$this->decodeFloat($bytes), $newOffset];
-            case 'bytes':
-                return [$bytes, $newOffset];
             case 'uint16':
             case 'uint32':
                 return [$this->decodeUint($bytes, $size, 0), $newOffset];
@@ -262,13 +261,6 @@ class Decoder
         throw new \RuntimeException(
             'The gmp or bcmath extension must be installed to read this database.'
         );
-    }
-
-    private function decodeString($bytes)
-    {
-        // XXX - NOOP. As far as I know, the end user has to explicitly set the
-        // encoding in PHP. Strings are just bytes.
-        return $bytes;
     }
 
     private function sizeFromCtrlByte($ctrlByte, $offset)
