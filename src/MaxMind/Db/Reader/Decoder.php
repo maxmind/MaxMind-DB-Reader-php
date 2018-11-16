@@ -121,7 +121,7 @@ class Decoder
             case self::_UINT32:
                 return [$this->decodeUint($bytes, $size, 0), $newOffset];
             case self::_INT32:
-                return [$this->decodeInt32($bytes), $newOffset];
+                return [$this->decodeInt32($bytes, $size), $newOffset];
             case self::_UINT64:
             case self::_UINT128:
                 return [$this->decodeUint($bytes, $size, 0), $newOffset];
@@ -184,9 +184,23 @@ class Decoder
         return $float;
     }
 
-    private function decodeInt32($bytes)
+    private function decodeInt32($bytes, $size)
     {
-        $bytes = str_pad($bytes, 4, "\x00", STR_PAD_LEFT);
+        switch ($size) {
+            case 0:
+                return 0;
+            case 1:
+            case 2:
+            case 3:
+                $bytes = str_pad($bytes, 4, "\x00", STR_PAD_LEFT);
+                break;
+            case 4:
+                break;
+            default:
+                throw new InvalidDatabaseException(
+                    "The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)"
+                );
+        }
 
         list(, $int) = unpack('l', $this->maybeSwitchByteOrder($bytes));
 
