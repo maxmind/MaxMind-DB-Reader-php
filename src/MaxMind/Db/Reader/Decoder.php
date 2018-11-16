@@ -2,6 +2,8 @@
 
 namespace MaxMind\Db\Reader;
 
+\define(__NAMESPACE__ . '\_MM_MAX_INT_BYTES', log(PHP_INT_MAX, 2) / 8);
+
 class Decoder
 {
     private $fileStream;
@@ -223,8 +225,6 @@ class Decoder
 
     private function decodeUint($bytes, $byteLength, $base)
     {
-        $maxUintBytes = log(PHP_INT_MAX, 2) / 8;
-
         if ($byteLength === 0) {
             return $base;
         }
@@ -235,7 +235,7 @@ class Decoder
 
         foreach ($unpacked as $part) {
             // We only use gmp or bcmath if the final value is too big
-            if ($byteLength <= $maxUintBytes) {
+            if ($byteLength <= _MM_MAX_INT_BYTES) {
                 $integer = ($integer << 8) + $part;
             } elseif (\extension_loaded('gmp')) {
                 $integer = gmp_add(gmp_mul($integer, 256), $part);
@@ -252,7 +252,7 @@ class Decoder
             $byteLength = $byteLength + log($base, 2) / 8;
         }
 
-        if ($byteLength <= $maxUintBytes) {
+        if ($byteLength <= _MM_MAX_INT_BYTES) {
             return $integer + $base;
         } elseif (\extension_loaded('gmp')) {
             return gmp_strval(gmp_add($integer, $base));
