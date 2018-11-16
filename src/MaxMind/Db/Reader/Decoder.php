@@ -186,7 +186,8 @@ class Decoder
 
     private function decodeInt32($bytes)
     {
-        $bytes = $this->zeroPadLeft($bytes, 4);
+        $bytes = str_pad($bytes, 4, "\x00", STR_PAD_LEFT);
+
         list(, $int) = unpack('l', $this->maybeSwitchByteOrder($bytes));
 
         return $int;
@@ -287,11 +288,6 @@ class Decoder
         }
 
         return [$size, $offset + $bytesToRead];
-    }
-
-    private function zeroPadLeft($content, $desiredLength)
-    {
-        return str_pad($content, $desiredLength, "\x00", STR_PAD_LEFT);
     }
 
     private function maybeSwitchByteOrder($bytes)
