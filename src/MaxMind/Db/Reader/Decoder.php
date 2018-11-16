@@ -220,13 +220,6 @@ class Decoder
         return [$map, $offset];
     }
 
-    private $pointerValueOffset = [
-        1 => 0,
-        2 => 2048,
-        3 => 526336,
-        4 => 0,
-    ];
-
     private function decodePointer($ctrlByte, $offset)
     {
         $pointerSize = (($ctrlByte >> 3) & 0x3) + 1;
@@ -234,12 +227,30 @@ class Decoder
         $buffer = Util::read($this->fileStream, $offset, $pointerSize);
         $offset = $offset + $pointerSize;
 
-        $packed = $pointerSize === 4
-            ? $buffer
-            : (pack('C', $ctrlByte & 0x7)) . $buffer;
+        switch ($pointerSize) {
+            case 1:
+                $packed = (pack('C', $ctrlByte & 0x7)) . $buffer;
+                list(, $pointer) = unpack('n', $packed);
+                $pointer += $this->pointerBase;
+                break;
+            case 2:
+                $packed = "\x00" . (pack('C', $ctrlByte & 0x7)) . $buffer;
+                list(, $pointer) = unpack('N', $packed);
+                $pointer += $this->pointerBase + 2048;
+                break;
+            case 3:
+                $packed = (pack('C', $ctrlByte & 0x7)) . $buffer;
 
-        $base = $this->pointerBase + $this->pointerValueOffset[$pointerSize];
-        $pointer = $this->decodeUint($packed, $pointerSize, $base);
+                // It is safe to use 'N' here, even on 32 bit machines as the
+                // first bit is 0.
+                list(, $pointer) = unpack('N', $packed);
+                $pointer += $this->pointerBase + 526336;
+                break;
+            case 4:
+                // We cannot use unpack here as we might overflow on 32 bit
+                // machines
+                $pointer = $this->decodeUint($buffer, $pointerSize, $this->pointerBase);
+        }
 
         return [$pointer, $offset];
     }
