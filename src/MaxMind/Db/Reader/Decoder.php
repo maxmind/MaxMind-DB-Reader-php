@@ -229,7 +229,7 @@ class Decoder
             return $base;
         }
 
-        $unpacked = array_merge(unpack('C*', $bytes));
+        $unpacked = unpack('C*', $bytes);
 
         $integer = 0;
 
