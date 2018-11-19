@@ -134,7 +134,9 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
         ],
     ];
 
-    private $pointers = [
+    private function pointers()
+    {
+        return [
         ['expected' => 0, 'input' => [0x20, 0x0]],
         ['expected' => 5, 'input' => [0x20, 0x5]],
         ['expected' => 10, 'input' => [0x20, 0xa]],
@@ -143,10 +145,10 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
         ['expected' => 524283, 'input' => [0x2f, 0xf7, 0xfb]],
         ['expected' => 526335, 'input' => [0x2f, 0xff, 0xff]],
         ['expected' => 134217726, 'input' => [0x37, 0xf7, 0xf7, 0xfe]],
-        ['expected' => 134744063, 'input' => [0x37, 0xff, 0xff, 0xff]],
-        ['expected' => 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
-        ['expected' => 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]],
+        ['expected' => PHP_INT_MAX < 4294967295 ? '2147483647' : 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
+        ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]],
     ];
+    }
 
     private $uint16 = [
         ['expected' => 0, 'input' => [0xa0]],
@@ -223,15 +225,18 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
         return $strings;
     }
 
-    private $uint32 = [
+    private function uint32()
+    {
+        return [
         ['expected' => 0, 'input' => [0xc0]],
         ['expected' => 255, 'input' => [0xc1, 0xff]],
         ['expected' => 500, 'input' => [0xc2, 0x1, 0xf4]],
         ['expected' => 10872, 'input' => [0xc2, 0x2a, 0x78]],
         ['expected' => 65535, 'input' => [0xc2, 0xff, 0xff]],
         ['expected' => 16777215, 'input' => [0xc3, 0xff, 0xff, 0xff]],
-        ['expected' => 4294967295, 'input' => [0xc4, 0xff, 0xff, 0xff, 0xff]],
+        ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0xc4, 0xff, 0xff, 0xff, 0xff]],
     ];
+    }
 
     private function bytes()
     {
@@ -256,7 +261,16 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
         ];
 
         for ($power = 1; $power <= $bits / 8; ++$power) {
-            $expected = bcsub(bcpow(2, 8 * $power), 1);
+            $expected = 0;
+            if (\extension_loaded('gmp')) {
+                $expected = gmp_strval(gmp_sub(gmp_pow(2, 8 * $power), 1));
+            } elseif (\extension_loaded('bcmath')) {
+                $expected = bcsub(bcpow(2, 8 * $power), 1);
+            } else {
+                $this->markTestSkipped('This test requires gmp or bcmath.');
+
+                return;
+            }
             $input = [$power, $ctrlByte];
             for ($i = 2; $i < 2 + $power; ++$i) {
                 $input[$i] = 0xff;
@@ -304,7 +318,7 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
 
     public function testPointers()
     {
-        $this->validateTypeDecodingList('pointers', $this->pointers);
+        $this->validateTypeDecodingList('pointers', $this->pointers());
     }
 
     public function testStrings()
@@ -319,7 +333,7 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
 
     public function testUint32()
     {
-        $this->validateTypeDecodingList('uint32', $this->uint32);
+        $this->validateTypeDecodingList('uint32', $this->uint32());
     }
 
     public function testUint64()
