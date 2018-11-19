@@ -3,7 +3,8 @@
 namespace MaxMind\Db\Reader;
 
 // @codingStandardsIgnoreLine
-\define(__NAMESPACE__ . '\_MM_MAX_INT_BYTES', log(PHP_INT_MAX, 2) / 8);
+// We subtract 1 from the log to protect against precision loss.
+\define(__NAMESPACE__ . '\_MM_MAX_INT_BYTES', (log(PHP_INT_MAX, 2) - 1) / 8);
 
 class Decoder
 {
