@@ -10,6 +10,7 @@ class Decoder
 {
     private $fileStream;
     private $pointerBase;
+    private $pointerBaseByteSize;
     // This is only used for unit testing
     private $pointerTestHack;
     private $switchByteOrder;
@@ -38,6 +39,8 @@ class Decoder
     ) {
         $this->fileStream = $fileStream;
         $this->pointerBase = $pointerBase;
+
+        $this->pointerBaseByteSize = $pointerBase > 0 ? log($pointerBase, 2) / 8 : 0;
         $this->pointerTestHack = $pointerTestHack;
 
         $this->switchByteOrder = $this->isPlatformLittleEndian();
@@ -119,14 +122,15 @@ class Decoder
                 $this->verifySize(4, $size);
 
                 return [$this->decodeFloat($bytes), $newOffset];
-            case self::_UINT16:
-            case self::_UINT32:
-                return [$this->decodeUint($bytes, $size, 0), $newOffset];
+
+                return [$this->decodeUint($bytes, $size), $newOffset];
             case self::_INT32:
                 return [$this->decodeInt32($bytes, $size), $newOffset];
+            case self::_UINT16:
+            case self::_UINT32:
             case self::_UINT64:
             case self::_UINT128:
-                return [$this->decodeUint($bytes, $size, 0), $newOffset];
+                return [$this->decodeUint($bytes, $size), $newOffset];
             default:
                 throw new InvalidDatabaseException(
                     'Unknown or unexpected type: ' . $type
@@ -251,16 +255,30 @@ class Decoder
             case 4:
                 // We cannot use unpack here as we might overflow on 32 bit
                 // machines
-                $pointer = $this->decodeUint($buffer, $pointerSize, $this->pointerBase);
+                $pointerOffset = $this->decodeUint($buffer, $pointerSize);
+
+                $byteLength = $pointerSize + $this->pointerBaseByteSize;
+
+                if ($byteLength <= _MM_MAX_INT_BYTES) {
+                    $pointer = $pointerOffset + $this->pointerBase;
+                } elseif (\extension_loaded('gmp')) {
+                    $pointer = gmp_strval(gmp_add($pointerOffset, $this->pointerBase));
+                } elseif (\extension_loaded('bcmath')) {
+                    $pointer = bcadd($pointerOffset, $this->pointerBase);
+                } else {
+                    throw new \RuntimeException(
+                        'The gmp or bcmath extension must be installed to read this database.'
+                    );
+                }
         }
 
         return [$pointer, $offset];
     }
 
-    private function decodeUint($bytes, $byteLength, $base)
+    private function decodeUint($bytes, $byteLength)
     {
         if ($byteLength === 0) {
-            return $base;
+            return 0;
         }
 
         $integer = 0;
@@ -272,7 +290,7 @@ class Decoder
             if ($byteLength <= _MM_MAX_INT_BYTES) {
                 $integer = ($integer << 8) + $part;
             } elseif (\extension_loaded('gmp')) {
-                $integer = gmp_add(gmp_mul($integer, 256), $part);
+                $integer = gmp_strval(gmp_add(gmp_mul($integer, 256), $part));
             } elseif (\extension_loaded('bcmath')) {
                 $integer = bcadd(bcmul($integer, 256), $part);
             } else {
@@ -282,20 +300,7 @@ class Decoder
             }
         }
 
-        if ($base > 0) {
-            $byteLength = $byteLength + log($base, 2) / 8;
-        }
-
-        if ($byteLength <= _MM_MAX_INT_BYTES) {
-            return $integer + $base;
-        } elseif (\extension_loaded('gmp')) {
-            return gmp_strval(gmp_add($integer, $base));
-        } elseif (\extension_loaded('bcmath')) {
-            return bcadd($integer, $base);
-        }
-        throw new \RuntimeException(
-            'The gmp or bcmath extension must be installed to read this database.'
-        );
+        return $integer;
     }
 
     private function sizeFromCtrlByte($ctrlByte, $offset)
