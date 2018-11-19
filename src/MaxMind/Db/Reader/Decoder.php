@@ -122,8 +122,6 @@ class Decoder
                 $this->verifySize(4, $size);
 
                 return [$this->decodeFloat($bytes), $newOffset];
-
-                return [$this->decodeUint($bytes, $size), $newOffset];
             case self::_INT32:
                 return [$this->decodeInt32($bytes, $size), $newOffset];
             case self::_UINT16:
