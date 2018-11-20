@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.4.0
+1.4.0 (2018-11-20)
 ------------------
 
 * The `maxminddb` extension now has the arginfo when using reflection.
