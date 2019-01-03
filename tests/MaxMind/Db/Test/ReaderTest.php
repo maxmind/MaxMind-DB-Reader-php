@@ -54,8 +54,8 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertSame(-268435456, $record['int32']);
         $this->assertSame(100, $record['uint16']);
-        $this->assertSame(PHP_INT_MAX < 4294967295 ? '268435456' : 268435456, $record['uint32']);
-        $this->assertSame('1152921504606846976', $record['uint64']);
+        $this->assertSame(PHP_INT_MAX < 4294967295 && !\extension_loaded('maxminddb') ? '268435456' : 268435456, $record['uint32']);
+        $this->assertSame(PHP_INT_MAX > 1152921504606846976 && \extension_loaded('maxminddb') ? 1152921504606846976 : '1152921504606846976', $record['uint64']);
 
         $uint128 = $record['uint128'];
 
@@ -98,6 +98,27 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
             $this->markTestIncomplete('Requires gmp extension to check value of uint128');
         }
         $this->assertSame('0', $uint128);
+    }
+
+    public function testMax()
+    {
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
+        $record = $reader->get('::255.255.255.255');
+
+        $this->assertSame(INF, $record['double']);
+        $this->assertSame(INF, $record['float'], 'float');
+        $this->assertSame(2147483647, $record['int32']);
+        $this->assertSame(0xFFFF, $record['uint16']);
+        $this->assertSame(PHP_INT_MAX < 0xFFFFFFFF ? '4294967295' : 0xFFFFFFFF, $record['uint32']);
+        $this->assertSame('18446744073709551615', $record['uint64'] . '');
+
+        $uint128 = $record['uint128'];
+        if (\extension_loaded('gmp')) {
+            $uint128 = gmp_strval($uint128);
+        } else {
+            $this->markTestIncomplete('Requires gmp extension to check value of uint128');
+        }
+        $this->assertSame('340282366920938463463374607431768211455', $uint128);
     }
 
     public function testNoIpV4SearchTree()
