@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.4.1
+1.4.1 (2019-01-04)
 ------------------
 
 * The `maxminddb` extension now returns a string when a `uint32`
