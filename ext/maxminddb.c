@@ -78,6 +78,8 @@ static void handle_uint128(const MMDB_entry_data_list_s *entry_data_list,
                            zval *z_value TSRMLS_DC);
 static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC);
+static void handle_uint32(const MMDB_entry_data_list_s *entry_data_list,
+                          zval *z_value TSRMLS_DC);
 static zend_class_entry * lookup_class(const char *name TSRMLS_DC);
 
 #define CHECK_ALLOCATED(val)                  \
@@ -338,7 +340,7 @@ static const MMDB_entry_data_list_s *handle_entry_data_list(
         ZVAL_LONG(z_value, entry_data_list->entry_data.uint16);
         break;
     case MMDB_DATA_TYPE_UINT32:
-        ZVAL_LONG(z_value, entry_data_list->entry_data.uint32);
+        handle_uint32(entry_data_list, z_value TSRMLS_CC);
         break;
     case MMDB_DATA_TYPE_BOOLEAN:
         ZVAL_BOOL(z_value, entry_data_list->entry_data.boolean);
@@ -451,17 +453,51 @@ static void handle_uint128(const MMDB_entry_data_list_s *entry_data_list,
     efree(num_str);
 }
 
-static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
+static void handle_uint32(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC)
 {
-    // We return it as a string because PHP uses signed longs
+    uint32_t val = entry_data_list->entry_data.uint32;
+
+#if LONG_MAX >= UINT32_MAX
+    ZVAL_LONG(z_value, val);
+    return;
+#else
+    if (val <= LONG_MAX) {
+        ZVAL_LONG(z_value, val);
+        return;
+    }
+
     char *int_str;
-    spprintf(&int_str, 0, "%" PRIu64,
-             entry_data_list->entry_data.uint64);
+    spprintf(&int_str, 0, "%" PRIu32, val);
     CHECK_ALLOCATED(int_str);
 
     _ZVAL_STRING(z_value, int_str);
     efree(int_str);
+#endif
+}
+
+
+static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
+                          zval *z_value TSRMLS_DC)
+{
+    uint64_t val = entry_data_list->entry_data.uint64;
+
+#if LONG_MAX >= UINT64_MAX
+    ZVAL_LONG(z_value, val);
+    return;
+#else
+    if (val <= LONG_MAX) {
+        ZVAL_LONG(z_value, val);
+        return;
+    }
+
+    char *int_str;
+    spprintf(&int_str, 0, "%" PRIu64, val);
+    CHECK_ALLOCATED(int_str);
+
+    _ZVAL_STRING(z_value, int_str);
+    efree(int_str);
+#endif
 }
 
 static zend_class_entry *lookup_class(const char *name TSRMLS_DC)

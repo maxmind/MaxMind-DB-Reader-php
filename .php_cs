@@ -8,6 +8,7 @@ return PhpCsFixer\Config::create()
         'array_syntax' => ['syntax' => 'short'],
         'combine_consecutive_unsets' => true,
         'concat_space' => [ 'spacing' => 'one'],
+        'fopen_flags' => ['b_mode' => true],
         'heredoc_to_nowdoc' => true,
         'list_syntax' => ['syntax' => 'long'],
         'no_extra_consecutive_blank_lines' => ['break', 'continue', 'extra', 'return', 'throw', 'use', 'parenthesis_brace_block', 'square_brace_block', 'curly_brace_block'],
