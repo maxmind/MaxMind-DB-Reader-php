@@ -36,7 +36,7 @@ class Reader
      *                                                     if the database is invalid or there is an error reading
      *                                                     from it
      */
-    public function __construct($database)
+    public function __construct($database, $bufferDatabase = false)
     {
         if (\func_num_args() !== 1) {
             throw new \InvalidArgumentException(
@@ -50,9 +50,14 @@ class Reader
             );
         }
         
-        $this->fileHandle = @fopen("php://memory", 'r+b');
-        fputs($this->fileHandle, file_get_contents($database));
-        rewind($this->fileHandle);
+        if ($loadInMemory) {
+            $this->fileHandle = @fopen("php://memory", 'r+b');
+            fputs($this->fileHandle, file_get_contents($database));
+            rewind($this->fileHandle);
+        } else {
+            $this->fileHandle = @fopen($database, 'rb');
+        }
+        
         if ($this->fileHandle === false) {
             throw new \InvalidArgumentException(
                 "Error opening \"$database\"."
