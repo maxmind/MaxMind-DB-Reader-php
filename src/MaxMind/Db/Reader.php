@@ -30,6 +30,8 @@ class Reader
      *
      * @param string $database
      *                         the MaxMind DB file to use
+     * @param bool $bufferDatabase
+     *                         whether to buffer the database or not
      *
      * @throws \InvalidArgumentException                   for invalid database path or unknown arguments
      * @throws \MaxMind\Db\Reader\InvalidDatabaseException
@@ -38,9 +40,9 @@ class Reader
      */
     public function __construct($database, $bufferDatabase = false)
     {
-        if (\func_num_args() !== 2) {
+        if (\func_num_args() !== 1 && \func_num_args() !== 2) {
             throw new \InvalidArgumentException(
-                'The constructor takes exactly one argument.'
+                'The constructor takes one or two arguments.'
             );
         }
 
