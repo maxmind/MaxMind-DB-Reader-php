@@ -200,7 +200,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage The constructor takes exactly one argument.
+     * @expectedExceptionMessage The constructor takes one or two arguments.
      */
     public function testTooManyConstructorArgs()
     {
