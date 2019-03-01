@@ -204,7 +204,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
      */
     public function testTooManyConstructorArgs()
     {
-        new Reader('README.md', 1);
+        new Reader('README.md', false, 1);
     }
 
     /**
