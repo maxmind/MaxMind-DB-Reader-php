@@ -49,12 +49,16 @@ class Reader
                 "The file \"$database\" does not exist or is not readable."
             );
         }
-        $this->fileHandle = @fopen($database, 'rb');
+        
+        $this->fileHandle = @fopen("php://memory", 'r+b');
+        fputs($this->fileHandle, file_get_contents($database));
+        rewind($this->fileHandle);
         if ($this->fileHandle === false) {
             throw new \InvalidArgumentException(
                 "Error opening \"$database\"."
             );
         }
+        
         $this->fileSize = @filesize($database);
         if ($this->fileSize === false) {
             throw new \UnexpectedValueException(
