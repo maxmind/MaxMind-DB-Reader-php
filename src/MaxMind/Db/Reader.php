@@ -50,7 +50,7 @@ class Reader
             );
         }
         
-        if ($loadInMemory) {
+        if ($bufferDatabase === true) {
             $this->fileHandle = @fopen("php://memory", 'r+b');
             fputs($this->fileHandle, file_get_contents($database));
             rewind($this->fileHandle);
