@@ -38,7 +38,7 @@ class Reader
      */
     public function __construct($database, $bufferDatabase = false)
     {
-        if (\func_num_args() !== 1) {
+        if (\func_num_args() !== 2) {
             throw new \InvalidArgumentException(
                 'The constructor takes exactly one argument.'
             );
