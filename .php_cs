@@ -23,6 +23,7 @@ return PhpCsFixer\Config::create()
         'phpdoc_add_missing_param_annotation' => true,
         'phpdoc_no_alias_tag' => false,
         'phpdoc_order' => true,
+        'phpdoc_to_comment' => false,
         'semicolon_after_instruction' => true,
         'strict_comparison' => true,
         'strict_param' => true,

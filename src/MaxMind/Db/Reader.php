@@ -9,7 +9,7 @@ use MaxMind\Db\Reader\Util;
 
 /**
  * Instances of this class provide a reader for the MaxMind DB format. IP
- * addresses can be looked up using the <code>get</code> method.
+ * addresses can be looked up using the get method.
  */
 class Reader
 {
@@ -73,7 +73,7 @@ class Reader
     }
 
     /**
-     * Looks up the <code>address</code> in the MaxMind DB.
+     * Looks up the address in the MaxMind DB.
      *
      * @param string $ipAddress
      *                          the IP address to look up
