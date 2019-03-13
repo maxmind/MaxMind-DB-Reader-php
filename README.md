@@ -7,7 +7,7 @@ format that stores data indexed by IP address subnets (IPv4 or IPv6).
 
 ## Installation (Composer) ##
 
-We recommend installing this package with [Composer](http://getcomposer.org/).
+We recommend installing this package with [Composer](https://getcomposer.org/).
 
 ### Download Composer ###
 
@@ -129,7 +129,7 @@ breaking change.
 Please report all issues with this code using the [GitHub issue tracker](https://github.com/maxmind/MaxMind-DB-Reader-php/issues).
 
 If you are having an issue with a MaxMind service that is not specific to the
-client API, please see [our support page](http://www.maxmind.com/en/support).
+client API, please see [our support page](https://www.maxmind.com/en/support).
 
 ## Requirements  ##
 
@@ -145,7 +145,7 @@ PSR-2 style guidelines. Please include unit tests whenever possible.
 
 ## Versioning ##
 
-The MaxMind DB Reader PHP API uses [Semantic Versioning](http://semver.org/).
+The MaxMind DB Reader PHP API uses [Semantic Versioning](https://semver.org/).
 
 ## Copyright and License ##
 
