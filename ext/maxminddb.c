@@ -50,6 +50,20 @@ typedef int strsize_t;
 typedef void free_obj_t;
 #endif
 
+/* For PHP 8 compatibility */
+#ifndef TSRMLS_C
+#define TSRMLS_C
+#endif
+#ifndef TSRMLS_CC
+#define TSRMLS_CC
+#endif
+#ifndef TSRMLS_DC
+#define TSRMLS_DC
+#endif
+#ifndef ZEND_ACC_CTOR
+#define ZEND_ACC_CTOR 0
+#endif
+
 #ifdef ZEND_ENGINE_3
 typedef struct _maxminddb_obj {
     MMDB_s *mmdb;
@@ -274,7 +288,14 @@ PHP_METHOD(MaxMind_Db_Reader, metadata){
 
     handle_entry_data_list(entry_data_list, metadata_array TSRMLS_CC);
     MMDB_free_entry_data_list(entry_data_list);
-#ifdef ZEND_ENGINE_3
+#if PHP_VERSION_ID >= 80000
+    zend_call_method_with_1_params(Z_OBJ_P(return_value), metadata_ce,
+                                   &metadata_ce->constructor,
+                                   ZEND_CONSTRUCTOR_FUNC_NAME,
+                                   NULL,
+                                   metadata_array);
+    zval_ptr_dtor(metadata_array);
+#elif defined(ZEND_ENGINE_3)
     zend_call_method_with_1_params(return_value, metadata_ce,
                                    &metadata_ce->constructor,
                                    ZEND_CONSTRUCTOR_FUNC_NAME,

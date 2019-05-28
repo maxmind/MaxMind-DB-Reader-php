@@ -24,6 +24,11 @@ matrix:
       env:
         - RUN_LINTER=1
         - RUN_SNYK=1
+    - php: master
+  fast_finish: true
+  allow_failures:
+    - php: 'master'
+
 env:
   global:
     - secure: "RMIBN2tNKlrGA07coRW4B9m9jCobrYxDkEq3T3jGoGtXgQe/Mr3bI/4zQo7U3bvVTSF90lzkWbxATY45GQXRxWC7Ed2HI2jwUF96CXecdRhKiE9x051HsvXakvbODPLocV7/2LOZqz+eXCUeazLgRaSrIhAqMddFqMQSSM5STlc="
