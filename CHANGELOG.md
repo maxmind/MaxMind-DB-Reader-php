@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+1.4.2
+------------------
+
+* The C extension now supports PHP 8. Pull request by John Boehr.
+  GitHub #87.
+
 1.4.1 (2019-01-04)
 ------------------
 
