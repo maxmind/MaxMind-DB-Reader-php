@@ -14,8 +14,6 @@ language: php
 dist: trusty
 matrix:
   include:
-    - php: '5.4'
-    - php: '5.5'
     - php: '5.6'
     - php: '7.0'
     - php: '7.1'
@@ -24,10 +22,14 @@ matrix:
       env:
         - RUN_LINTER=1
         - RUN_SNYK=1
-    - php: master
+    - php: '7.4snapshot'
+    - php: 'master'
+    - php: 'nightly'
   fast_finish: true
   allow_failures:
+    - php: '7.4snapshot'
     - php: 'master'
+    - php: 'nightly'
 
 env:
   global:
