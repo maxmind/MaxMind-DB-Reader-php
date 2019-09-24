@@ -1,9 +1,10 @@
 CHANGELOG
 =========
 
-1.4.2
+1.5.0
 ------------------
 
+* PHP 5.6 or greater is now required.
 * The C extension now supports PHP 8. Pull request by John Boehr.
   GitHub #87.
 
