@@ -2,10 +2,14 @@
 
 namespace MaxMind\Db;
 
+use BadMethodCallException;
+use Exception;
+use InvalidArgumentException;
 use MaxMind\Db\Reader\Decoder;
 use MaxMind\Db\Reader\InvalidDatabaseException;
 use MaxMind\Db\Reader\Metadata;
 use MaxMind\Db\Reader\Util;
+use UnexpectedValueException;
 
 /**
  * Instances of this class provide a reader for the MaxMind DB format. IP
@@ -31,7 +35,7 @@ class Reader
      * @param string $database
      *                         the MaxMind DB file to use
      *
-     * @throws \InvalidArgumentException                   for invalid database path or unknown arguments
+     * @throws InvalidArgumentException                    for invalid database path or unknown arguments
      * @throws \MaxMind\Db\Reader\InvalidDatabaseException
      *                                                     if the database is invalid or there is an error reading
      *                                                     from it
@@ -39,25 +43,25 @@ class Reader
     public function __construct($database)
     {
         if (\func_num_args() !== 1) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'The constructor takes exactly one argument.'
             );
         }
 
         if (!is_readable($database)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "The file \"$database\" does not exist or is not readable."
             );
         }
         $this->fileHandle = @fopen($database, 'rb');
         if ($this->fileHandle === false) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Error opening \"$database\"."
             );
         }
         $this->fileSize = @filesize($database);
         if ($this->fileSize === false) {
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 "Error determining the size of \"$database\"."
             );
         }
@@ -78,36 +82,36 @@ class Reader
      * @param string $ipAddress
      *                          the IP address to look up
      *
-     * @throws \BadMethodCallException   if this method is called on a closed database
-     * @throws \InvalidArgumentException if something other than a single IP address is passed to the method
+     * @throws BadMethodCallException   if this method is called on a closed database
+     * @throws InvalidArgumentException if something other than a single IP address is passed to the method
      * @throws InvalidDatabaseException
-     *                                   if the database is invalid or there is an error reading
-     *                                   from it
+     *                                  if the database is invalid or there is an error reading
+     *                                  from it
      *
      * @return array the record for the IP address
      */
     public function get($ipAddress)
     {
         if (\func_num_args() !== 1) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Method takes exactly one argument.'
             );
         }
 
         if (!\is_resource($this->fileHandle)) {
-            throw new \BadMethodCallException(
+            throw new BadMethodCallException(
                 'Attempt to read from a closed MaxMind DB.'
             );
         }
 
         if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "The value \"$ipAddress\" is not a valid IP address."
             );
         }
 
         if ($this->metadata->ipVersion === 4 && strrpos($ipAddress, ':')) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Error looking up $ipAddress. You attempted to look up an"
                 . ' IPv6 address in an IPv4-only database.'
             );
@@ -267,15 +271,15 @@ class Reader
     }
 
     /**
-     * @throws \InvalidArgumentException if arguments are passed to the method
-     * @throws \BadMethodCallException   if the database has been closed
+     * @throws InvalidArgumentException if arguments are passed to the method
+     * @throws BadMethodCallException   if the database has been closed
      *
      * @return Metadata object for the database
      */
     public function metadata()
     {
         if (\func_num_args()) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Method takes no arguments.'
             );
         }
@@ -283,7 +287,7 @@ class Reader
         // Not technically required, but this makes it consistent with
         // C extension and it allows us to change our implementation later.
         if (!\is_resource($this->fileHandle)) {
-            throw new \BadMethodCallException(
+            throw new BadMethodCallException(
                 'Attempt to read from a closed MaxMind DB.'
             );
         }
@@ -294,13 +298,13 @@ class Reader
     /**
      * Closes the MaxMind DB and returns resources to the system.
      *
-     * @throws \Exception
-     *                    if an I/O error occurs
+     * @throws Exception
+     *                   if an I/O error occurs
      */
     public function close()
     {
         if (!\is_resource($this->fileHandle)) {
-            throw new \BadMethodCallException(
+            throw new BadMethodCallException(
                 'Attempt to close a closed MaxMind DB.'
             );
         }

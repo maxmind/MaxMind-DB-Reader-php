@@ -3,11 +3,12 @@
 namespace MaxMind\Db\Test\Reader;
 
 use MaxMind\Db\Reader\Decoder;
+use PHPUnit_Framework_TestCase;
 
 /**
  * @coversNothing
  */
-class PointerTest extends \PHPUnit_Framework_TestCase
+class PointerTest extends PHPUnit_Framework_TestCase
 {
     public function testWithPointers()
     {

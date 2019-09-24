@@ -2,12 +2,15 @@
 
 namespace MaxMind\Db\Test\Reader;
 
+use InvalidArgumentException;
 use MaxMind\Db\Reader;
+use PHPUnit_Framework_TestCase;
+use ReflectionClass;
 
 /**
  * @coversNothing
  */
-class ReaderTest extends \PHPUnit_Framework_TestCase
+class ReaderTest extends PHPUnit_Framework_TestCase
 {
     public function testReader()
     {
@@ -217,7 +220,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
         if (\extension_loaded('maxminddb')) {
             new Reader();
         } else {
-            throw new \InvalidArgumentException();
+            throw new InvalidArgumentException();
         }
     }
 
@@ -246,7 +249,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
             );
             $reader->get();
         } else {
-            throw new \InvalidArgumentException();
+            throw new InvalidArgumentException();
         }
     }
 
@@ -311,7 +314,7 @@ class ReaderTest extends \PHPUnit_Framework_TestCase
 
     public function testReaderIsNotFinal()
     {
-        $reflectionClass = new \ReflectionClass('MaxMind\Db\Reader');
+        $reflectionClass = new ReflectionClass('MaxMind\Db\Reader');
         $this->assertFalse($reflectionClass->isFinal());
     }
 
