@@ -88,7 +88,7 @@ class Reader
      *                                  if the database is invalid or there is an error reading
      *                                  from it
      *
-     * @return array the record for the IP address
+     * @return mixed the record for the IP address
      */
     public function get($ipAddress)
     {
