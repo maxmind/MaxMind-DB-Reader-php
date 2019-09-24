@@ -74,6 +74,7 @@ class Reader
             $this->fileHandle,
             $this->metadata->searchTreeSize + self::$DATA_SECTION_SEPARATOR_SIZE
         );
+        $this->ipV4Start = $this->ipV4StartNode();
     }
 
     /**
@@ -126,28 +127,25 @@ class Reader
 
     private function findAddressInTree($ipAddress)
     {
-        // XXX - could simplify. Done as a byte array to ease porting
-        $rawAddress = array_merge(unpack('C*', inet_pton($ipAddress)));
+        $rawAddress = unpack('C*', inet_pton($ipAddress));
 
         $bitCount = \count($rawAddress) * 8;
 
         // The first node of the tree is always node 0, at the beginning of the
         // value
         $node = $this->startNode($bitCount);
+        $nodeCount = $this->metadata->nodeCount;
 
-        for ($i = 0; $i < $bitCount; ++$i) {
-            if ($node >= $this->metadata->nodeCount) {
-                break;
-            }
-            $tempBit = 0xFF & $rawAddress[$i >> 3];
+        for ($i = 0; $i < $bitCount && $node < $nodeCount; ++$i) {
+            $tempBit = 0xFF & $rawAddress[($i >> 3) + 1];
             $bit = 1 & ($tempBit >> 7 - ($i % 8));
 
             $node = $this->readNode($node, $bit);
         }
-        if ($node === $this->metadata->nodeCount) {
+        if ($node === $nodeCount) {
             // Record is empty
             return 0;
-        } elseif ($node > $this->metadata->nodeCount) {
+        } elseif ($node > $nodeCount) {
             // Record is a data pointer
             return $node;
         }
@@ -159,7 +157,7 @@ class Reader
         // Check if we are looking up an IPv4 address in an IPv6 tree. If this
         // is the case, we can skip over the first 96 nodes.
         if ($this->metadata->ipVersion === 6 && $length === 32) {
-            return $this->ipV4StartNode();
+            return $this->ipV4Start;
         }
         // The first node of the tree is always node 0, at the beginning of the
         // value
@@ -168,21 +166,16 @@ class Reader
 
     private function ipV4StartNode()
     {
-        // This is a defensive check. There is no reason to call this when you
-        // have an IPv4 tree.
+        // If we have an IPv4 database, the start node is the first node
         if ($this->metadata->ipVersion === 4) {
             return 0;
         }
 
-        if ($this->ipV4Start) {
-            return $this->ipV4Start;
-        }
         $node = 0;
 
         for ($i = 0; $i < 96 && $node < $this->metadata->nodeCount; ++$i) {
             $node = $this->readNode($node, 0);
         }
-        $this->ipV4Start = $node;
 
         return $node;
     }
