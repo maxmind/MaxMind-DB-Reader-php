@@ -184,7 +184,6 @@ class Reader
     {
         $baseOffset = $nodeNumber * $this->metadata->nodeByteSize;
 
-        // XXX - probably could condense this.
         switch ($this->metadata->recordSize) {
             case 24:
                 $bytes = Util::read($this->fileHandle, $baseOffset + $index * 3, 3);
@@ -192,15 +191,13 @@ class Reader
 
                 return $node;
             case 28:
-                $middleByte = Util::read($this->fileHandle, $baseOffset + 3, 1);
-                list(, $middle) = unpack('C', $middleByte);
+                $bytes = Util::read($this->fileHandle, $baseOffset + 3 * $index, 4);
                 if ($index === 0) {
-                    $middle = (0xF0 & $middle) >> 4;
+                    $middle = (0xF0 & \ord($bytes[3])) >> 4;
                 } else {
-                    $middle = 0x0F & $middle;
+                    $middle = 0x0F & \ord($bytes[0]);
                 }
-                $bytes = Util::read($this->fileHandle, $baseOffset + $index * 4, 3);
-                list(, $node) = unpack('N', \chr($middle) . $bytes);
+                list(, $node) = unpack('N', \chr($middle) . substr($bytes, $index, 3));
 
                 return $node;
             case 32:
