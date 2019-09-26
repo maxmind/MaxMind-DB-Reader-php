@@ -78,7 +78,7 @@ class Reader
     }
 
     /**
-     * Looks up the address in the MaxMind DB.
+     * Retrieves the record for the IP address.
      *
      * @param string $ipAddress
      *                          the IP address to look up
@@ -98,6 +98,33 @@ class Reader
                 'Method takes exactly one argument.'
             );
         }
+        list($record) = $this->getWithPrefixLen($ipAddress);
+
+        return $record;
+    }
+
+    /**
+     * Retrieves the record for the IP address and its associated network prefix length.
+     *
+     * @param string $ipAddress
+     *                          the IP address to look up
+     *
+     * @throws BadMethodCallException   if this method is called on a closed database
+     * @throws InvalidArgumentException if something other than a single IP address is passed to the method
+     * @throws InvalidDatabaseException
+     *                                  if the database is invalid or there is an error reading
+     *                                  from it
+     *
+     * @return array an array where the first element is the record and the
+     *               second the network prefix length for the record
+     */
+    public function getWithPrefixLen($ipAddress)
+    {
+        if (\func_num_args() !== 1) {
+            throw new InvalidArgumentException(
+                'Method takes exactly one argument.'
+            );
+        }
 
         if (!\is_resource($this->fileHandle)) {
             throw new BadMethodCallException(
@@ -111,12 +138,12 @@ class Reader
             );
         }
 
-        $pointer = $this->findAddressInTree($ipAddress);
+        list($pointer, $prefixLen) = $this->findAddressInTree($ipAddress);
         if ($pointer === 0) {
-            return null;
+            return [null, $prefixLen];
         }
 
-        return $this->resolveDataPointer($pointer);
+        return [$this->resolveDataPointer($pointer), $prefixLen];
     }
 
     private function findAddressInTree($ipAddress)
@@ -154,10 +181,10 @@ class Reader
         }
         if ($node === $nodeCount) {
             // Record is empty
-            return 0;
+            return [0, $i];
         } elseif ($node > $nodeCount) {
             // Record is a data pointer
-            return $node;
+            return [$node, $i];
         }
         throw new InvalidDatabaseException('Something bad happened');
     }

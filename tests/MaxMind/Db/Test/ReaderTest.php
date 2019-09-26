@@ -133,6 +133,110 @@ class ReaderTest extends PHPUnit_Framework_TestCase
         $this->assertSame('::0/64', $reader->get('192.1.1.1'));
     }
 
+    public function testGetWithPrefixLen()
+    {
+        $decoderRecord = [
+            'array' => [1, 2, 3],
+            'boolean' => true,
+            'bytes' => pack('N', 42),
+            'double' => 42.123456,
+            'float' => 1.100000023841858,
+            'int32' => -268435456,
+            'map' => [
+                'mapX' => [
+                    'arrayX' => [7, 8, 9],
+                    'utf8_stringX' => 'hello',
+                ],
+            ],
+            'uint128' => '1329227995784915872903807060280344576',
+            'uint16' => 0x64,
+        'uint32' => PHP_INT_MAX < 4294967295 && !\extension_loaded('maxminddb') ? '268435456' : 268435456,
+        'uint64' => PHP_INT_MAX > 1152921504606846976 && \extension_loaded('maxminddb') ? 1152921504606846976 : '1152921504606846976',
+            'utf8_string' => 'unicode! ☯ - ♫',
+       ];
+        $tests = [
+                [
+                'ip' => '1.1.1.1',
+                'dbFile' => 'MaxMind-DB-test-ipv6-32.mmdb',
+                'expectedPrefixLength' => 8,
+                'expectedRecord' => null,
+                ],
+                [
+                'ip' => '::1:ffff:ffff',
+                'dbFile' => 'MaxMind-DB-test-ipv6-24.mmdb',
+                'expectedPrefixLength' => 128,
+                'expectedRecord' => ['ip' => '::1:ffff:ffff'],
+                ],
+                [
+                'ip' => '::2:0:1',
+                'dbFile' => 'MaxMind-DB-test-ipv6-24.mmdb',
+                'expectedPrefixLength' => 122,
+                'expectedRecord' => ['ip' => '::2:0:0'],
+                ],
+                [
+                'ip' => '1.1.1.1',
+                'dbFile' => 'MaxMind-DB-test-ipv4-24.mmdb',
+                'expectedPrefixLength' => 32,
+                'expectedRecord' => ['ip' => '1.1.1.1'],
+                ],
+                [
+                'ip' => '1.1.1.3',
+                'dbFile' => 'MaxMind-DB-test-ipv4-24.mmdb',
+                'expectedPrefixLength' => 31,
+                'expectedRecord' => ['ip' => '1.1.1.2'],
+                ],
+                [
+                'ip' => '1.1.1.3',
+                'dbFile' => 'MaxMind-DB-test-decoder.mmdb',
+                'expectedPrefixLength' => 24,
+                'expectedRecord' => $decoderRecord,
+                ],
+                [
+                'ip' => '::ffff:1.1.1.128',
+                'dbFile' => 'MaxMind-DB-test-decoder.mmdb',
+                'expectedPrefixLength' => 120,
+                'expectedRecord' => $decoderRecord,
+                ],
+                [
+                'ip' => '::1.1.1.128',
+                'dbFile' => 'MaxMind-DB-test-decoder.mmdb',
+                'expectedPrefixLength' => 120,
+                'expectedRecord' => $decoderRecord,
+                ],
+                [
+                'ip' => '200.0.2.1',
+                'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
+                'expectedPrefixLength' => 0,
+                'expectedRecord' => '::0/64',
+                ],
+                [
+                'ip' => '::200.0.2.1',
+                'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
+                'expectedPrefixLength' => 64,
+                'expectedRecord' => '::0/64',
+                ],
+                [
+                'ip' => '0:0:0:0:ffff:ffff:ffff:ffff',
+                'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
+                'expectedPrefixLength' => 64,
+                'expectedRecord' => '::0/64',
+                ],
+                [
+                'ip' => 'ef00::',
+                'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
+                'expectedPrefixLength' => 1,
+                'expectedRecord' => null,
+                ],
+            ];
+
+        foreach ($tests as $test) {
+            $reader = new Reader('tests/data/test-data/' . $test['dbFile']);
+            list($record, $prefixLen) = $reader->getWithPrefixLen($test['ip']);
+            $this->assertSame($test['expectedPrefixLength'], $prefixLen, "prefix length for {$test['ip']} on {$test['dbFile']}");
+            $this->assertSame($test['expectedRecord'], $record, "record for {$test['ip']} on {$test['dbFile']}");
+        }
+    }
+
     /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Error looking up 2001::. You attempted to look up an IPv6 address in an IPv4-only database
