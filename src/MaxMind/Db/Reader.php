@@ -111,12 +111,6 @@ class Reader
             );
         }
 
-        if ($this->metadata->ipVersion === 4 && strrpos($ipAddress, ':')) {
-            throw new InvalidArgumentException(
-                "Error looking up $ipAddress. You attempted to look up an"
-                . ' IPv6 address in an IPv4-only database.'
-            );
-        }
         $pointer = $this->findAddressInTree($ipAddress);
         if ($pointer === 0) {
             return null;
@@ -137,8 +131,15 @@ class Reader
 
         // Check if we are looking up an IPv4 address in an IPv6 tree. If this
         // is the case, we can skip over the first 96 nodes.
-        if ($this->metadata->ipVersion === 6 && $bitCount === 32) {
-            $node = $this->ipV4Start;
+        if ($this->metadata->ipVersion === 6) {
+            if ($bitCount === 32) {
+                $node = $this->ipV4Start;
+            }
+        } elseif ($this->metadata->ipVersion === 4 && $bitCount === 128) {
+            throw new InvalidArgumentException(
+                "Error looking up $ipAddress. You attempted to look up an"
+                . ' IPv6 address in an IPv4-only database.'
+            );
         }
 
         $nodeCount = $this->metadata->nodeCount;
