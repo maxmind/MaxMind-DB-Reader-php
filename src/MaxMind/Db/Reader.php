@@ -129,20 +129,22 @@ class Reader
         // value
         $node = 0;
 
+        $metadata = $this->metadata;
+
         // Check if we are looking up an IPv4 address in an IPv6 tree. If this
         // is the case, we can skip over the first 96 nodes.
-        if ($this->metadata->ipVersion === 6) {
+        if ($metadata->ipVersion === 6) {
             if ($bitCount === 32) {
                 $node = $this->ipV4Start;
             }
-        } elseif ($this->metadata->ipVersion === 4 && $bitCount === 128) {
+        } elseif ($metadata->ipVersion === 4 && $bitCount === 128) {
             throw new InvalidArgumentException(
                 "Error looking up $ipAddress. You attempted to look up an"
                 . ' IPv6 address in an IPv4-only database.'
             );
         }
 
-        $nodeCount = $this->metadata->nodeCount;
+        $nodeCount = $metadata->nodeCount;
 
         for ($i = 0; $i < $bitCount && $node < $nodeCount; ++$i) {
             $tempBit = 0xFF & $rawAddress[($i >> 3) + 1];
