@@ -133,7 +133,14 @@ class Reader
 
         // The first node of the tree is always node 0, at the beginning of the
         // value
-        $node = $this->startNode($bitCount);
+        $node = 0;
+
+        // Check if we are looking up an IPv4 address in an IPv6 tree. If this
+        // is the case, we can skip over the first 96 nodes.
+        if ($this->metadata->ipVersion === 6 && $bitCount === 32) {
+            $node = $this->ipV4Start;
+        }
+
         $nodeCount = $this->metadata->nodeCount;
 
         for ($i = 0; $i < $bitCount && $node < $nodeCount; ++$i) {
@@ -150,18 +157,6 @@ class Reader
             return $node;
         }
         throw new InvalidDatabaseException('Something bad happened');
-    }
-
-    private function startNode($length)
-    {
-        // Check if we are looking up an IPv4 address in an IPv6 tree. If this
-        // is the case, we can skip over the first 96 nodes.
-        if ($this->metadata->ipVersion === 6 && $length === 32) {
-            return $this->ipV4Start;
-        }
-        // The first node of the tree is always node 0, at the beginning of the
-        // value
-        return 0;
     }
 
     private function ipV4StartNode()
