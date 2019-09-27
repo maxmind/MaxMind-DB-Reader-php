@@ -7,6 +7,9 @@ CHANGELOG
 * PHP 5.6 or greater is now required.
 * The C extension now supports PHP 8. Pull request by John Boehr.
   GitHub #87.
+* A new method, `getWithPrefixLen`, was added to the `Reader` class.
+  This method returns an array containing the record and the prefix
+  length for that record. GitHub #89.
 
 1.4.1 (2019-01-04)
 ------------------

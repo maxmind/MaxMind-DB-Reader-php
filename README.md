@@ -72,7 +72,12 @@ $databaseFile = 'GeoIP2-City.mmdb';
 
 $reader = new Reader($databaseFile);
 
+// get returns just the record for the IP address
 print_r($reader->get($ipAddress));
+
+// getWithPrefixLen returns an array containing the record and the
+// associated prefix length for that record.
+print_r($reader->getWithPrefixLen($ipAddress));
 
 $reader->close();
 ```
