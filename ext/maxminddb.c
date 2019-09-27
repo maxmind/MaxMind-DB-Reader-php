@@ -79,6 +79,8 @@ typedef struct _maxminddb_obj {
 
 PHP_FUNCTION(maxminddb);
 
+static void
+get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len);
 static const MMDB_entry_data_list_s *
 handle_entry_data_list(const MMDB_entry_data_list_s *entry_data_list,
                        zval *z_value TSRMLS_DC);
@@ -182,6 +184,33 @@ ZEND_ARG_INFO(0, ip_address)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, get) {
+    int prefix_len = 0;
+    get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, return_value, &prefix_len);
+}
+
+PHP_METHOD(MaxMind_Db_Reader, getWithPrefixLen) {
+    zval *record, *z_prefix_len;
+#ifdef ZEND_ENGINE_3
+    zval _record, _z_prefix_len;
+    record = &_record;
+    z_prefix_len = &_z_prefix_len;
+#else
+    ALLOC_INIT_ZVAL(record);
+    ALLOC_INIT_ZVAL(z_prefix_len);
+#endif
+
+    int prefix_len = 0;
+    get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, record, &prefix_len);
+
+    array_init(return_value);
+    add_next_index_zval(return_value, record);
+
+    ZVAL_LONG(z_prefix_len, prefix_len);
+    add_next_index_zval(return_value, z_prefix_len);
+}
+
+static void
+get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     char *ip_address = NULL;
     strsize_t name_len;
     zval *_this_zval = NULL;
@@ -234,10 +263,13 @@ PHP_METHOD(MaxMind_Db_Reader, get) {
         return;
     }
 
+    *prefix_len = result.netmask;
+
     MMDB_entry_data_list_s *entry_data_list = NULL;
 
     if (!result.found_entry) {
-        RETURN_NULL();
+        ZVAL_NULL(record);
+        return;
     }
 
     int status = MMDB_get_entry_data_list(&result.entry, &entry_data_list);
@@ -257,7 +289,7 @@ PHP_METHOD(MaxMind_Db_Reader, get) {
         return;
     }
 
-    handle_entry_data_list(entry_data_list, return_value TSRMLS_CC);
+    handle_entry_data_list(entry_data_list, record TSRMLS_CC);
     MMDB_free_entry_data_list(entry_data_list);
 }
 
@@ -589,8 +621,9 @@ maxminddb_create_handler(zend_class_entry *type TSRMLS_DC) {
 static zend_function_entry maxminddb_methods[] = {
     PHP_ME(MaxMind_Db_Reader, __construct, arginfo_maxmindbreader_construct,
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(MaxMind_Db_Reader, close,    arginfo_maxmindbreader_void, ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, get,      arginfo_maxmindbreader_get,  ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, close, arginfo_maxmindbreader_void, ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, get, arginfo_maxmindbreader_get,  ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, getWithPrefixLen, arginfo_maxmindbreader_get,  ZEND_ACC_PUBLIC)
     PHP_ME(MaxMind_Db_Reader, metadata, arginfo_maxmindbreader_void, ZEND_ACC_PUBLIC)
     { NULL, NULL, NULL }
 };
