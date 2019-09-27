@@ -237,17 +237,34 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
         return;
     }
 
-    int gai_error = 0;
-    int mmdb_error = MMDB_SUCCESS;
-    MMDB_lookup_result_s result =
-        MMDB_lookup_string(mmdb, ip_address, &gai_error, &mmdb_error);
+    struct addrinfo hints = {
+        .ai_family = AF_UNSPEC,
+        .ai_flags = AI_NUMERICHOST,
+        // We set ai_socktype so that we only get one result back
+        .ai_socktype = SOCK_STREAM};
 
-    if (MMDB_SUCCESS != gai_error) {
+    struct addrinfo *addresses = NULL;
+    int gai_status = getaddrinfo(ip_address, NULL, &hints, &addresses);
+    if (gai_status) {
         THROW_EXCEPTION("InvalidArgumentException",
                         "The value \"%s\" is not a valid IP address.",
                         ip_address);
         return;
     }
+    if (!addresses && !addresses->ai_addr) {
+        THROW_EXCEPTION(
+            "InvalidArgumentException",
+            "getaddrinfo was successful but failed to set the addrinfo");
+        return;
+    }
+
+    int sa_family = addresses->ai_addr->sa_family;
+
+    int mmdb_error = MMDB_SUCCESS;
+    MMDB_lookup_result_s result =
+        MMDB_lookup_sockaddr(mmdb, addresses->ai_addr, &mmdb_error);
+
+    freeaddrinfo(addresses);
 
     if (MMDB_SUCCESS != mmdb_error) {
         char *exception_name;
@@ -265,13 +282,18 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
 
     *prefix_len = result.netmask;
 
-    MMDB_entry_data_list_s *entry_data_list = NULL;
+    if (sa_family == AF_INET && mmdb->metadata.ip_version == 6) {
+        // We return the prefix length given the IPv4 address. If there is
+        // no IPv4 subtree, we return a prefix length of 0.
+        *prefix_len = *prefix_len >= 96 ? *prefix_len - 96 : 0;
+    }
 
     if (!result.found_entry) {
         ZVAL_NULL(record);
         return;
     }
 
+    MMDB_entry_data_list_s *entry_data_list = NULL;
     int status = MMDB_get_entry_data_list(&result.entry, &entry_data_list);
 
     if (MMDB_SUCCESS != status) {
