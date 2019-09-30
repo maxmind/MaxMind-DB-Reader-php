@@ -3,11 +3,12 @@
 namespace MaxMind\Db\Test\Reader;
 
 use MaxMind\Db\Reader\Decoder;
+use PHPUnit_Framework_TestCase;
 
 /**
  * @coversNothing
  */
-class DecoderTest extends \PHPUnit_Framework_TestCase
+class DecoderTest extends PHPUnit_Framework_TestCase
 {
     private $arrays = [
         [
@@ -261,7 +262,6 @@ class DecoderTest extends \PHPUnit_Framework_TestCase
         ];
 
         for ($power = 1; $power <= $bits / 8; ++$power) {
-            $expected = 0;
             if (\extension_loaded('gmp')) {
                 $expected = gmp_strval(gmp_sub(gmp_pow(2, 8 * $power), 1));
             } elseif (\extension_loaded('bcmath')) {

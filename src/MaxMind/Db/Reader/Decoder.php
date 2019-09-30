@@ -3,6 +3,8 @@
 namespace MaxMind\Db\Reader;
 
 // @codingStandardsIgnoreLine
+use RuntimeException;
+
 /**
  * @ignore
  *
@@ -284,7 +286,7 @@ class Decoder
                 } elseif (\extension_loaded('bcmath')) {
                     $pointer = bcadd($pointerOffset, $this->pointerBase);
                 } else {
-                    throw new \RuntimeException(
+                    throw new RuntimeException(
                         'The gmp or bcmath extension must be installed to read this database.'
                     );
                 }
@@ -312,7 +314,7 @@ class Decoder
             } elseif (\extension_loaded('bcmath')) {
                 $integer = bcadd(bcmul($integer, 256), $part);
             } else {
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     'The gmp or bcmath extension must be installed to read this database.'
                 );
             }

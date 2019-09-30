@@ -57,6 +57,25 @@ use MaxMind\Db\Reader;
 $reader = new Reader('example.mmdb');
 ```
 
+## Installation (RPM)
+
+RPMs are available in the [official Fedora repository](https://apps.fedoraproject.org/packages/php-maxminddb).
+
+To install on Fedora, run:
+
+```bash
+dnf install php-maxminddb
+```
+
+To install on CentOS or RHEL 7, first [enable the EPEL repository](https://fedoraproject.org/wiki/EPEL)
+and then run:
+
+```bash
+yum install php-maxminddb
+```
+
+Please note that these packages are *not* maintained by MaxMind.
+
 ## Usage ##
 
 ## Example ##
@@ -72,7 +91,12 @@ $databaseFile = 'GeoIP2-City.mmdb';
 
 $reader = new Reader($databaseFile);
 
+// get returns just the record for the IP address
 print_r($reader->get($ipAddress));
+
+// getWithPrefixLen returns an array containing the record and the
+// associated prefix length for that record.
+print_r($reader->getWithPrefixLen($ipAddress));
 
 $reader->close();
 ```
@@ -133,7 +157,7 @@ client API, please see [our support page](https://www.maxmind.com/en/support).
 
 ## Requirements  ##
 
-This library requires PHP 5.4 or greater.
+This library requires PHP 5.6 or greater.
 
 The GMP or BCMath extension may be required to read some databases
 using the pure PHP API.
