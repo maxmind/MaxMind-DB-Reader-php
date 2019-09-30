@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.5.0
+1.5.0 (2019-09-30)
 ------------------
 
 * PHP 5.6 or greater is now required.
