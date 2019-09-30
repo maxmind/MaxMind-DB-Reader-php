@@ -59,8 +59,7 @@ $reader = new Reader('example.mmdb');
 
 ## Installation (RPM)
 
-RPMs are available in the [official Fedora repository](https://apps.fedoraproject.org/packages/php-maxminddb)
-and in [Remi's RPM repository](https://rpms.remirepo.net/rpmphp/zoom.php?rpm=python-maxminddb).
+RPMs are available in the [official Fedora repository](https://apps.fedoraproject.org/packages/php-maxminddb).
 
 To install on Fedora, run:
 
