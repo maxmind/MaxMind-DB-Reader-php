@@ -251,7 +251,7 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                         ip_address);
         return;
     }
-    if (!addresses && !addresses->ai_addr) {
+    if (!addresses || !addresses->ai_addr) {
         THROW_EXCEPTION(
             "InvalidArgumentException",
             "getaddrinfo was successful but failed to set the addrinfo");
