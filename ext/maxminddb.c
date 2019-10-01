@@ -665,6 +665,10 @@ PHP_MINIT_FUNCTION(maxminddb) {
     maxminddb_obj_handlers.offset = XtOffsetOf(maxminddb_obj, std);
     maxminddb_obj_handlers.free_obj = maxminddb_free_storage;
 #endif
+    zend_declare_class_constant_string(maxminddb_ce,
+                                       "MMDB_LIB_VERSION",
+                                       sizeof("MMDB_LIB_VERSION") - 1,
+                                       MMDB_lib_version() TSRMLS_CC);
 
     return SUCCESS;
 }
