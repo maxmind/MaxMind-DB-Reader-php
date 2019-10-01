@@ -243,6 +243,9 @@ class ReaderTest extends PHPUnit_Framework_TestCase
      */
     public function testV6AddressV4Database()
     {
+        if (defined("MaxMind\\Db\\Reader::MMDB_LIB_VERSION") && version_compare(Reader::MMDB_LIB_VERSION, '1.2.0', '<')) {
+            $this->markTestSkipped('MMDB_LIB_VERSION < 1.2.0');
+        }
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-ipv4-24.mmdb');
         $reader->get('2001::');
     }
