@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+1.5.1
+------------------
+
+* Make tests pass with older versions of libmaxminddb. PR by Remi
+  Collet. GitHub #90.
+
 1.5.0 (2019-09-30)
 ------------------
 
