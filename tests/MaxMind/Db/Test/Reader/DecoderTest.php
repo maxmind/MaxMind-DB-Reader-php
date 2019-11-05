@@ -3,12 +3,12 @@
 namespace MaxMind\Db\Test\Reader;
 
 use MaxMind\Db\Reader\Decoder;
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @coversNothing
  */
-class DecoderTest extends PHPUnit_Framework_TestCase
+class DecoderTest extends TestCase
 {
     private $arrays = [
         [

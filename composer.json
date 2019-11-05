@@ -31,5 +31,10 @@
         "psr-4": {
             "MaxMind\\Db\\": "src/MaxMind/Db"
         }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MaxMind\\Db\\Test\\Reader\\": "tests/MaxMind/Db/Test/Reader"
+        }
     }
 }
