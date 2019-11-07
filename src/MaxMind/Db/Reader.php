@@ -48,7 +48,17 @@ class Reader
             );
         }
 
-        if (!is_readable($database)) {
+        // If UNC path...
+        if (substr($database, 0, 2) === str_repeat(DIRECTORY_SEPARATOR, 2)) {
+
+            $readable = file_exists($root);
+
+        } else {
+
+            $readable = is_readable($root);
+        }
+
+        if (!readable) {
             throw new InvalidArgumentException(
                 "The file \"$database\" does not exist or is not readable."
             );
