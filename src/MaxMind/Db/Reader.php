@@ -51,14 +51,14 @@ class Reader
         // If UNC path...
         if (substr($database, 0, 2) === str_repeat(DIRECTORY_SEPARATOR, 2)) {
 
-            $readable = file_exists($root);
+            $readable = file_exists($database);
 
         } else {
 
-            $readable = is_readable($root);
+            $readable = is_readable($database);
         }
 
-        if (!readable) {
+        if (!$readable) {
             throw new InvalidArgumentException(
                 "The file \"$database\" does not exist or is not readable."
             );
