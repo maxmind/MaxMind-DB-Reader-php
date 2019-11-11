@@ -4,13 +4,13 @@ namespace MaxMind\Db\Test\Reader;
 
 use InvalidArgumentException;
 use MaxMind\Db\Reader;
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
 /**
  * @coversNothing
  */
-class ReaderTest extends PHPUnit_Framework_TestCase
+class ReaderTest extends TestCase
 {
     public function testReader()
     {
