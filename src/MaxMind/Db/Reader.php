@@ -265,19 +265,18 @@ class Reader
         $fileSize = $fstat['size'];
         $marker = self::$METADATA_START_MARKER;
         $markerLength = self::$METADATA_START_MARKER_LENGTH;
-        $metadataMaxLengthExcludingMarker
-            = min(self::$METADATA_MAX_SIZE, $fileSize) - $markerLength;
 
-        for ($i = 0; $i <= $metadataMaxLengthExcludingMarker; ++$i) {
-            for ($j = 0; $j < $markerLength; ++$j) {
-                fseek($handle, $fileSize - $i - $j - 1);
-                $matchBit = fgetc($handle);
-                if ($matchBit !== $marker[$markerLength - $j - 1]) {
-                    continue 2;
-                }
+        $minStart = $fileSize - min(self::$METADATA_MAX_SIZE + 1, $fileSize);
+
+        for ($offset = $fileSize - $markerLength - 1; $offset >= $minStart; --$offset) {
+            if (fseek($handle, $offset) !== 0) {
+                break;
             }
 
-            return $fileSize - $i;
+            $value = fread($handle, $markerLength);
+            if ($value === $marker) {
+                return $offset + $markerLength;
+            }
         }
         throw new InvalidDatabaseException(
             "Error opening database file ($filename). " .
