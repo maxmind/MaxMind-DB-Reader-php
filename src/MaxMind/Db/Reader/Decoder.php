@@ -341,8 +341,7 @@ class Decoder
             $size = 285 + $adjust;
         } elseif ($size > 30) {
             list(, $adjust) = unpack('N', "\x00" . $bytes);
-            $size = ($adjust & (0x0FFFFFFF >> (32 - (8 * $bytesToRead))))
-                + 65821;
+            $size = $adjust + 65821;
         }
 
         return [$size, $offset + $bytesToRead];
