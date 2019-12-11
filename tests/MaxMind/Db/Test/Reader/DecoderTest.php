@@ -372,7 +372,7 @@ class DecoderTest extends TestCase
         $handle = fopen('php://memory', 'rwb');
 
         foreach ($input as $byte) {
-            fwrite($handle, pack('C', $byte));
+            fwrite($handle, \chr($byte));
         }
         fseek($handle, 0);
         $decoder = new Decoder($handle, 0, true);
