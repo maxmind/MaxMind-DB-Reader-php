@@ -242,7 +242,7 @@ class Reader
     {
         $resolved = $pointer - $this->metadata->nodeCount
             + $this->metadata->searchTreeSize;
-        if ($resolved > $this->fileSize) {
+        if ($resolved >= $this->fileSize) {
             throw new InvalidDatabaseException(
                 "The MaxMind DB file's search tree is corrupt"
             );
