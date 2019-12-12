@@ -1,11 +1,13 @@
 CHANGELOG
 =========
 
-1.5.1
+1.5.1 (2019-12-12)
 ------------------
 
+* Minor performance improvements.
 * Make tests pass with older versions of libmaxminddb. PR by Remi
   Collet. GitHub #90.
+* Test enhancements. PR by Chun-Sheng, Li. GitHub #91.
 
 1.5.0 (2019-09-30)
 ------------------
