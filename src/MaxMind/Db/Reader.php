@@ -266,9 +266,9 @@ class Reader
         $marker = self::$METADATA_START_MARKER;
         $markerLength = self::$METADATA_START_MARKER_LENGTH;
 
-        $minStart = $fileSize - min(self::$METADATA_MAX_SIZE + 1, $fileSize);
+        $minStart = $fileSize - min(self::$METADATA_MAX_SIZE, $fileSize);
 
-        for ($offset = $fileSize - $markerLength - 1; $offset >= $minStart; --$offset) {
+        for ($offset = $fileSize - $markerLength; $offset >= $minStart; --$offset) {
             if (fseek($handle, $offset) !== 0) {
                 break;
             }
