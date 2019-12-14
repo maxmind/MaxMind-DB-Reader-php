@@ -163,7 +163,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
         return;
     }
 
-    MMDB_s *mmdb = (MMDB_s *)emalloc(sizeof(MMDB_s));
+    MMDB_s *mmdb = (MMDB_s *)ecalloc(1, sizeof(MMDB_s));
     uint16_t status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
 
     if (MMDB_SUCCESS != status) {
@@ -604,6 +604,7 @@ static void maxminddb_free_storage(free_obj_t *object TSRMLS_DC) {
     if (obj->mmdb != NULL) {
         MMDB_close(obj->mmdb);
         efree(obj->mmdb);
+        obj->mmdb = NULL;
     }
 
     zend_object_std_dtor(&obj->std TSRMLS_CC);
