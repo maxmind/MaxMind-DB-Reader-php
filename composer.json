@@ -20,6 +20,9 @@
         "ext-gmp": "bcmath or gmp is required for decoding larger integers with the pure PHP decoder",
         "ext-maxminddb": "A C-based database decoder that provides significantly faster lookups"
     },
+    "conflict": {
+        "ext-maxminddb": "<1.5.1,>=2.0.0"
+    },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "2.*",
         "phpunit/phpunit": "5.*",
