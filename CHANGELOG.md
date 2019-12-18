@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+1.5.2
+------------------
+
+* 1.5.0 and 1.5.1 contained a possible memory corruptions when using
+  `getWithPrefixLen`. This has been fixed. Reported by proton-ab.
+  GitHub #96.
+
 1.5.1 (2019-12-12)
 ------------------
 
