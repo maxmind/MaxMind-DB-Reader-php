@@ -163,7 +163,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
         return;
     }
 
-    MMDB_s *mmdb = (MMDB_s *)emalloc(sizeof(MMDB_s));
+    MMDB_s *mmdb = (MMDB_s *)ecalloc(1, sizeof(MMDB_s));
     uint16_t status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
 
     if (MMDB_SUCCESS != status) {
