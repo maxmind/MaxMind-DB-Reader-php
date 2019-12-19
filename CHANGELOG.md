@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.6.0
+1.6.0 (2019-12-19)
 ------------------
 
 * 1.5.0 and 1.5.1 contained a possible memory corruptions when using
