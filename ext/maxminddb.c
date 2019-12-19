@@ -79,7 +79,7 @@ typedef struct _maxminddb_obj {
 
 PHP_FUNCTION(maxminddb);
 
-static void
+static int
 get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len);
 static const MMDB_entry_data_list_s *
 handle_entry_data_list(const MMDB_entry_data_list_s *entry_data_list,
@@ -163,7 +163,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
         return;
     }
 
-    MMDB_s *mmdb = (MMDB_s *)emalloc(sizeof(MMDB_s));
+    MMDB_s *mmdb = (MMDB_s *)ecalloc(1, sizeof(MMDB_s));
     uint16_t status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
 
     if (MMDB_SUCCESS != status) {
@@ -200,7 +200,9 @@ PHP_METHOD(MaxMind_Db_Reader, getWithPrefixLen) {
 #endif
 
     int prefix_len = 0;
-    get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, record, &prefix_len);
+    if (get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, record, &prefix_len)) {
+        return;
+    }
 
     array_init(return_value);
     add_next_index_zval(return_value, record);
@@ -209,7 +211,7 @@ PHP_METHOD(MaxMind_Db_Reader, getWithPrefixLen) {
     add_next_index_zval(return_value, z_prefix_len);
 }
 
-static void
+static int
 get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     char *ip_address = NULL;
     strsize_t name_len;
@@ -224,7 +226,7 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                                      &name_len) == FAILURE) {
         THROW_EXCEPTION("InvalidArgumentException",
                         "Method takes exactly one argument.");
-        return;
+        return 1;
     }
 
     const maxminddb_obj *mmdb_obj = (maxminddb_obj *)Z_MAXMINDDB_P(getThis());
@@ -234,7 +236,7 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     if (NULL == mmdb) {
         THROW_EXCEPTION("BadMethodCallException",
                         "Attempt to read from a closed MaxMind DB.");
-        return;
+        return 1;
     }
 
     struct addrinfo hints = {
@@ -249,13 +251,13 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
         THROW_EXCEPTION("InvalidArgumentException",
                         "The value \"%s\" is not a valid IP address.",
                         ip_address);
-        return;
+        return 1;
     }
     if (!addresses || !addresses->ai_addr) {
         THROW_EXCEPTION(
             "InvalidArgumentException",
             "getaddrinfo was successful but failed to set the addrinfo");
-        return;
+        return 1;
     }
 
     int sa_family = addresses->ai_addr->sa_family;
@@ -277,7 +279,7 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                         "Error looking up %s. %s",
                         ip_address,
                         MMDB_strerror(mmdb_error));
-        return;
+        return 1;
     }
 
     *prefix_len = result.netmask;
@@ -290,7 +292,7 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
 
     if (!result.found_entry) {
         ZVAL_NULL(record);
-        return;
+        return 0;
     }
 
     MMDB_entry_data_list_s *entry_data_list = NULL;
@@ -302,17 +304,18 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                         ip_address,
                         MMDB_strerror(status));
         MMDB_free_entry_data_list(entry_data_list);
-        return;
+        return 1;
     } else if (NULL == entry_data_list) {
         THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
                         "Error while looking up data for %s. Your database may "
                         "be corrupt or you have found a bug in libmaxminddb.",
                         ip_address);
-        return;
+        return 1;
     }
 
     handle_entry_data_list(entry_data_list, record TSRMLS_CC);
     MMDB_free_entry_data_list(entry_data_list);
+    return 0;
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_maxmindbreader_void, 0, 0, 0)
