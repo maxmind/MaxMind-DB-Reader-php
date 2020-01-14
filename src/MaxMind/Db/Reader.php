@@ -48,15 +48,10 @@ class Reader
             );
         }
 
-        if (!is_readable($database)) {
-            throw new InvalidArgumentException(
-                "The file \"$database\" does not exist or is not readable."
-            );
-        }
         $this->fileHandle = @fopen($database, 'rb');
         if ($this->fileHandle === false) {
             throw new InvalidArgumentException(
-                "Error opening \"$database\"."
+                "The file \"$database\" does not exist or is not readable."
             );
         }
         $this->fileSize = @filesize($database);

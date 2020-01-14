@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+1.6.1
+------------------
+
+* Work around PHP `is_readable()` bug. Reported by Ben Roberts. GitHub
+  #92.
+
 1.6.0 (2019-12-19)
 ------------------
 
