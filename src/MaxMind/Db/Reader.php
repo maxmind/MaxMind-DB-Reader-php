@@ -20,7 +20,7 @@ class Reader
     private static $DATA_SECTION_SEPARATOR_SIZE = 16;
     private static $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
     private static $METADATA_START_MARKER_LENGTH = 14;
-    private static $METADATA_MAX_SIZE = 131072; // 128 * 1024 = 128KB
+    private static $METADATA_MAX_SIZE = 131072; // 128 * 1024 = 128KiB
 
     private $decoder;
     private $fileHandle;
