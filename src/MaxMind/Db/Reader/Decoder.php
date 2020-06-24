@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MaxMind\Db\Reader;
 
 // @codingStandardsIgnoreLine
@@ -56,8 +58,8 @@ class Decoder
 
     public function __construct(
         $fileStream,
-        $pointerBase = 0,
-        $pointerTestHack = false
+        int $pointerBase = 0,
+        bool $pointerTestHack = false
     ) {
         $this->fileStream = $fileStream;
         $this->pointerBase = $pointerBase;
@@ -68,7 +70,7 @@ class Decoder
         $this->switchByteOrder = $this->isPlatformLittleEndian();
     }
 
-    public function decode($offset)
+    public function decode(int $offset): array
     {
         $ctrlByte = \ord(Util::read($this->fileStream, $offset, 1));
         ++$offset;
@@ -113,7 +115,7 @@ class Decoder
         return $this->decodeByType($type, $offset, $size);
     }
 
-    private function decodeByType($type, $offset, $size)
+    private function decodeByType(int $type, int $offset, int $size): array
     {
         switch ($type) {
             case self::_MAP:
@@ -152,7 +154,7 @@ class Decoder
         }
     }
 
-    private function verifySize($expected, $actual)
+    private function verifySize(int $expected, int $actual): void
     {
         if ($expected !== $actual) {
             throw new InvalidDatabaseException(
@@ -161,7 +163,7 @@ class Decoder
         }
     }
 
-    private function decodeArray($size, $offset)
+    private function decodeArray(int $size, int $offset): array
     {
         $array = [];
 
@@ -173,12 +175,12 @@ class Decoder
         return [$array, $offset];
     }
 
-    private function decodeBoolean($size)
+    private function decodeBoolean(int $size): bool
     {
-        return $size === 0 ? false : true;
+        return $size !== 0;
     }
 
-    private function decodeDouble($bits)
+    private function decodeDouble(string $bits): float
     {
         // This assumes IEEE 754 doubles, but most (all?) modern platforms
         // use them.
@@ -191,7 +193,7 @@ class Decoder
         return $double;
     }
 
-    private function decodeFloat($bits)
+    private function decodeFloat(string $bits): float
     {
         // This assumes IEEE 754 floats, but most (all?) modern platforms
         // use them.
@@ -204,7 +206,7 @@ class Decoder
         return $float;
     }
 
-    private function decodeInt32($bytes, $size)
+    private function decodeInt32(string $bytes, int $size): int
     {
         switch ($size) {
             case 0:
@@ -227,7 +229,7 @@ class Decoder
         return $int;
     }
 
-    private function decodeMap($size, $offset)
+    private function decodeMap(int $size, int $offset): array
     {
         $map = [];
 
@@ -240,7 +242,7 @@ class Decoder
         return [$map, $offset];
     }
 
-    private function decodePointer($ctrlByte, $offset)
+    private function decodePointer(int $ctrlByte, int $offset): array
     {
         $pointerSize = (($ctrlByte >> 3) & 0x3) + 1;
 
@@ -289,7 +291,7 @@ class Decoder
         return [$pointer, $offset];
     }
 
-    private function decodeUint($bytes, $byteLength)
+    private function decodeUint(string $bytes, int $byteLength)
     {
         if ($byteLength === 0) {
             return 0;
@@ -304,9 +306,9 @@ class Decoder
             if ($byteLength <= _MM_MAX_INT_BYTES) {
                 $integer = ($integer << 8) + $part;
             } elseif (\extension_loaded('gmp')) {
-                $integer = gmp_strval(gmp_add(gmp_mul($integer, 256), $part));
+                $integer = gmp_strval(gmp_add(gmp_mul((string) $integer, '256'), $part));
             } elseif (\extension_loaded('bcmath')) {
-                $integer = bcadd(bcmul($integer, 256), $part);
+                $integer = bcadd(bcmul((string) $integer, '256'), (string) $part);
             } else {
                 throw new RuntimeException(
                     'The gmp or bcmath extension must be installed to read this database.'
@@ -317,7 +319,7 @@ class Decoder
         return $integer;
     }
 
-    private function sizeFromCtrlByte($ctrlByte, $offset)
+    private function sizeFromCtrlByte(int $ctrlByte, int $offset): array
     {
         $size = $ctrlByte & 0x1f;
 
@@ -341,12 +343,12 @@ class Decoder
         return [$size, $offset + $bytesToRead];
     }
 
-    private function maybeSwitchByteOrder($bytes)
+    private function maybeSwitchByteOrder(string $bytes): string
     {
         return $this->switchByteOrder ? strrev($bytes) : $bytes;
     }
 
-    private function isPlatformLittleEndian()
+    private function isPlatformLittleEndian(): bool
     {
         $testint = 0x00FF;
         $packed = pack('S', $testint);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MaxMind\Db;
 
 use BadMethodCallException;
@@ -40,7 +42,7 @@ class Reader
      *                                  if the database is invalid or there is an error reading
      *                                  from it
      */
-    public function __construct($database)
+    public function __construct(string $database)
     {
         if (\func_num_args() !== 1) {
             throw new InvalidArgumentException(
@@ -86,7 +88,7 @@ class Reader
      *
      * @return mixed the record for the IP address
      */
-    public function get($ipAddress)
+    public function get(string $ipAddress)
     {
         if (\func_num_args() !== 1) {
             throw new InvalidArgumentException(
@@ -113,7 +115,7 @@ class Reader
      * @return array an array where the first element is the record and the
      *               second the network prefix length for the record
      */
-    public function getWithPrefixLen($ipAddress)
+    public function getWithPrefixLen(string $ipAddress): array
     {
         if (\func_num_args() !== 1) {
             throw new InvalidArgumentException(
@@ -141,7 +143,7 @@ class Reader
         return [$this->resolveDataPointer($pointer), $prefixLen];
     }
 
-    private function findAddressInTree($ipAddress)
+    private function findAddressInTree(string $ipAddress): array
     {
         $rawAddress = unpack('C*', inet_pton($ipAddress));
 
@@ -184,7 +186,7 @@ class Reader
         throw new InvalidDatabaseException('Something bad happened');
     }
 
-    private function ipV4StartNode()
+    private function ipV4StartNode(): int
     {
         // If we have an IPv4 database, the start node is the first node
         if ($this->metadata->ipVersion === 4) {
@@ -200,7 +202,7 @@ class Reader
         return $node;
     }
 
-    private function readNode($nodeNumber, $index)
+    private function readNode(int $nodeNumber, int $index): int
     {
         $baseOffset = $nodeNumber * $this->metadata->nodeByteSize;
 
@@ -233,7 +235,7 @@ class Reader
         }
     }
 
-    private function resolveDataPointer($pointer)
+    private function resolveDataPointer(int $pointer)
     {
         $resolved = $pointer - $this->metadata->nodeCount
             + $this->metadata->searchTreeSize;
@@ -253,7 +255,7 @@ class Reader
      * are much faster algorithms (e.g., Boyer-Moore) for this if speed is ever
      * an issue, but I suspect it won't be.
      */
-    private function findMetadataStart($filename)
+    private function findMetadataStart(string $filename): int
     {
         $handle = $this->fileHandle;
         $fstat = fstat($handle);
@@ -285,7 +287,7 @@ class Reader
      *
      * @return Metadata object for the database
      */
-    public function metadata()
+    public function metadata(): Metadata
     {
         if (\func_num_args()) {
             throw new InvalidArgumentException(
@@ -310,7 +312,7 @@ class Reader
      * @throws Exception
      *                   if an I/O error occurs
      */
-    public function close()
+    public function close(): void
     {
         if (!\is_resource($this->fileHandle)) {
             throw new BadMethodCallException(
