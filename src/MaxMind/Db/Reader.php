@@ -35,10 +35,10 @@ class Reader
      * @param string $database
      *                         the MaxMind DB file to use
      *
-     * @throws InvalidArgumentException                    for invalid database path or unknown arguments
-     * @throws \MaxMind\Db\Reader\InvalidDatabaseException
-     *                                                     if the database is invalid or there is an error reading
-     *                                                     from it
+     * @throws InvalidArgumentException for invalid database path or unknown arguments
+     * @throws InvalidDatabaseException
+     *                                  if the database is invalid or there is an error reading
+     *                                  from it
      */
     public function __construct($database)
     {
