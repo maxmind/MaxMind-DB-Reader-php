@@ -65,14 +65,14 @@ class Decoder
         // use the size to determine the length of the pointer and then follow
         // it.
         if ($type === self::_POINTER) {
-            list($pointer, $offset) = $this->decodePointer($ctrlByte, $offset);
+            [$pointer, $offset] = $this->decodePointer($ctrlByte, $offset);
 
             // for unit testing
             if ($this->pointerTestHack) {
                 return [$pointer];
             }
 
-            list($result) = $this->decode($pointer);
+            [$result] = $this->decode($pointer);
 
             return [$result, $offset];
         }
@@ -94,7 +94,7 @@ class Decoder
             ++$offset;
         }
 
-        list($size, $offset) = $this->sizeFromCtrlByte($ctrlByte, $offset);
+        [$size, $offset] = $this->sizeFromCtrlByte($ctrlByte, $offset);
 
         return $this->decodeByType($type, $offset, $size);
     }
@@ -152,7 +152,7 @@ class Decoder
         $array = [];
 
         for ($i = 0; $i < $size; ++$i) {
-            list($value, $offset) = $this->decode($offset);
+            [$value, $offset] = $this->decode($offset);
             array_push($array, $value);
         }
 
@@ -172,7 +172,7 @@ class Decoder
         // We are not using the "E" format as that was only added in
         // 7.0.15 and 7.1.1. As such, we must switch byte order on
         // little endian machines.
-        list(, $double) = unpack('d', $this->maybeSwitchByteOrder($bits));
+        [, $double] = unpack('d', $this->maybeSwitchByteOrder($bits));
 
         return $double;
     }
@@ -185,7 +185,7 @@ class Decoder
         // We are not using the "G" format as that was only added in
         // 7.0.15 and 7.1.1. As such, we must switch byte order on
         // little endian machines.
-        list(, $float) = unpack('f', $this->maybeSwitchByteOrder($bits));
+        [, $float] = unpack('f', $this->maybeSwitchByteOrder($bits));
 
         return $float;
     }
@@ -208,7 +208,7 @@ class Decoder
                 );
         }
 
-        list(, $int) = unpack('l', $this->maybeSwitchByteOrder($bytes));
+        [, $int] = unpack('l', $this->maybeSwitchByteOrder($bytes));
 
         return $int;
     }
@@ -218,8 +218,8 @@ class Decoder
         $map = [];
 
         for ($i = 0; $i < $size; ++$i) {
-            list($key, $offset) = $this->decode($offset);
-            list($value, $offset) = $this->decode($offset);
+            [$key, $offset] = $this->decode($offset);
+            [$value, $offset] = $this->decode($offset);
             $map[$key] = $value;
         }
 
@@ -236,12 +236,12 @@ class Decoder
         switch ($pointerSize) {
             case 1:
                 $packed = \chr($ctrlByte & 0x7) . $buffer;
-                list(, $pointer) = unpack('n', $packed);
+                [, $pointer] = unpack('n', $packed);
                 $pointer += $this->pointerBase;
                 break;
             case 2:
                 $packed = "\x00" . \chr($ctrlByte & 0x7) . $buffer;
-                list(, $pointer) = unpack('N', $packed);
+                [, $pointer] = unpack('N', $packed);
                 $pointer += $this->pointerBase + 2048;
                 break;
             case 3:
@@ -249,7 +249,7 @@ class Decoder
 
                 // It is safe to use 'N' here, even on 32 bit machines as the
                 // first bit is 0.
-                list(, $pointer) = unpack('N', $packed);
+                [, $pointer] = unpack('N', $packed);
                 $pointer += $this->pointerBase + 526336;
                 break;
             case 4:
@@ -317,10 +317,10 @@ class Decoder
         if ($size === 29) {
             $size = 29 + \ord($bytes);
         } elseif ($size === 30) {
-            list(, $adjust) = unpack('n', $bytes);
+            [, $adjust] = unpack('n', $bytes);
             $size = 285 + $adjust;
         } elseif ($size > 30) {
-            list(, $adjust) = unpack('N', "\x00" . $bytes);
+            [, $adjust] = unpack('N', "\x00" . $bytes);
             $size = $adjust + 65821;
         }
 

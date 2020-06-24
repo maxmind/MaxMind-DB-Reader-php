@@ -235,7 +235,7 @@ class ReaderTest extends TestCase
 
         foreach ($tests as $test) {
             $reader = new Reader('tests/data/test-data/' . $test['dbFile']);
-            list($record, $prefixLen) = $reader->getWithPrefixLen($test['ip']);
+            [$record, $prefixLen] = $reader->getWithPrefixLen($test['ip']);
             $this->assertSame($test['expectedPrefixLength'], $prefixLen, "prefix length for {$test['ip']} on {$test['dbFile']}");
             $this->assertSame($test['expectedRecord'], $record, "record for {$test['ip']} on {$test['dbFile']}");
         }

@@ -10,7 +10,7 @@ return PhpCsFixer\Config::create()
         'concat_space' => [ 'spacing' => 'one'],
         'fopen_flags' => ['b_mode' => true],
         'heredoc_to_nowdoc' => true,
-        'list_syntax' => ['syntax' => 'long'],
+        'list_syntax' => ['syntax' => 'short'],
         'no_extra_consecutive_blank_lines' => ['break', 'continue', 'extra', 'return', 'throw', 'use', 'parenthesis_brace_block', 'square_brace_block', 'curly_brace_block'],
         'no_short_echo_tag' => true,
         'no_unreachable_default_argument_value' => true,

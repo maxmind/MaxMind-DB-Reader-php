@@ -65,7 +65,7 @@ class Reader
 
         $start = $this->findMetadataStart($database);
         $metadataDecoder = new Decoder($this->fileHandle, $start);
-        list($metadataArray) = $metadataDecoder->decode($start);
+        [$metadataArray] = $metadataDecoder->decode($start);
         $this->metadata = new Metadata($metadataArray);
         $this->decoder = new Decoder(
             $this->fileHandle,
@@ -95,7 +95,7 @@ class Reader
                 'Method takes exactly one argument.'
             );
         }
-        list($record) = $this->getWithPrefixLen($ipAddress);
+        [$record] = $this->getWithPrefixLen($ipAddress);
 
         return $record;
     }
@@ -135,7 +135,7 @@ class Reader
             );
         }
 
-        list($pointer, $prefixLen) = $this->findAddressInTree($ipAddress);
+        [$pointer, $prefixLen] = $this->findAddressInTree($ipAddress);
         if ($pointer === 0) {
             return [null, $prefixLen];
         }
@@ -209,7 +209,7 @@ class Reader
         switch ($this->metadata->recordSize) {
             case 24:
                 $bytes = Util::read($this->fileHandle, $baseOffset + $index * 3, 3);
-                list(, $node) = unpack('N', "\x00" . $bytes);
+                [, $node] = unpack('N', "\x00" . $bytes);
 
                 return $node;
             case 28:
@@ -219,12 +219,12 @@ class Reader
                 } else {
                     $middle = 0x0F & \ord($bytes[0]);
                 }
-                list(, $node) = unpack('N', \chr($middle) . substr($bytes, $index, 3));
+                [, $node] = unpack('N', \chr($middle) . substr($bytes, $index, 3));
 
                 return $node;
             case 32:
                 $bytes = Util::read($this->fileHandle, $baseOffset + $index * 4, 4);
-                list(, $node) = unpack('N', $bytes);
+                [, $node] = unpack('N', $bytes);
 
                 return $node;
             default:
@@ -245,7 +245,7 @@ class Reader
             );
         }
 
-        list($data) = $this->decoder->decode($resolved);
+        [$data] = $this->decoder->decode($resolved);
 
         return $data;
     }
