@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MaxMind\Db\Test\Reader;
 
 use MaxMind\Db\Reader\Decoder;
@@ -10,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  */
 class PointerTest extends TestCase
 {
-    public function testWithPointers()
+    public function testWithPointers(): void
     {
         $handle = fopen('tests/data/test-data/maps-with-pointers.raw', 'rb');
         $decoder = new Decoder($handle, 0);
