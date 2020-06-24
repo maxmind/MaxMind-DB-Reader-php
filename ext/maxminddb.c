@@ -271,7 +271,12 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
         return 1;
     }
 
-    handle_entry_data_list(entry_data_list, record TSRMLS_CC);
+    const MMDB_entry_data_list_s *rv =
+        handle_entry_data_list(entry_data_list, record TSRMLS_CC);
+    if (rv == NULL) {
+        // We should have already thrown the exception in handle_entry_data_list
+        return 1;
+    }
     MMDB_free_entry_data_list(entry_data_list);
     return 0;
 }
@@ -300,13 +305,15 @@ PHP_METHOD(MaxMind_Db_Reader, metadata) {
 
     object_init_ex(return_value, metadata_ce);
 
-    zval metadata_array;
-    ZVAL_NULL(&metadata_array);
-
     MMDB_entry_data_list_s *entry_data_list;
     MMDB_get_metadata_as_entry_data_list(mmdb_obj->mmdb, &entry_data_list);
 
-    handle_entry_data_list(entry_data_list, &metadata_array TSRMLS_CC);
+    zval metadata_array;
+    const MMDB_entry_data_list_s *rv =
+        handle_entry_data_list(entry_data_list, &metadata_array TSRMLS_CC);
+    if (rv == NULL) {
+        return;
+    }
     MMDB_free_entry_data_list(entry_data_list);
 #if PHP_VERSION_ID >= 80000
     zend_call_method_with_1_params(Z_OBJ_P(return_value),
@@ -417,10 +424,11 @@ handle_map(const MMDB_entry_data_list_s *entry_data_list,
 
         entry_data_list = entry_data_list->next;
         zval new_value;
-        ZVAL_NULL(&new_value);
         entry_data_list =
             handle_entry_data_list(entry_data_list, &new_value TSRMLS_CC);
-        add_assoc_zval(z_value, key, &new_value);
+        if (entry_data_list != NULL) {
+            add_assoc_zval(z_value, key, &new_value);
+        }
         efree(key);
     }
     return entry_data_list;
@@ -437,10 +445,11 @@ handle_array(const MMDB_entry_data_list_s *entry_data_list,
     for (i = 0; i < size && entry_data_list; i++) {
         entry_data_list = entry_data_list->next;
         zval new_value;
-        ZVAL_NULL(&new_value);
         entry_data_list =
             handle_entry_data_list(entry_data_list, &new_value TSRMLS_CC);
-        add_next_index_zval(z_value, &new_value);
+        if (entry_data_list != NULL) {
+            add_next_index_zval(z_value, &new_value);
+        }
     }
     return entry_data_list;
 }
