@@ -157,7 +157,7 @@ client API, please see [our support page](https://www.maxmind.com/en/support).
 
 ## Requirements  ##
 
-This library requires PHP 5.6 or greater.
+This library requires PHP 7.2 or greater.
 
 The GMP or BCMath extension may be required to read some databases
 using the pure PHP API.
