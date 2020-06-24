@@ -37,8 +37,6 @@
     ZEND_NS_NAME(PHP_MAXMINDDB_READER_NS, "InvalidDatabaseException")
 
 #define Z_MAXMINDDB_P(zv) php_maxminddb_fetch_object(Z_OBJ_P(zv))
-#define _ZVAL_STRING ZVAL_STRING
-#define _ZVAL_STRINGL ZVAL_STRINGL
 typedef size_t strsize_t;
 typedef zend_object free_obj_t;
 
@@ -157,33 +155,30 @@ PHP_METHOD(MaxMind_Db_Reader, get) {
 }
 
 PHP_METHOD(MaxMind_Db_Reader, getWithPrefixLen) {
-    zval *record, *z_prefix_len;
-    zval _record, _z_prefix_len;
-    record = &_record;
-    z_prefix_len = &_z_prefix_len;
+    zval record, z_prefix_len;
 
     int prefix_len = 0;
-    if (get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, record, &prefix_len)) {
+    if (get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, &record, &prefix_len)) {
         return;
     }
 
     array_init(return_value);
-    add_next_index_zval(return_value, record);
+    add_next_index_zval(return_value, &record);
 
-    ZVAL_LONG(z_prefix_len, prefix_len);
-    add_next_index_zval(return_value, z_prefix_len);
+    ZVAL_LONG(&z_prefix_len, prefix_len);
+    add_next_index_zval(return_value, &z_prefix_len);
 }
 
 static int
 get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     char *ip_address = NULL;
     strsize_t name_len;
-    zval *_this_zval = NULL;
+    zval *this_zval = NULL;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
                                      getThis(),
                                      "Os",
-                                     &_this_zval,
+                                     &this_zval,
                                      maxminddb_ce,
                                      &ip_address,
                                      &name_len) == FAILURE) {
@@ -305,14 +300,13 @@ PHP_METHOD(MaxMind_Db_Reader, metadata) {
 
     object_init_ex(return_value, metadata_ce);
 
-    zval _metadata_array;
-    zval *metadata_array = &_metadata_array;
-    ZVAL_NULL(metadata_array);
+    zval metadata_array;
+    ZVAL_NULL(&metadata_array);
 
     MMDB_entry_data_list_s *entry_data_list;
     MMDB_get_metadata_as_entry_data_list(mmdb_obj->mmdb, &entry_data_list);
 
-    handle_entry_data_list(entry_data_list, metadata_array TSRMLS_CC);
+    handle_entry_data_list(entry_data_list, &metadata_array TSRMLS_CC);
     MMDB_free_entry_data_list(entry_data_list);
 #if PHP_VERSION_ID >= 80000
     zend_call_method_with_1_params(Z_OBJ_P(return_value),
@@ -320,16 +314,16 @@ PHP_METHOD(MaxMind_Db_Reader, metadata) {
                                    &metadata_ce->constructor,
                                    ZEND_CONSTRUCTOR_FUNC_NAME,
                                    NULL,
-                                   metadata_array);
-    zval_ptr_dtor(metadata_array);
+                                   &metadata_array);
+    zval_ptr_dtor(&metadata_array);
 #else
     zend_call_method_with_1_params(return_value,
                                    metadata_ce,
                                    &metadata_ce->constructor,
                                    ZEND_CONSTRUCTOR_FUNC_NAME,
                                    NULL,
-                                   metadata_array);
-    zval_ptr_dtor(metadata_array);
+                                   &metadata_array);
+    zval_ptr_dtor(&metadata_array);
 #endif
 }
 
@@ -361,14 +355,14 @@ handle_entry_data_list(const MMDB_entry_data_list_s *entry_data_list,
         case MMDB_DATA_TYPE_ARRAY:
             return handle_array(entry_data_list, z_value TSRMLS_CC);
         case MMDB_DATA_TYPE_UTF8_STRING:
-            _ZVAL_STRINGL(z_value,
-                          (char *)entry_data_list->entry_data.utf8_string,
-                          entry_data_list->entry_data.data_size);
+            ZVAL_STRINGL(z_value,
+                         (char *)entry_data_list->entry_data.utf8_string,
+                         entry_data_list->entry_data.data_size);
             break;
         case MMDB_DATA_TYPE_BYTES:
-            _ZVAL_STRINGL(z_value,
-                          (char *)entry_data_list->entry_data.bytes,
-                          entry_data_list->entry_data.data_size);
+            ZVAL_STRINGL(z_value,
+                         (char *)entry_data_list->entry_data.bytes,
+                         entry_data_list->entry_data.data_size);
             break;
         case MMDB_DATA_TYPE_DOUBLE:
             ZVAL_DOUBLE(z_value, entry_data_list->entry_data.double_value);
@@ -422,12 +416,11 @@ handle_map(const MMDB_entry_data_list_s *entry_data_list,
         }
 
         entry_data_list = entry_data_list->next;
-        zval _new_value;
-        zval *new_value = &_new_value;
-        ZVAL_NULL(new_value);
+        zval new_value;
+        ZVAL_NULL(&new_value);
         entry_data_list =
-            handle_entry_data_list(entry_data_list, new_value TSRMLS_CC);
-        add_assoc_zval(z_value, key, new_value);
+            handle_entry_data_list(entry_data_list, &new_value TSRMLS_CC);
+        add_assoc_zval(z_value, key, &new_value);
         efree(key);
     }
     return entry_data_list;
@@ -443,12 +436,11 @@ handle_array(const MMDB_entry_data_list_s *entry_data_list,
     uint i;
     for (i = 0; i < size && entry_data_list; i++) {
         entry_data_list = entry_data_list->next;
-        zval _new_value;
-        zval *new_value = &_new_value;
-        ZVAL_NULL(new_value);
+        zval new_value;
+        ZVAL_NULL(&new_value);
         entry_data_list =
-            handle_entry_data_list(entry_data_list, new_value TSRMLS_CC);
-        add_next_index_zval(z_value, new_value);
+            handle_entry_data_list(entry_data_list, &new_value TSRMLS_CC);
+        add_next_index_zval(z_value, &new_value);
     }
     return entry_data_list;
 }
@@ -475,7 +467,7 @@ static void handle_uint128(const MMDB_entry_data_list_s *entry_data_list,
     spprintf(&num_str, 0, "0x%016" PRIX64 "%016" PRIX64, high, low);
     CHECK_ALLOCATED(num_str);
 
-    _ZVAL_STRING(z_value, num_str);
+    ZVAL_STRING(z_value, num_str);
     efree(num_str);
 }
 
@@ -496,7 +488,7 @@ static void handle_uint32(const MMDB_entry_data_list_s *entry_data_list,
     spprintf(&int_str, 0, "%" PRIu32, val);
     CHECK_ALLOCATED(int_str);
 
-    _ZVAL_STRING(z_value, int_str);
+    ZVAL_STRING(z_value, int_str);
     efree(int_str);
 #endif
 }
@@ -518,7 +510,7 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
     spprintf(&int_str, 0, "%" PRIu64, val);
     CHECK_ALLOCATED(int_str);
 
-    _ZVAL_STRING(z_value, int_str);
+    ZVAL_STRING(z_value, int_str);
     efree(int_str);
 #endif
 }
