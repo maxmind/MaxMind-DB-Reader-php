@@ -53,18 +53,21 @@ class Reader
             );
         }
 
-        $this->fileHandle = @fopen($database, 'rb');
-        if ($this->fileHandle === false) {
+        $fileHandle = @fopen($database, 'rb');
+        if ($fileHandle === false) {
             throw new InvalidArgumentException(
                 "The file \"$database\" does not exist or is not readable."
             );
         }
-        $this->fileSize = @filesize($database);
-        if ($this->fileSize === false) {
+        $this->fileHandle = $fileHandle;
+
+        $fileSize = @filesize($database);
+        if ($fileSize === false) {
             throw new UnexpectedValueException(
                 "Error determining the size of \"$database\"."
             );
         }
+        $this->fileSize = $fileSize;
 
         $start = $this->findMetadataStart($database);
         $metadataDecoder = new Decoder($this->fileHandle, $start);
