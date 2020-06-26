@@ -135,12 +135,6 @@ class Reader
             );
         }
 
-        if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
-            throw new InvalidArgumentException(
-                "The value \"$ipAddress\" is not a valid IP address."
-            );
-        }
-
         [$pointer, $prefixLen] = $this->findAddressInTree($ipAddress);
         if ($pointer === 0) {
             return [null, $prefixLen];
@@ -151,7 +145,14 @@ class Reader
 
     private function findAddressInTree(string $ipAddress): array
     {
-        $rawAddress = unpack('C*', inet_pton($ipAddress));
+        $packedAddr = @inet_pton($ipAddress);
+        if ($packedAddr === false) {
+            throw new InvalidArgumentException(
+                "The value \"$ipAddress\" is not a valid IP address."
+            );
+        }
+
+        $rawAddress = unpack('C*', $packedAddr);
 
         $bitCount = \count($rawAddress) * 8;
 
