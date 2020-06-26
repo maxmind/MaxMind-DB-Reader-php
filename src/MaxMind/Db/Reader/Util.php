@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MaxMind\Db\Reader;
 
 class Util
 {
-    public static function read($stream, $offset, $numberOfBytes)
+    public static function read($stream, int $offset, int $numberOfBytes): string
     {
         if ($numberOfBytes === 0) {
             return '';

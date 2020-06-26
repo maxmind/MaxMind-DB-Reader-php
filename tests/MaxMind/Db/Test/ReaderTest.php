@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MaxMind\Db\Test\Reader;
 
+use BadMethodCallException;
 use InvalidArgumentException;
 use MaxMind\Db\Reader;
+use MaxMind\Db\Reader\InvalidDatabaseException;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
@@ -12,7 +16,7 @@ use ReflectionClass;
  */
 class ReaderTest extends TestCase
 {
-    public function testReader()
+    public function testReader(): void
     {
         foreach ([24, 28, 32] as $recordSize) {
             foreach ([4, 6] as $ipVersion) {
@@ -31,7 +35,7 @@ class ReaderTest extends TestCase
         }
     }
 
-    public function testDecoder()
+    public function testDecoder(): void
     {
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
         $record = $reader->get('::1.1.1.0');
@@ -75,7 +79,7 @@ class ReaderTest extends TestCase
         );
     }
 
-    public function testZeros()
+    public function testZeros(): void
     {
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
         $record = $reader->get('::');
@@ -103,7 +107,7 @@ class ReaderTest extends TestCase
         $this->assertSame('0', $uint128);
     }
 
-    public function testMax()
+    public function testMax(): void
     {
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
         $record = $reader->get('::255.255.255.255');
@@ -124,7 +128,7 @@ class ReaderTest extends TestCase
         $this->assertSame('340282366920938463463374607431768211455', $uint128);
     }
 
-    public function testNoIpV4SearchTree()
+    public function testNoIpV4SearchTree(): void
     {
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-no-ipv4-search-tree.mmdb'
@@ -133,7 +137,7 @@ class ReaderTest extends TestCase
         $this->assertSame('::0/64', $reader->get('192.1.1.1'));
     }
 
-    public function testGetWithPrefixLen()
+    public function testGetWithPrefixLen(): void
     {
         $decoderRecord = [
             'array' => [1, 2, 3],
@@ -231,18 +235,16 @@ class ReaderTest extends TestCase
 
         foreach ($tests as $test) {
             $reader = new Reader('tests/data/test-data/' . $test['dbFile']);
-            list($record, $prefixLen) = $reader->getWithPrefixLen($test['ip']);
+            [$record, $prefixLen] = $reader->getWithPrefixLen($test['ip']);
             $this->assertSame($test['expectedPrefixLength'], $prefixLen, "prefix length for {$test['ip']} on {$test['dbFile']}");
             $this->assertSame($test['expectedRecord'], $record, "record for {$test['ip']} on {$test['dbFile']}");
         }
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Error looking up 2001::. You attempted to look up an IPv6 address in an IPv4-only database
-     */
-    public function testV6AddressV4Database()
+    public function testV6AddressV4Database(): void
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Error looking up 2001::. You attempted to look up an IPv6 address in an IPv4-only database');
         if (\defined('MaxMind\\Db\\Reader::MMDB_LIB_VERSION') && version_compare(Reader::MMDB_LIB_VERSION, '1.2.0', '<')) {
             $this->markTestSkipped('MMDB_LIB_VERSION < 1.2.0');
         }
@@ -250,80 +252,65 @@ class ReaderTest extends TestCase
         $reader->get('2001::');
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage The value "not_ip" is not a valid IP address.
-     */
-    public function testIpValidation()
+    public function testIpValidation(): void
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The value "not_ip" is not a valid IP address.');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
         $reader->get('not_ip');
     }
 
-    /**
-     * @expectedException \MaxMind\Db\Reader\InvalidDatabaseException
-     * @expectedExceptionMessage The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)
-     */
-    public function testBrokenDatabase()
+    public function testBrokenDatabase(): void
     {
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage('The MaxMind DB file\'s data section contains bad data (unknown data type or corrupt data)');
         $reader = new Reader('tests/data/test-data/GeoIP2-City-Test-Broken-Double-Format.mmdb');
         $reader->get('2001:220::');
     }
 
-    /**
-     * @expectedException \MaxMind\Db\Reader\InvalidDatabaseException
-     * @expectedExceptionMessage The MaxMind DB file's search tree is corrupt
-     */
-    public function testBrokenSearchTreePointer()
+    public function testBrokenSearchTreePointer(): void
     {
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage('The MaxMind DB file\'s search tree is corrupt');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-broken-pointers-24.mmdb');
         $reader->get('1.1.1.32');
     }
 
-    /**
-     * @expectedException \MaxMind\Db\Reader\InvalidDatabaseException
-     * @expectedExceptionMessage contains bad data
-     */
-    public function testBrokenDataPointer()
+    public function testBrokenDataPointer(): void
     {
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage('contains bad data');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-broken-pointers-24.mmdb');
         $reader->get('1.1.1.16');
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage The file "file-does-not-exist.mmdb" does not exist or is not readable.
-     */
-    public function testMissingDatabase()
+    public function testMissingDatabase(): void
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The file "file-does-not-exist.mmdb" does not exist or is not readable.');
         new Reader('file-does-not-exist.mmdb');
     }
 
-    /**
-     * @expectedException \MaxMind\Db\Reader\InvalidDatabaseException
-     * @expectedExceptionMessage Error opening database file (README.md). Is this a valid MaxMind DB file?
-     */
-    public function testNonDatabase()
+    public function testNonDatabase(): void
     {
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage('Error opening database file (README.md). Is this a valid MaxMind DB file?');
         new Reader('README.md');
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage The constructor takes exactly one argument.
-     */
-    public function testTooManyConstructorArgs()
+    public function testTooManyConstructorArgs(): void
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The constructor takes exactly one argument.');
         new Reader('README.md', 1);
     }
 
     /**
-     * @expectedException \InvalidArgumentException
-     *
      * This test only matters for the extension.
      */
-    public function testNoConstructorArgs()
+    public function testNoConstructorArgs(): void
     {
+        $this->expectException(InvalidArgumentException::class);
         if (\extension_loaded('maxminddb')) {
             new Reader();
         } else {
@@ -331,12 +318,10 @@ class ReaderTest extends TestCase
         }
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Method takes exactly one argument.
-     */
-    public function testTooManyGetAgs()
+    public function testTooManyGetAgs(): void
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Method takes exactly one argument.');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
@@ -344,12 +329,11 @@ class ReaderTest extends TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
-     *
      * This test only matters for the extension.
      */
-    public function testNoGetArgs()
+    public function testNoGetArgs(): void
     {
+        $this->expectException(InvalidArgumentException::class);
         if (\extension_loaded('maxminddb')) {
             $reader = new Reader(
                 'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
@@ -360,32 +344,30 @@ class ReaderTest extends TestCase
         }
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Method takes no arguments.
-     */
-    public function testMetadataAgs()
+    public function testMetadataAgs(): void
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Method takes no arguments.');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
         $reader->metadata('blah');
     }
 
-    public function testClose()
+    public function testClose(): void
     {
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
         $reader->close();
+
+        $this->assertTrue(true);
     }
 
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Attempt to close a closed MaxMind DB.
-     */
-    public function testDoubleClose()
+    public function testDoubleClose(): void
     {
+        $this->expectException(BadMethodCallException::class);
+        $this->expectExceptionMessage('Attempt to close a closed MaxMind DB.');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
@@ -393,12 +375,10 @@ class ReaderTest extends TestCase
         $reader->close();
     }
 
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Attempt to read from a closed MaxMind DB.
-     */
-    public function testClosedGet()
+    public function testClosedGet(): void
     {
+        $this->expectException(BadMethodCallException::class);
+        $this->expectExceptionMessage('Attempt to read from a closed MaxMind DB.');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
@@ -406,12 +386,10 @@ class ReaderTest extends TestCase
         $reader->get('1.1.1.1');
     }
 
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Attempt to read from a closed MaxMind DB.
-     */
-    public function testClosedMetadata()
+    public function testClosedMetadata(): void
     {
+        $this->expectException(BadMethodCallException::class);
+        $this->expectExceptionMessage('Attempt to read from a closed MaxMind DB.');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
@@ -419,13 +397,13 @@ class ReaderTest extends TestCase
         $reader->metadata();
     }
 
-    public function testReaderIsNotFinal()
+    public function testReaderIsNotFinal(): void
     {
         $reflectionClass = new ReflectionClass('MaxMind\Db\Reader');
         $this->assertFalse($reflectionClass->isFinal());
     }
 
-    private function checkMetadata($reader, $ipVersion, $recordSize)
+    private function checkMetadata($reader, $ipVersion, $recordSize): void
     {
         $metadata = $reader->metadata();
 
@@ -452,10 +430,10 @@ class ReaderTest extends TestCase
         $this->assertGreaterThan(200, $metadata->searchTreeSize);
     }
 
-    private function checkIpV4(Reader $reader, $fileName)
+    private function checkIpV4(Reader $reader, $fileName): void
     {
         for ($i = 0; $i <= 5; ++$i) {
-            $address = '1.1.1.' . pow(2, $i);
+            $address = '1.1.1.' . 2 ** $i;
             $this->assertSame(
                 ['ip' => $address],
                 $reader->get($address),
@@ -490,7 +468,7 @@ class ReaderTest extends TestCase
     }
 
     // XXX - logic could be combined with above
-    private function checkIpV6(Reader $reader, $fileName)
+    private function checkIpV6(Reader $reader, $fileName): void
     {
         $subnets = ['::1:ffff:ffff', '::2:0:0',
             '::2:0:40', '::2:0:50', '::2:0:58', ];

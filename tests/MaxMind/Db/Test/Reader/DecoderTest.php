@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MaxMind\Db\Test\Reader;
 
 use MaxMind\Db\Reader\Decoder;
@@ -263,9 +265,9 @@ class DecoderTest extends TestCase
 
         for ($power = 1; $power <= $bits / 8; ++$power) {
             if (\extension_loaded('gmp')) {
-                $expected = gmp_strval(gmp_sub(gmp_pow(2, 8 * $power), 1));
+                $expected = gmp_strval(gmp_sub(gmp_pow('2', 8 * $power), '1'));
             } elseif (\extension_loaded('bcmath')) {
-                $expected = bcsub(bcpow(2, 8 * $power), 1);
+                $expected = bcsub(bcpow('2', (string) (8 * $power)), '1');
             } else {
                 $this->markTestSkipped('This test requires gmp or bcmath.');
 
@@ -281,91 +283,91 @@ class DecoderTest extends TestCase
         return $uints;
     }
 
-    public function testArrays()
+    public function testArrays(): void
     {
         $this->validateTypeDecodingList('array', $this->arrays);
     }
 
-    public function testBooleans()
+    public function testBooleans(): void
     {
         $this->validateTypeDecodingList('boolean', $this->booleans);
     }
 
-    public function testBytes()
+    public function testBytes(): void
     {
         $this->validateTypeDecodingList('byte', $this->bytes());
     }
 
-    public function testDoubles()
+    public function testDoubles(): void
     {
         $this->validateTypeDecodingList('double', $this->doubles);
     }
 
-    public function testFloats()
+    public function testFloats(): void
     {
         $this->validateTypeDecodingList('float', $this->floats);
     }
 
-    public function testInt32()
+    public function testInt32(): void
     {
         $this->validateTypeDecodingList('int32', $this->int32);
     }
 
-    public function testMaps()
+    public function testMaps(): void
     {
         $this->validateTypeDecodingList('map', $this->maps);
     }
 
-    public function testPointers()
+    public function testPointers(): void
     {
         $this->validateTypeDecodingList('pointers', $this->pointers());
     }
 
-    public function testStrings()
+    public function testStrings(): void
     {
         $this->validateTypeDecodingList('utf8_string', $this->strings());
     }
 
-    public function testUint16()
+    public function testUint16(): void
     {
         $this->validateTypeDecodingList('uint16', $this->uint16);
     }
 
-    public function testUint32()
+    public function testUint32(): void
     {
         $this->validateTypeDecodingList('uint32', $this->uint32());
     }
 
-    public function testUint64()
+    public function testUint64(): void
     {
         $this->validateTypeDecoding('uint64', $this->generateLargeUint(64));
     }
 
-    public function testUint128()
+    public function testUint128(): void
     {
         $this->validateTypeDecoding('uint128', $this->generateLargeUint(128));
     }
 
-    private function validateTypeDecoding($type, $tests)
+    private function validateTypeDecoding($type, $tests): void
     {
         foreach ($tests as $expected => $input) {
             $this->checkDecoding($type, $input, $expected);
         }
     }
 
-    private function validateTypeDecodingList($type, $tests)
+    private function validateTypeDecodingList($type, $tests): void
     {
         foreach ($tests as $test) {
             $this->checkDecoding(
                 $type,
                 $test['input'],
                 $test['expected'],
-                isset($test['name']) ? $test['name'] : $test['input']
+                $test['name'] ?? $test['input']
             );
         }
     }
 
-    private function checkDecoding($type, $input, $expected, $name = null)
+    private function checkDecoding($type, $input, $expected, $name = null): void
     {
         $name = $name || $expected;
         $description = "decoded $type - $name";
@@ -376,7 +378,7 @@ class DecoderTest extends TestCase
         }
         fseek($handle, 0);
         $decoder = new Decoder($handle, 0, true);
-        list($actual) = $decoder->decode(0);
+        [$actual] = $decoder->decode(0);
 
         if ($type === 'float') {
             $actual = round($actual, 2);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MaxMind\Db\Reader;
 
 /**
@@ -64,7 +66,7 @@ class Metadata
     private $recordSize;
     private $searchTreeSize;
 
-    public function __construct($metadata)
+    public function __construct(array $metadata)
     {
         $this->binaryFormatMajorVersion =
             $metadata['binary_format_major_version'];
@@ -81,7 +83,7 @@ class Metadata
         $this->searchTreeSize = $this->nodeCount * $this->nodeByteSize;
     }
 
-    public function __get($var)
+    public function __get(string $var)
     {
         return $this->$var;
     }

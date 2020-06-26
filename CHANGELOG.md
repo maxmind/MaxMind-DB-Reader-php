@@ -1,9 +1,10 @@
 CHANGELOG
 =========
 
-1.6.1
+1.7.0
 ------------------
 
+* IMPORTANT: PHP 7.2 or greater is now required.
 * Work around PHP `is_readable()` bug. Reported by Ben Roberts. GitHub
   #92.
 
