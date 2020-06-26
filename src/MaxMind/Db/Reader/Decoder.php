@@ -319,7 +319,7 @@ class Decoder
         } elseif ($size === 30) {
             [, $adjust] = unpack('n', $bytes);
             $size = 285 + $adjust;
-        } elseif ($size > 30) {
+        } else {
             [, $adjust] = unpack('N', "\x00" . $bytes);
             $size = $adjust + 65821;
         }
