@@ -19,16 +19,19 @@ use UnexpectedValueException;
  */
 class Reader
 {
-    private static $DATA_SECTION_SEPARATOR_SIZE = 16;
-    private static $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
-    private static $METADATA_START_MARKER_LENGTH = 14;
-    private static $METADATA_MAX_SIZE = 131072; // 128 * 1024 = 128KiB
+    private static int $DATA_SECTION_SEPARATOR_SIZE = 16;
+    private static string $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
+    private static int $METADATA_START_MARKER_LENGTH = 14;
+    private static int $METADATA_MAX_SIZE = 131072; // 128 * 1024 = 128KiB
 
-    private $decoder;
+    private Decoder $decoder;
+    /**
+     * @var resource
+     */
     private $fileHandle;
-    private $fileSize;
-    private $ipV4Start;
-    private $metadata;
+    private int $fileSize;
+    private int $ipV4Start;
+    private Metadata $metadata;
 
     /**
      * Constructs a Reader for the MaxMind DB format. The file passed to it must

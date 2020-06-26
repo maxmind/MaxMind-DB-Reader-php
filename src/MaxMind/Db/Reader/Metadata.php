@@ -54,17 +54,17 @@ namespace MaxMind\Db\Reader;
  */
 class Metadata
 {
-    private $binaryFormatMajorVersion;
-    private $binaryFormatMinorVersion;
-    private $buildEpoch;
-    private $databaseType;
-    private $description;
-    private $ipVersion;
-    private $languages;
-    private $nodeByteSize;
-    private $nodeCount;
-    private $recordSize;
-    private $searchTreeSize;
+    private int $binaryFormatMajorVersion;
+    private int $binaryFormatMinorVersion;
+    private int $buildEpoch;
+    private string $databaseType;
+    private array $description;
+    private int $ipVersion;
+    private array $languages;
+    private int $nodeByteSize;
+    private int $nodeCount;
+    private int $recordSize;
+    private int $searchTreeSize;
 
     public function __construct(array $metadata)
     {

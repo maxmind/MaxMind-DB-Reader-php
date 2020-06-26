@@ -16,12 +16,15 @@ use RuntimeException;
 
 class Decoder
 {
+    /**
+     * @var resource
+     */
     private $fileStream;
-    private $pointerBase;
-    private $pointerBaseByteSize;
+    private int $pointerBase;
+    private float $pointerBaseByteSize;
     // This is only used for unit testing
-    private $pointerTestHack;
-    private $switchByteOrder;
+    private bool $pointerTestHack;
+    private bool $switchByteOrder;
 
     private const _EXTENDED = 0;
     private const _POINTER = 1;
