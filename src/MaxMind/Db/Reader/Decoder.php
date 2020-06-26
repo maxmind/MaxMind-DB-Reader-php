@@ -265,6 +265,11 @@ class Decoder
                         'The gmp or bcmath extension must be installed to read this database.'
                     );
                 }
+                break;
+            default:
+                throw new InvalidDatabaseException(
+                    'Unexpected pointer size ' . $pointerSize
+                );
         }
 
         return [$pointer, $offset];
