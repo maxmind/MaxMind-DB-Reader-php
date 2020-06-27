@@ -20,11 +20,24 @@ class Decoder
      * @var resource
      */
     private $fileStream;
-    private int $pointerBase;
-    private float $pointerBaseByteSize;
-    // This is only used for unit testing
-    private bool $pointerTestHack;
-    private bool $switchByteOrder;
+    /**
+     * @var int
+     */
+    private $pointerBase;
+    /**
+     * @var float
+     */
+    private $pointerBaseByteSize;
+    /**
+     * This is only used for unit testing.
+     *
+     * @var bool
+     */
+    private $pointerTestHack;
+    /**
+     * @var bool
+     */
+    private $switchByteOrder;
 
     private const _EXTENDED = 0;
     private const _POINTER = 1;
@@ -43,6 +56,9 @@ class Decoder
     private const _BOOLEAN = 14;
     private const _FLOAT = 15;
 
+    /**
+     * @param resource $fileStream
+     */
     public function __construct(
         $fileStream,
         int $pointerBase = 0,

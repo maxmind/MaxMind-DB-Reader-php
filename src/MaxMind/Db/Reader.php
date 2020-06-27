@@ -19,19 +19,43 @@ use UnexpectedValueException;
  */
 class Reader
 {
-    private static int $DATA_SECTION_SEPARATOR_SIZE = 16;
-    private static string $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
-    private static int $METADATA_START_MARKER_LENGTH = 14;
-    private static int $METADATA_MAX_SIZE = 131072; // 128 * 1024 = 128KiB
+    /**
+     * @var int
+     */
+    private static $DATA_SECTION_SEPARATOR_SIZE = 16;
+    /**
+     * @var string
+     */
+    private static $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
+    /**
+     * @var int
+     */
+    private static $METADATA_START_MARKER_LENGTH = 14;
+    /**
+     * @var int
+     */
+    private static $METADATA_MAX_SIZE = 131072; // 128 * 1024 = 128KiB
 
-    private Decoder $decoder;
+    /**
+     * @var Decoder
+     */
+    private $decoder;
     /**
      * @var resource
      */
     private $fileHandle;
-    private int $fileSize;
-    private int $ipV4Start;
-    private Metadata $metadata;
+    /**
+     * @var int
+     */
+    private $fileSize;
+    /**
+     * @var int
+     */
+    private $ipV4Start;
+    /**
+     * @var Metadata
+     */
+    private $metadata;
 
     /**
      * Constructs a Reader for the MaxMind DB format. The file passed to it must
@@ -242,6 +266,9 @@ class Reader
         }
     }
 
+    /**
+     * @return mixed
+     */
     private function resolveDataPointer(int $pointer)
     {
         $resolved = $pointer - $this->metadata->nodeCount

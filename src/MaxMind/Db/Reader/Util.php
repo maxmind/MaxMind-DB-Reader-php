@@ -6,6 +6,9 @@ namespace MaxMind\Db\Reader;
 
 class Util
 {
+    /**
+     * @param resource $stream
+     */
     public static function read($stream, int $offset, int $numberOfBytes): string
     {
         if ($numberOfBytes === 0) {
