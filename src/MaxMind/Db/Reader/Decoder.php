@@ -16,11 +16,27 @@ use RuntimeException;
 
 class Decoder
 {
+    /**
+     * @var resource
+     */
     private $fileStream;
+    /**
+     * @var int
+     */
     private $pointerBase;
+    /**
+     * @var float
+     */
     private $pointerBaseByteSize;
-    // This is only used for unit testing
+    /**
+     * This is only used for unit testing.
+     *
+     * @var bool
+     */
     private $pointerTestHack;
+    /**
+     * @var bool
+     */
     private $switchByteOrder;
 
     private const _EXTENDED = 0;
@@ -40,6 +56,9 @@ class Decoder
     private const _BOOLEAN = 14;
     private const _FLOAT = 15;
 
+    /**
+     * @param resource $fileStream
+     */
     public function __construct(
         $fileStream,
         int $pointerBase = 0,
@@ -256,12 +275,17 @@ class Decoder
                 } elseif (\extension_loaded('gmp')) {
                     $pointer = gmp_strval(gmp_add($pointerOffset, $this->pointerBase));
                 } elseif (\extension_loaded('bcmath')) {
-                    $pointer = bcadd($pointerOffset, $this->pointerBase);
+                    $pointer = bcadd($pointerOffset, (string) $this->pointerBase);
                 } else {
                     throw new RuntimeException(
                         'The gmp or bcmath extension must be installed to read this database.'
                     );
                 }
+                break;
+            default:
+                throw new InvalidDatabaseException(
+                    'Unexpected pointer size ' . $pointerSize
+                );
         }
 
         return [$pointer, $offset];
@@ -311,7 +335,7 @@ class Decoder
         } elseif ($size === 30) {
             [, $adjust] = unpack('n', $bytes);
             $size = 285 + $adjust;
-        } elseif ($size > 30) {
+        } else {
             [, $adjust] = unpack('N', "\x00" . $bytes);
             $size = $adjust + 65821;
         }

@@ -54,16 +54,49 @@ namespace MaxMind\Db\Reader;
  */
 class Metadata
 {
+    /**
+     * @var int
+     */
     private $binaryFormatMajorVersion;
+    /**
+     * @var int
+     */
     private $binaryFormatMinorVersion;
+    /**
+     * @var int
+     */
     private $buildEpoch;
+    /**
+     * @var string
+     */
     private $databaseType;
+    /**
+     * @var array
+     */
     private $description;
+    /**
+     * @var int
+     */
     private $ipVersion;
+    /**
+     * @var array
+     */
     private $languages;
+    /**
+     * @var int
+     */
     private $nodeByteSize;
+    /**
+     * @var int
+     */
     private $nodeCount;
+    /**
+     * @var int
+     */
     private $recordSize;
+    /**
+     * @var int
+     */
     private $searchTreeSize;
 
     public function __construct(array $metadata)
@@ -83,6 +116,9 @@ class Metadata
         $this->searchTreeSize = $this->nodeCount * $this->nodeByteSize;
     }
 
+    /**
+     * @return mixed
+     */
     public function __get(string $var)
     {
         return $this->$var;

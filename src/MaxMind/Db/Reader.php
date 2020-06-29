@@ -19,15 +19,42 @@ use UnexpectedValueException;
  */
 class Reader
 {
+    /**
+     * @var int
+     */
     private static $DATA_SECTION_SEPARATOR_SIZE = 16;
+    /**
+     * @var string
+     */
     private static $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
+    /**
+     * @var int
+     */
     private static $METADATA_START_MARKER_LENGTH = 14;
+    /**
+     * @var int
+     */
     private static $METADATA_MAX_SIZE = 131072; // 128 * 1024 = 128KiB
 
+    /**
+     * @var Decoder
+     */
     private $decoder;
+    /**
+     * @var resource
+     */
     private $fileHandle;
+    /**
+     * @var int
+     */
     private $fileSize;
+    /**
+     * @var int
+     */
     private $ipV4Start;
+    /**
+     * @var Metadata
+     */
     private $metadata;
 
     /**
@@ -50,18 +77,21 @@ class Reader
             );
         }
 
-        $this->fileHandle = @fopen($database, 'rb');
-        if ($this->fileHandle === false) {
+        $fileHandle = @fopen($database, 'rb');
+        if ($fileHandle === false) {
             throw new InvalidArgumentException(
                 "The file \"$database\" does not exist or is not readable."
             );
         }
-        $this->fileSize = @filesize($database);
-        if ($this->fileSize === false) {
+        $this->fileHandle = $fileHandle;
+
+        $fileSize = @filesize($database);
+        if ($fileSize === false) {
             throw new UnexpectedValueException(
                 "Error determining the size of \"$database\"."
             );
         }
+        $this->fileSize = $fileSize;
 
         $start = $this->findMetadataStart($database);
         $metadataDecoder = new Decoder($this->fileHandle, $start);
@@ -129,12 +159,6 @@ class Reader
             );
         }
 
-        if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
-            throw new InvalidArgumentException(
-                "The value \"$ipAddress\" is not a valid IP address."
-            );
-        }
-
         [$pointer, $prefixLen] = $this->findAddressInTree($ipAddress);
         if ($pointer === 0) {
             return [null, $prefixLen];
@@ -145,7 +169,14 @@ class Reader
 
     private function findAddressInTree(string $ipAddress): array
     {
-        $rawAddress = unpack('C*', inet_pton($ipAddress));
+        $packedAddr = @inet_pton($ipAddress);
+        if ($packedAddr === false) {
+            throw new InvalidArgumentException(
+                "The value \"$ipAddress\" is not a valid IP address."
+            );
+        }
+
+        $rawAddress = unpack('C*', $packedAddr);
 
         $bitCount = \count($rawAddress) * 8;
 
@@ -235,6 +266,9 @@ class Reader
         }
     }
 
+    /**
+     * @return mixed
+     */
     private function resolveDataPointer(int $pointer)
     {
         $resolved = $pointer - $this->metadata->nodeCount
