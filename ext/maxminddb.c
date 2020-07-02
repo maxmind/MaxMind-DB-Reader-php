@@ -21,6 +21,7 @@
 #include <zend.h>
 
 #include "Zend/zend_exceptions.h"
+#include "Zend/zend_types.h"
 #include "ext/spl/spl_exceptions.h"
 #include "ext/standard/info.h"
 #include <maxminddb.h>
@@ -53,6 +54,11 @@ typedef zend_object free_obj_t;
 #endif
 #ifndef ZEND_ACC_CTOR
 #define ZEND_ACC_CTOR 0
+#endif
+
+/* IS_MIXED was added in 2020 */
+#ifndef IS_MIXED
+#define IS_MIXED IS_UNDEF
 #endif
 
 typedef struct _maxminddb_obj {
@@ -95,8 +101,8 @@ php_maxminddb_fetch_object(zend_object *obj TSRMLS_DC) {
     return (maxminddb_obj *)((char *)(obj)-XtOffsetOf(maxminddb_obj, std));
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_maxmindbreader_construct, 0, 0, 1)
-ZEND_ARG_INFO(0, db_file)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_maxminddbreader_construct, 0, 0, 1)
+ZEND_ARG_TYPE_INFO(0, db_file, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, __construct) {
@@ -145,14 +151,20 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
     mmdb_obj->mmdb = mmdb;
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_maxmindbreader_get, 0, 0, 1)
-ZEND_ARG_INFO(0, ip_address)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(
+    arginfo_maxminddbreader_get, 0, 1, IS_MIXED, 1)
+ZEND_ARG_TYPE_INFO(0, ip_address, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, get) {
     int prefix_len = 0;
     get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, return_value, &prefix_len);
 }
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(
+    arginfo_maxminddbreader_getWithPrefixLen, 0, 1, IS_ARRAY, 1)
+ZEND_ARG_TYPE_INFO(0, ip_address, IS_STRING, 0)
+ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, getWithPrefixLen) {
     zval record, z_prefix_len;
@@ -289,7 +301,7 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     return 0;
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_maxmindbreader_void, 0, 0, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_maxminddbreader_void, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, metadata) {
@@ -571,12 +583,12 @@ static zend_object *maxminddb_create_handler(zend_class_entry *type TSRMLS_DC) {
 
 // clang-format off
 static zend_function_entry maxminddb_methods[] = {
-    PHP_ME(MaxMind_Db_Reader, __construct, arginfo_maxmindbreader_construct,
+    PHP_ME(MaxMind_Db_Reader, __construct, arginfo_maxminddbreader_construct,
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(MaxMind_Db_Reader, close, arginfo_maxmindbreader_void, ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, get, arginfo_maxmindbreader_get,  ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, getWithPrefixLen, arginfo_maxmindbreader_get,  ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, metadata, arginfo_maxmindbreader_void, ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, close, arginfo_maxminddbreader_void, ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, get, arginfo_maxminddbreader_get,  ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, getWithPrefixLen, arginfo_maxminddbreader_getWithPrefixLen,  ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, metadata, arginfo_maxminddbreader_void, ZEND_ACC_PUBLIC)
     { NULL, NULL, NULL }
 };
 // clang-format on
