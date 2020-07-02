@@ -21,6 +21,7 @@
 #include <zend.h>
 
 #include "Zend/zend_exceptions.h"
+#include "ext/spl/spl_exceptions.h"
 #include "ext/standard/info.h"
 #include <maxminddb.h>
 
@@ -86,12 +87,6 @@ static zend_class_entry *lookup_class(const char *name TSRMLS_DC);
         return;                                                                \
     }
 
-#define THROW_EXCEPTION(name, ...)                                             \
-    {                                                                          \
-        zend_class_entry *exception_ce = lookup_class(name TSRMLS_CC);         \
-        zend_throw_exception_ex(exception_ce, 0 TSRMLS_CC, __VA_ARGS__);       \
-    }
-
 static zend_object_handlers maxminddb_obj_handlers;
 static zend_class_entry *maxminddb_ce, *maxminddb_exception_ce;
 
@@ -116,16 +111,19 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
                                      maxminddb_ce,
                                      &db_file,
                                      &name_len) == FAILURE) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "The constructor takes exactly one argument.");
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException,
+                                0 TSRMLS_CC,
+                                "The constructor takes exactly one argument.");
         return;
     }
 
     if (0 != php_check_open_basedir(db_file TSRMLS_CC) ||
         0 != access(db_file, R_OK)) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "The file \"%s\" does not exist or is not readable.",
-                        db_file);
+        zend_throw_exception_ex(
+            spl_ce_InvalidArgumentException,
+            0 TSRMLS_CC,
+            "The file \"%s\" does not exist or is not readable.",
+            db_file);
         return;
     }
 
@@ -184,8 +182,9 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                                      maxminddb_ce,
                                      &ip_address,
                                      &name_len) == FAILURE) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "Method takes exactly one argument.");
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException,
+                                0 TSRMLS_CC,
+                                "Method takes exactly one argument.");
         return 1;
     }
 
@@ -194,8 +193,9 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     MMDB_s *mmdb = mmdb_obj->mmdb;
 
     if (NULL == mmdb) {
-        THROW_EXCEPTION("BadMethodCallException",
-                        "Attempt to read from a closed MaxMind DB.");
+        zend_throw_exception_ex(spl_ce_BadMethodCallException,
+                                0 TSRMLS_CC,
+                                "Attempt to read from a closed MaxMind DB.");
         return 1;
     }
 
@@ -208,14 +208,16 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     struct addrinfo *addresses = NULL;
     int gai_status = getaddrinfo(ip_address, NULL, &hints, &addresses);
     if (gai_status) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "The value \"%s\" is not a valid IP address.",
-                        ip_address);
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException,
+                                0 TSRMLS_CC,
+                                "The value \"%s\" is not a valid IP address.",
+                                ip_address);
         return 1;
     }
     if (!addresses || !addresses->ai_addr) {
-        THROW_EXCEPTION(
-            "InvalidArgumentException",
+        zend_throw_exception_ex(
+            spl_ce_InvalidArgumentException,
+            0 TSRMLS_CC,
             "getaddrinfo was successful but failed to set the addrinfo");
         return 1;
     }
@@ -229,18 +231,17 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     freeaddrinfo(addresses);
 
     if (MMDB_SUCCESS != mmdb_error) {
+        zend_class_entry *ex;
         if (MMDB_IPV6_LOOKUP_IN_IPV4_DATABASE_ERROR == mmdb_error) {
-            THROW_EXCEPTION("InvalidArgumentException",
-                            "Error looking up %s. %s",
-                            ip_address,
-                            MMDB_strerror(mmdb_error));
+            ex = spl_ce_InvalidArgumentException;
         } else {
-            zend_throw_exception_ex(maxminddb_exception_ce,
-                                    0 TSRMLS_CC,
-                                    "Error looking up %s. %s",
-                                    ip_address,
-                                    MMDB_strerror(mmdb_error));
+            ex = maxminddb_exception_ce;
         }
+        zend_throw_exception_ex(ex,
+                                0 TSRMLS_CC,
+                                "Error looking up %s. %s",
+                                ip_address,
+                                MMDB_strerror(mmdb_error));
         return 1;
     }
 
@@ -293,8 +294,9 @@ ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, metadata) {
     if (ZEND_NUM_ARGS() != 0) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "Method takes no arguments.");
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException,
+                                0 TSRMLS_CC,
+                                "Method takes no arguments.");
         return;
     }
 
@@ -302,8 +304,9 @@ PHP_METHOD(MaxMind_Db_Reader, metadata) {
         (maxminddb_obj *)Z_MAXMINDDB_P(getThis());
 
     if (NULL == mmdb_obj->mmdb) {
-        THROW_EXCEPTION("BadMethodCallException",
-                        "Attempt to read from a closed MaxMind DB.");
+        zend_throw_exception_ex(spl_ce_BadMethodCallException,
+                                0 TSRMLS_CC,
+                                "Attempt to read from a closed MaxMind DB.");
         return;
     }
 
@@ -343,16 +346,18 @@ PHP_METHOD(MaxMind_Db_Reader, metadata) {
 
 PHP_METHOD(MaxMind_Db_Reader, close) {
     if (ZEND_NUM_ARGS() != 0) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "Method takes no arguments.");
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException,
+                                0 TSRMLS_CC,
+                                "Method takes no arguments.");
         return;
     }
 
     maxminddb_obj *mmdb_obj = (maxminddb_obj *)Z_MAXMINDDB_P(getThis());
 
     if (NULL == mmdb_obj->mmdb) {
-        THROW_EXCEPTION("BadMethodCallException",
-                        "Attempt to close a closed MaxMind DB.");
+        zend_throw_exception_ex(spl_ce_BadMethodCallException,
+                                0 TSRMLS_CC,
+                                "Attempt to close a closed MaxMind DB.");
         return;
     }
     MMDB_close(mmdb_obj->mmdb);
