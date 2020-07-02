@@ -93,7 +93,7 @@ static zend_class_entry *lookup_class(const char *name TSRMLS_DC);
     }
 
 static zend_object_handlers maxminddb_obj_handlers;
-static zend_class_entry *maxminddb_ce;
+static zend_class_entry *maxminddb_ce, *maxminddb_exception_ce;
 
 static inline maxminddb_obj *
 php_maxminddb_fetch_object(zend_object *obj TSRMLS_DC) {
@@ -133,10 +133,12 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
     uint16_t status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
 
     if (MMDB_SUCCESS != status) {
-        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                        "Error opening database file (%s). Is this a valid "
-                        "MaxMind DB file?",
-                        db_file);
+        zend_throw_exception_ex(
+            maxminddb_exception_ce,
+            0 TSRMLS_CC,
+            "Error opening database file (%s). Is this a valid "
+            "MaxMind DB file?",
+            db_file);
         efree(mmdb);
         return;
     }
@@ -227,16 +229,18 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     freeaddrinfo(addresses);
 
     if (MMDB_SUCCESS != mmdb_error) {
-        char *exception_name;
         if (MMDB_IPV6_LOOKUP_IN_IPV4_DATABASE_ERROR == mmdb_error) {
-            exception_name = "InvalidArgumentException";
+            THROW_EXCEPTION("InvalidArgumentException",
+                            "Error looking up %s. %s",
+                            ip_address,
+                            MMDB_strerror(mmdb_error));
         } else {
-            exception_name = PHP_MAXMINDDB_READER_EX_NS;
+            zend_throw_exception_ex(maxminddb_exception_ce,
+                                    0 TSRMLS_CC,
+                                    "Error looking up %s. %s",
+                                    ip_address,
+                                    MMDB_strerror(mmdb_error));
         }
-        THROW_EXCEPTION(exception_name,
-                        "Error looking up %s. %s",
-                        ip_address,
-                        MMDB_strerror(mmdb_error));
         return 1;
     }
 
@@ -257,17 +261,20 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     int status = MMDB_get_entry_data_list(&result.entry, &entry_data_list);
 
     if (MMDB_SUCCESS != status) {
-        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                        "Error while looking up data for %s. %s",
-                        ip_address,
-                        MMDB_strerror(status));
+        zend_throw_exception_ex(maxminddb_exception_ce,
+                                0 TSRMLS_CC,
+                                "Error while looking up data for %s. %s",
+                                ip_address,
+                                MMDB_strerror(status));
         MMDB_free_entry_data_list(entry_data_list);
         return 1;
     } else if (NULL == entry_data_list) {
-        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                        "Error while looking up data for %s. Your database may "
-                        "be corrupt or you have found a bug in libmaxminddb.",
-                        ip_address);
+        zend_throw_exception_ex(
+            maxminddb_exception_ce,
+            0 TSRMLS_CC,
+            "Error while looking up data for %s. Your database may "
+            "be corrupt or you have found a bug in libmaxminddb.",
+            ip_address);
         return 1;
     }
 
@@ -396,9 +403,10 @@ handle_entry_data_list(const MMDB_entry_data_list_s *entry_data_list,
             ZVAL_LONG(z_value, entry_data_list->entry_data.int32);
             break;
         default:
-            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                            "Invalid data type arguments: %d",
-                            entry_data_list->entry_data.type);
+            zend_throw_exception_ex(maxminddb_exception_ce,
+                                    0 TSRMLS_CC,
+                                    "Invalid data type arguments: %d",
+                                    entry_data_list->entry_data.type);
             return NULL;
     }
     return entry_data_list;
@@ -417,8 +425,9 @@ handle_map(const MMDB_entry_data_list_s *entry_data_list,
         char *key = estrndup((char *)entry_data_list->entry_data.utf8_string,
                              entry_data_list->entry_data.data_size);
         if (NULL == key) {
-            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                            "Invalid data type arguments");
+            zend_throw_exception_ex(maxminddb_exception_ce,
+                                    0 TSRMLS_CC,
+                                    "Invalid data type arguments");
             return NULL;
         }
 
@@ -570,9 +579,14 @@ static zend_function_entry maxminddb_methods[] = {
 PHP_MINIT_FUNCTION(maxminddb) {
     zend_class_entry ce;
 
+    INIT_CLASS_ENTRY(ce, PHP_MAXMINDDB_READER_EX_NS, NULL);
+    maxminddb_exception_ce =
+        zend_register_internal_class_ex(&ce, zend_ce_exception);
+
     INIT_CLASS_ENTRY(ce, PHP_MAXMINDDB_READER_NS, maxminddb_methods);
     maxminddb_ce = zend_register_internal_class(&ce TSRMLS_CC);
     maxminddb_ce->create_object = maxminddb_create_handler;
+
     memcpy(&maxminddb_obj_handlers,
            zend_get_std_object_handlers(),
            sizeof(zend_object_handlers));
