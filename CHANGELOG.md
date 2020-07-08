@@ -5,6 +5,12 @@ CHANGELOG
 ------------------
 
 * IMPORTANT: PHP 7.2 or greater is now required.
+* The extension no longer depends on the pure PHP classes in
+  `maxmind-db/reader`. You can use it independently.
+* Type hints have been added to both the pure PHP implementation
+  and the extension.
+* The `metadata` method on the reader now returns a new copy of the
+  metadata object rather than the actual object used by the reader.
 * Work around PHP `is_readable()` bug. Reported by Ben Roberts. GitHub
   #92.
 
