@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MaxMind\Db;
 
+use ArgumentCountError;
 use BadMethodCallException;
 use Exception;
 use InvalidArgumentException;
@@ -72,8 +73,8 @@ class Reader
     public function __construct(string $database)
     {
         if (\func_num_args() !== 1) {
-            throw new InvalidArgumentException(
-                'The constructor takes exactly one argument.'
+            throw new ArgumentCountError(
+                sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
             );
         }
 
@@ -121,8 +122,8 @@ class Reader
     public function get(string $ipAddress)
     {
         if (\func_num_args() !== 1) {
-            throw new InvalidArgumentException(
-                'Method takes exactly one argument.'
+            throw new ArgumentCountError(
+                sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
             );
         }
         [$record] = $this->getWithPrefixLen($ipAddress);
@@ -148,8 +149,8 @@ class Reader
     public function getWithPrefixLen(string $ipAddress): array
     {
         if (\func_num_args() !== 1) {
-            throw new InvalidArgumentException(
-                'Method takes exactly one argument.'
+            throw new ArgumentCountError(
+                sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
             );
         }
 
@@ -324,8 +325,8 @@ class Reader
     public function metadata(): Metadata
     {
         if (\func_num_args()) {
-            throw new InvalidArgumentException(
-                'Method takes no arguments.'
+            throw new ArgumentCountError(
+                sprintf('%s() expects exactly 0 parameters, %d given', __METHOD__, \func_num_args())
             );
         }
 
@@ -348,6 +349,12 @@ class Reader
      */
     public function close(): void
     {
+        if (\func_num_args()) {
+            throw new ArgumentCountError(
+                sprintf('%s() expects exactly 0 parameters, %d given', __METHOD__, \func_num_args())
+            );
+        }
+
         if (!\is_resource($this->fileHandle)) {
             throw new BadMethodCallException(
                 'Attempt to close a closed MaxMind DB.'

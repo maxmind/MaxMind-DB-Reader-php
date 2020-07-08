@@ -54,10 +54,6 @@ class MetadataTest extends TestCase
     public function testNoConstructorArgs(): void
     {
         $this->expectException(ArgumentCountError::class);
-        if (\extension_loaded('maxminddb')) {
-            new Metadata();
-        } else {
-            throw new InvalidArgumentException();
-        }
+        new Metadata();
     }
 }

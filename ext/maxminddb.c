@@ -119,9 +119,6 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
                                      maxminddb_ce,
                                      &db_file,
                                      &name_len) == FAILURE) {
-        zend_throw_exception_ex(spl_ce_InvalidArgumentException,
-                                0 TSRMLS_CC,
-                                "The constructor takes exactly one argument.");
         return;
     }
 
@@ -196,9 +193,6 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                                      maxminddb_ce,
                                      &ip_address,
                                      &name_len) == FAILURE) {
-        zend_throw_exception_ex(spl_ce_InvalidArgumentException,
-                                0 TSRMLS_CC,
-                                "Method takes exactly one argument.");
         return 1;
     }
 
@@ -307,15 +301,18 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_maxminddbreader_void, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, metadata) {
-    if (ZEND_NUM_ARGS() != 0) {
-        zend_throw_exception_ex(spl_ce_InvalidArgumentException,
-                                0 TSRMLS_CC,
-                                "Method takes no arguments.");
+    zval *this_zval = NULL;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                                     getThis(),
+                                     "O",
+                                     &this_zval,
+                                     maxminddb_ce) == FAILURE) {
         return;
     }
 
     const maxminddb_obj *const mmdb_obj =
-        (maxminddb_obj *)Z_MAXMINDDB_P(getThis());
+        (maxminddb_obj *)Z_MAXMINDDB_P(this_zval);
 
     if (NULL == mmdb_obj->mmdb) {
         zend_throw_exception_ex(spl_ce_BadMethodCallException,
@@ -359,14 +356,17 @@ PHP_METHOD(MaxMind_Db_Reader, metadata) {
 }
 
 PHP_METHOD(MaxMind_Db_Reader, close) {
-    if (ZEND_NUM_ARGS() != 0) {
-        zend_throw_exception_ex(spl_ce_InvalidArgumentException,
-                                0 TSRMLS_CC,
-                                "Method takes no arguments.");
+    zval *this_zval = NULL;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                                     getThis(),
+                                     "O",
+                                     &this_zval,
+                                     maxminddb_ce) == FAILURE) {
         return;
     }
 
-    maxminddb_obj *mmdb_obj = (maxminddb_obj *)Z_MAXMINDDB_P(getThis());
+    maxminddb_obj *mmdb_obj = (maxminddb_obj *)Z_MAXMINDDB_P(this_zval);
 
     if (NULL == mmdb_obj->mmdb) {
         zend_throw_exception_ex(spl_ce_BadMethodCallException,
@@ -594,7 +594,6 @@ static zend_function_entry maxminddb_methods[] = {
     { NULL, NULL, NULL }
 };
 // clang-format on
-
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_metadata_construct, 0, 0, 1)
 ZEND_ARG_TYPE_INFO(0, metadata, IS_ARRAY, 0)
