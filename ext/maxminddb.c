@@ -87,7 +87,6 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC);
 static void handle_uint32(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC);
-static zend_class_entry *lookup_class(const char *name TSRMLS_DC);
 
 #define CHECK_ALLOCATED(val)                                                   \
     if (!val) {                                                                \
@@ -321,9 +320,6 @@ PHP_METHOD(MaxMind_Db_Reader, metadata) {
         return;
     }
 
-    const char *const name = ZEND_NS_NAME(PHP_MAXMINDDB_READER_NS, "Metadata");
-    zend_class_entry *metadata_ce = lookup_class(name TSRMLS_CC);
-
     object_init_ex(return_value, metadata_ce);
 
     MMDB_entry_data_list_s *entry_data_list;
@@ -550,16 +546,6 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
     ZVAL_STRING(z_value, int_str);
     efree(int_str);
 #endif
-}
-
-static zend_class_entry *lookup_class(const char *name TSRMLS_DC) {
-    zend_string *n = zend_string_init(name, strlen(name), 0);
-    zend_class_entry *ce = zend_lookup_class(n);
-    zend_string_release(n);
-    if (NULL == ce) {
-        zend_error(E_ERROR, "Class %s not found", name);
-    }
-    return ce;
 }
 
 static void maxminddb_free_storage(free_obj_t *object TSRMLS_DC) {
