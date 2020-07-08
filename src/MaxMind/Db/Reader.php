@@ -338,7 +338,7 @@ class Reader
             );
         }
 
-        return $this->metadata;
+        return clone $this->metadata;
     }
 
     /**
