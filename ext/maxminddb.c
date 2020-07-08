@@ -35,6 +35,8 @@
 
 #define PHP_MAXMINDDB_NS ZEND_NS_NAME("MaxMind", "Db")
 #define PHP_MAXMINDDB_READER_NS ZEND_NS_NAME(PHP_MAXMINDDB_NS, "Reader")
+#define PHP_MAXMINDDB_METADATA_NS                                              \
+    ZEND_NS_NAME(PHP_MAXMINDDB_READER_NS, "Metadata")
 #define PHP_MAXMINDDB_READER_EX_NS                                             \
     ZEND_NS_NAME(PHP_MAXMINDDB_READER_NS, "InvalidDatabaseException")
 
@@ -94,7 +96,7 @@ static zend_class_entry *lookup_class(const char *name TSRMLS_DC);
     }
 
 static zend_object_handlers maxminddb_obj_handlers;
-static zend_class_entry *maxminddb_ce, *maxminddb_exception_ce;
+static zend_class_entry *maxminddb_ce, *maxminddb_exception_ce, *metadata_ce;
 
 static inline maxminddb_obj *
 php_maxminddb_fetch_object(zend_object *obj TSRMLS_DC) {
@@ -593,6 +595,128 @@ static zend_function_entry maxminddb_methods[] = {
 };
 // clang-format on
 
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_metadata_construct, 0, 0, 1)
+ZEND_ARG_TYPE_INFO(0, metadata, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(MaxMind_Db_Reader_Metadata, __construct) {
+    zval *object = NULL;
+    zval *metadata_array = NULL;
+    zend_long node_count = 0;
+    zend_long record_size = 0;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                                     getThis(),
+                                     "Oa",
+                                     &object,
+                                     metadata_ce,
+                                     &metadata_array) == FAILURE) {
+        return;
+    }
+
+    zval *tmp = NULL;
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "binary_format_major_version",
+                                  sizeof("binary_format_major_version") - 1))) {
+        zend_update_property(metadata_ce,
+                             object,
+                             "binaryFormatMajorVersion",
+                             sizeof("binaryFormatMajorVersion") - 1,
+                             tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "binary_format_minor_version",
+                                  sizeof("binary_format_minor_version") - 1))) {
+        zend_update_property(metadata_ce,
+                             object,
+                             "binaryFormatMinorVersion",
+                             sizeof("binaryFormatMinorVersion") - 1,
+                             tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "build_epoch",
+                                  sizeof("build_epoch") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "buildEpoch", sizeof("buildEpoch") - 1, tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "database_type",
+                                  sizeof("database_type") - 1))) {
+        zend_update_property(metadata_ce,
+                             object,
+                             "databaseType",
+                             sizeof("databaseType") - 1,
+                             tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "description",
+                                  sizeof("description") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "description", sizeof("description") - 1, tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "ip_version",
+                                  sizeof("ip_version") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "ipVersion", sizeof("ipVersion") - 1, tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(
+             HASH_OF(metadata_array), "languages", sizeof("languages") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "languages", sizeof("languages") - 1, tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "record_size",
+                                  sizeof("record_size") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "recordSize", sizeof("recordSize") - 1, tmp);
+        if (Z_TYPE_P(tmp) == IS_LONG) {
+            record_size = Z_LVAL_P(tmp);
+        }
+    }
+
+    if (record_size != 0) {
+        zend_update_property_long(metadata_ce,
+                                  object,
+                                  "nodeByteSize",
+                                  sizeof("nodeByteSize") - 1,
+                                  record_size / 4);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "node_count",
+                                  sizeof("node_count") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "nodeCount", sizeof("nodeCount") - 1, tmp);
+        if (Z_TYPE_P(tmp) == IS_LONG) {
+            node_count = Z_LVAL_P(tmp);
+        }
+    }
+
+    if (record_size != 0) {
+        zend_update_property_long(metadata_ce,
+                                  object,
+                                  "searchTreeSize",
+                                  sizeof("searchTreeSize") - 1,
+                                  record_size * node_count / 4);
+    }
+}
+
+static zend_function_entry metadata_methods[] = {
+    PHP_ME(MaxMind_Db_Reader_Metadata,
+           __construct,
+           arginfo_metadata_construct,
+           ZEND_ACC_PUBLIC | ZEND_ACC_CTOR){NULL, NULL, NULL}};
+// clang-format on
+
 PHP_MINIT_FUNCTION(maxminddb) {
     zend_class_entry ce;
 
@@ -603,6 +727,41 @@ PHP_MINIT_FUNCTION(maxminddb) {
     INIT_CLASS_ENTRY(ce, PHP_MAXMINDDB_READER_NS, maxminddb_methods);
     maxminddb_ce = zend_register_internal_class(&ce TSRMLS_CC);
     maxminddb_ce->create_object = maxminddb_create_handler;
+
+    INIT_CLASS_ENTRY(ce, PHP_MAXMINDDB_METADATA_NS, metadata_methods);
+    metadata_ce = zend_register_internal_class(&ce TSRMLS_CC);
+    zend_declare_property_null(metadata_ce,
+                               "binaryFormatMajorVersion",
+                               sizeof("binaryFormatMajorVersion") - 1,
+                               ZEND_ACC_PUBLIC);
+    zend_declare_property_null(metadata_ce,
+                               "binaryFormatMinorVersion",
+                               sizeof("binaryFormatMinorVersion") - 1,
+                               ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "buildEpoch", sizeof("buildEpoch") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(metadata_ce,
+                               "databaseType",
+                               sizeof("databaseType") - 1,
+                               ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "description", sizeof("description") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "ipVersion", sizeof("ipVersion") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "languages", sizeof("languages") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(metadata_ce,
+                               "nodeByteSize",
+                               sizeof("nodeByteSize") - 1,
+                               ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "nodeCount", sizeof("nodeCount") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "recordSize", sizeof("recordSize") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(metadata_ce,
+                               "searchTreeSize",
+                               sizeof("searchTreeSize") - 1,
+                               ZEND_ACC_PUBLIC);
 
     memcpy(&maxminddb_obj_handlers,
            zend_get_std_object_handlers(),
