@@ -21,6 +21,8 @@
 #include <zend.h>
 
 #include "Zend/zend_exceptions.h"
+#include "Zend/zend_types.h"
+#include "ext/spl/spl_exceptions.h"
 #include "ext/standard/info.h"
 #include <maxminddb.h>
 
@@ -33,6 +35,8 @@
 
 #define PHP_MAXMINDDB_NS ZEND_NS_NAME("MaxMind", "Db")
 #define PHP_MAXMINDDB_READER_NS ZEND_NS_NAME(PHP_MAXMINDDB_NS, "Reader")
+#define PHP_MAXMINDDB_METADATA_NS                                              \
+    ZEND_NS_NAME(PHP_MAXMINDDB_READER_NS, "Metadata")
 #define PHP_MAXMINDDB_READER_EX_NS                                             \
     ZEND_NS_NAME(PHP_MAXMINDDB_READER_NS, "InvalidDatabaseException")
 
@@ -52,6 +56,11 @@ typedef zend_object free_obj_t;
 #endif
 #ifndef ZEND_ACC_CTOR
 #define ZEND_ACC_CTOR 0
+#endif
+
+/* IS_MIXED was added in 2020 */
+#ifndef IS_MIXED
+#define IS_MIXED IS_UNDEF
 #endif
 
 typedef struct _maxminddb_obj {
@@ -78,7 +87,6 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC);
 static void handle_uint32(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC);
-static zend_class_entry *lookup_class(const char *name TSRMLS_DC);
 
 #define CHECK_ALLOCATED(val)                                                   \
     if (!val) {                                                                \
@@ -86,22 +94,16 @@ static zend_class_entry *lookup_class(const char *name TSRMLS_DC);
         return;                                                                \
     }
 
-#define THROW_EXCEPTION(name, ...)                                             \
-    {                                                                          \
-        zend_class_entry *exception_ce = lookup_class(name TSRMLS_CC);         \
-        zend_throw_exception_ex(exception_ce, 0 TSRMLS_CC, __VA_ARGS__);       \
-    }
-
 static zend_object_handlers maxminddb_obj_handlers;
-static zend_class_entry *maxminddb_ce;
+static zend_class_entry *maxminddb_ce, *maxminddb_exception_ce, *metadata_ce;
 
 static inline maxminddb_obj *
 php_maxminddb_fetch_object(zend_object *obj TSRMLS_DC) {
     return (maxminddb_obj *)((char *)(obj)-XtOffsetOf(maxminddb_obj, std));
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_maxmindbreader_construct, 0, 0, 1)
-ZEND_ARG_INFO(0, db_file)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_maxminddbreader_construct, 0, 0, 1)
+ZEND_ARG_TYPE_INFO(0, db_file, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, __construct) {
@@ -116,16 +118,16 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
                                      maxminddb_ce,
                                      &db_file,
                                      &name_len) == FAILURE) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "The constructor takes exactly one argument.");
         return;
     }
 
     if (0 != php_check_open_basedir(db_file TSRMLS_CC) ||
         0 != access(db_file, R_OK)) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "The file \"%s\" does not exist or is not readable.",
-                        db_file);
+        zend_throw_exception_ex(
+            spl_ce_InvalidArgumentException,
+            0 TSRMLS_CC,
+            "The file \"%s\" does not exist or is not readable.",
+            db_file);
         return;
     }
 
@@ -133,10 +135,12 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
     uint16_t status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
 
     if (MMDB_SUCCESS != status) {
-        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                        "Error opening database file (%s). Is this a valid "
-                        "MaxMind DB file?",
-                        db_file);
+        zend_throw_exception_ex(
+            maxminddb_exception_ce,
+            0 TSRMLS_CC,
+            "Error opening database file (%s). Is this a valid "
+            "MaxMind DB file?",
+            db_file);
         efree(mmdb);
         return;
     }
@@ -145,14 +149,20 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
     mmdb_obj->mmdb = mmdb;
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_maxmindbreader_get, 0, 0, 1)
-ZEND_ARG_INFO(0, ip_address)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(
+    arginfo_maxminddbreader_get, 0, 1, IS_MIXED, 1)
+ZEND_ARG_TYPE_INFO(0, ip_address, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, get) {
     int prefix_len = 0;
     get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, return_value, &prefix_len);
 }
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(
+    arginfo_maxminddbreader_getWithPrefixLen, 0, 1, IS_ARRAY, 1)
+ZEND_ARG_TYPE_INFO(0, ip_address, IS_STRING, 0)
+ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, getWithPrefixLen) {
     zval record, z_prefix_len;
@@ -182,8 +192,6 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                                      maxminddb_ce,
                                      &ip_address,
                                      &name_len) == FAILURE) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "Method takes exactly one argument.");
         return 1;
     }
 
@@ -192,8 +200,9 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     MMDB_s *mmdb = mmdb_obj->mmdb;
 
     if (NULL == mmdb) {
-        THROW_EXCEPTION("BadMethodCallException",
-                        "Attempt to read from a closed MaxMind DB.");
+        zend_throw_exception_ex(spl_ce_BadMethodCallException,
+                                0 TSRMLS_CC,
+                                "Attempt to read from a closed MaxMind DB.");
         return 1;
     }
 
@@ -206,14 +215,16 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     struct addrinfo *addresses = NULL;
     int gai_status = getaddrinfo(ip_address, NULL, &hints, &addresses);
     if (gai_status) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "The value \"%s\" is not a valid IP address.",
-                        ip_address);
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException,
+                                0 TSRMLS_CC,
+                                "The value \"%s\" is not a valid IP address.",
+                                ip_address);
         return 1;
     }
     if (!addresses || !addresses->ai_addr) {
-        THROW_EXCEPTION(
-            "InvalidArgumentException",
+        zend_throw_exception_ex(
+            spl_ce_InvalidArgumentException,
+            0 TSRMLS_CC,
             "getaddrinfo was successful but failed to set the addrinfo");
         return 1;
     }
@@ -227,16 +238,17 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     freeaddrinfo(addresses);
 
     if (MMDB_SUCCESS != mmdb_error) {
-        char *exception_name;
+        zend_class_entry *ex;
         if (MMDB_IPV6_LOOKUP_IN_IPV4_DATABASE_ERROR == mmdb_error) {
-            exception_name = "InvalidArgumentException";
+            ex = spl_ce_InvalidArgumentException;
         } else {
-            exception_name = PHP_MAXMINDDB_READER_EX_NS;
+            ex = maxminddb_exception_ce;
         }
-        THROW_EXCEPTION(exception_name,
-                        "Error looking up %s. %s",
-                        ip_address,
-                        MMDB_strerror(mmdb_error));
+        zend_throw_exception_ex(ex,
+                                0 TSRMLS_CC,
+                                "Error looking up %s. %s",
+                                ip_address,
+                                MMDB_strerror(mmdb_error));
         return 1;
     }
 
@@ -257,17 +269,20 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     int status = MMDB_get_entry_data_list(&result.entry, &entry_data_list);
 
     if (MMDB_SUCCESS != status) {
-        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                        "Error while looking up data for %s. %s",
-                        ip_address,
-                        MMDB_strerror(status));
+        zend_throw_exception_ex(maxminddb_exception_ce,
+                                0 TSRMLS_CC,
+                                "Error while looking up data for %s. %s",
+                                ip_address,
+                                MMDB_strerror(status));
         MMDB_free_entry_data_list(entry_data_list);
         return 1;
     } else if (NULL == entry_data_list) {
-        THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                        "Error while looking up data for %s. Your database may "
-                        "be corrupt or you have found a bug in libmaxminddb.",
-                        ip_address);
+        zend_throw_exception_ex(
+            maxminddb_exception_ce,
+            0 TSRMLS_CC,
+            "Error while looking up data for %s. Your database may "
+            "be corrupt or you have found a bug in libmaxminddb.",
+            ip_address);
         return 1;
     }
 
@@ -281,27 +296,29 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
     return 0;
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_maxmindbreader_void, 0, 0, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_maxminddbreader_void, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(MaxMind_Db_Reader, metadata) {
-    if (ZEND_NUM_ARGS() != 0) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "Method takes no arguments.");
+    zval *this_zval = NULL;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                                     getThis(),
+                                     "O",
+                                     &this_zval,
+                                     maxminddb_ce) == FAILURE) {
         return;
     }
 
     const maxminddb_obj *const mmdb_obj =
-        (maxminddb_obj *)Z_MAXMINDDB_P(getThis());
+        (maxminddb_obj *)Z_MAXMINDDB_P(this_zval);
 
     if (NULL == mmdb_obj->mmdb) {
-        THROW_EXCEPTION("BadMethodCallException",
-                        "Attempt to read from a closed MaxMind DB.");
+        zend_throw_exception_ex(spl_ce_BadMethodCallException,
+                                0 TSRMLS_CC,
+                                "Attempt to read from a closed MaxMind DB.");
         return;
     }
-
-    const char *const name = ZEND_NS_NAME(PHP_MAXMINDDB_READER_NS, "Metadata");
-    zend_class_entry *metadata_ce = lookup_class(name TSRMLS_CC);
 
     object_init_ex(return_value, metadata_ce);
 
@@ -335,17 +352,22 @@ PHP_METHOD(MaxMind_Db_Reader, metadata) {
 }
 
 PHP_METHOD(MaxMind_Db_Reader, close) {
-    if (ZEND_NUM_ARGS() != 0) {
-        THROW_EXCEPTION("InvalidArgumentException",
-                        "Method takes no arguments.");
+    zval *this_zval = NULL;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                                     getThis(),
+                                     "O",
+                                     &this_zval,
+                                     maxminddb_ce) == FAILURE) {
         return;
     }
 
-    maxminddb_obj *mmdb_obj = (maxminddb_obj *)Z_MAXMINDDB_P(getThis());
+    maxminddb_obj *mmdb_obj = (maxminddb_obj *)Z_MAXMINDDB_P(this_zval);
 
     if (NULL == mmdb_obj->mmdb) {
-        THROW_EXCEPTION("BadMethodCallException",
-                        "Attempt to close a closed MaxMind DB.");
+        zend_throw_exception_ex(spl_ce_BadMethodCallException,
+                                0 TSRMLS_CC,
+                                "Attempt to close a closed MaxMind DB.");
         return;
     }
     MMDB_close(mmdb_obj->mmdb);
@@ -396,9 +418,10 @@ handle_entry_data_list(const MMDB_entry_data_list_s *entry_data_list,
             ZVAL_LONG(z_value, entry_data_list->entry_data.int32);
             break;
         default:
-            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                            "Invalid data type arguments: %d",
-                            entry_data_list->entry_data.type);
+            zend_throw_exception_ex(maxminddb_exception_ce,
+                                    0 TSRMLS_CC,
+                                    "Invalid data type arguments: %d",
+                                    entry_data_list->entry_data.type);
             return NULL;
     }
     return entry_data_list;
@@ -417,8 +440,9 @@ handle_map(const MMDB_entry_data_list_s *entry_data_list,
         char *key = estrndup((char *)entry_data_list->entry_data.utf8_string,
                              entry_data_list->entry_data.data_size);
         if (NULL == key) {
-            THROW_EXCEPTION(PHP_MAXMINDDB_READER_EX_NS,
-                            "Invalid data type arguments");
+            zend_throw_exception_ex(maxminddb_exception_ce,
+                                    0 TSRMLS_CC,
+                                    "Invalid data type arguments");
             return NULL;
         }
 
@@ -524,16 +548,6 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
 #endif
 }
 
-static zend_class_entry *lookup_class(const char *name TSRMLS_DC) {
-    zend_string *n = zend_string_init(name, strlen(name), 0);
-    zend_class_entry *ce = zend_lookup_class(n);
-    zend_string_release(n);
-    if (NULL == ce) {
-        zend_error(E_ERROR, "Class %s not found", name);
-    }
-    return ce;
-}
-
 static void maxminddb_free_storage(free_obj_t *object TSRMLS_DC) {
     maxminddb_obj *obj =
         php_maxminddb_fetch_object((zend_object *)object TSRMLS_CC);
@@ -557,22 +571,183 @@ static zend_object *maxminddb_create_handler(zend_class_entry *type TSRMLS_DC) {
 
 // clang-format off
 static zend_function_entry maxminddb_methods[] = {
-    PHP_ME(MaxMind_Db_Reader, __construct, arginfo_maxmindbreader_construct,
+    PHP_ME(MaxMind_Db_Reader, __construct, arginfo_maxminddbreader_construct,
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(MaxMind_Db_Reader, close, arginfo_maxmindbreader_void, ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, get, arginfo_maxmindbreader_get,  ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, getWithPrefixLen, arginfo_maxmindbreader_get,  ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, metadata, arginfo_maxmindbreader_void, ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, close, arginfo_maxminddbreader_void, ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, get, arginfo_maxminddbreader_get,  ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, getWithPrefixLen, arginfo_maxminddbreader_getWithPrefixLen,  ZEND_ACC_PUBLIC)
+    PHP_ME(MaxMind_Db_Reader, metadata, arginfo_maxminddbreader_void, ZEND_ACC_PUBLIC)
     { NULL, NULL, NULL }
+};
+// clang-format on
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_metadata_construct, 0, 0, 1)
+ZEND_ARG_TYPE_INFO(0, metadata, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(MaxMind_Db_Reader_Metadata, __construct) {
+    zval *object = NULL;
+    zval *metadata_array = NULL;
+    zend_long node_count = 0;
+    zend_long record_size = 0;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                                     getThis(),
+                                     "Oa",
+                                     &object,
+                                     metadata_ce,
+                                     &metadata_array) == FAILURE) {
+        return;
+    }
+
+    zval *tmp = NULL;
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "binary_format_major_version",
+                                  sizeof("binary_format_major_version") - 1))) {
+        zend_update_property(metadata_ce,
+                             object,
+                             "binaryFormatMajorVersion",
+                             sizeof("binaryFormatMajorVersion") - 1,
+                             tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "binary_format_minor_version",
+                                  sizeof("binary_format_minor_version") - 1))) {
+        zend_update_property(metadata_ce,
+                             object,
+                             "binaryFormatMinorVersion",
+                             sizeof("binaryFormatMinorVersion") - 1,
+                             tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "build_epoch",
+                                  sizeof("build_epoch") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "buildEpoch", sizeof("buildEpoch") - 1, tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "database_type",
+                                  sizeof("database_type") - 1))) {
+        zend_update_property(metadata_ce,
+                             object,
+                             "databaseType",
+                             sizeof("databaseType") - 1,
+                             tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "description",
+                                  sizeof("description") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "description", sizeof("description") - 1, tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "ip_version",
+                                  sizeof("ip_version") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "ipVersion", sizeof("ipVersion") - 1, tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(
+             HASH_OF(metadata_array), "languages", sizeof("languages") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "languages", sizeof("languages") - 1, tmp);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "record_size",
+                                  sizeof("record_size") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "recordSize", sizeof("recordSize") - 1, tmp);
+        if (Z_TYPE_P(tmp) == IS_LONG) {
+            record_size = Z_LVAL_P(tmp);
+        }
+    }
+
+    if (record_size != 0) {
+        zend_update_property_long(metadata_ce,
+                                  object,
+                                  "nodeByteSize",
+                                  sizeof("nodeByteSize") - 1,
+                                  record_size / 4);
+    }
+
+    if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
+                                  "node_count",
+                                  sizeof("node_count") - 1))) {
+        zend_update_property(
+            metadata_ce, object, "nodeCount", sizeof("nodeCount") - 1, tmp);
+        if (Z_TYPE_P(tmp) == IS_LONG) {
+            node_count = Z_LVAL_P(tmp);
+        }
+    }
+
+    if (record_size != 0) {
+        zend_update_property_long(metadata_ce,
+                                  object,
+                                  "searchTreeSize",
+                                  sizeof("searchTreeSize") - 1,
+                                  record_size * node_count / 4);
+    }
+}
+
+// clang-format off
+static zend_function_entry metadata_methods[] = {
+    PHP_ME(MaxMind_Db_Reader_Metadata, __construct, arginfo_metadata_construct, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
+    {NULL, NULL, NULL}
 };
 // clang-format on
 
 PHP_MINIT_FUNCTION(maxminddb) {
     zend_class_entry ce;
 
+    INIT_CLASS_ENTRY(ce, PHP_MAXMINDDB_READER_EX_NS, NULL);
+    maxminddb_exception_ce =
+        zend_register_internal_class_ex(&ce, zend_ce_exception);
+
     INIT_CLASS_ENTRY(ce, PHP_MAXMINDDB_READER_NS, maxminddb_methods);
     maxminddb_ce = zend_register_internal_class(&ce TSRMLS_CC);
     maxminddb_ce->create_object = maxminddb_create_handler;
+
+    INIT_CLASS_ENTRY(ce, PHP_MAXMINDDB_METADATA_NS, metadata_methods);
+    metadata_ce = zend_register_internal_class(&ce TSRMLS_CC);
+    zend_declare_property_null(metadata_ce,
+                               "binaryFormatMajorVersion",
+                               sizeof("binaryFormatMajorVersion") - 1,
+                               ZEND_ACC_PUBLIC);
+    zend_declare_property_null(metadata_ce,
+                               "binaryFormatMinorVersion",
+                               sizeof("binaryFormatMinorVersion") - 1,
+                               ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "buildEpoch", sizeof("buildEpoch") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(metadata_ce,
+                               "databaseType",
+                               sizeof("databaseType") - 1,
+                               ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "description", sizeof("description") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "ipVersion", sizeof("ipVersion") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "languages", sizeof("languages") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(metadata_ce,
+                               "nodeByteSize",
+                               sizeof("nodeByteSize") - 1,
+                               ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "nodeCount", sizeof("nodeCount") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(
+        metadata_ce, "recordSize", sizeof("recordSize") - 1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(metadata_ce,
+                               "searchTreeSize",
+                               sizeof("searchTreeSize") - 1,
+                               ZEND_ACC_PUBLIC);
+
     memcpy(&maxminddb_obj_handlers,
            zend_get_std_object_handlers(),
            sizeof(zend_object_handlers));

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MaxMind\Db\Test\Reader;
 
+use ArgumentCountError;
 use BadMethodCallException;
 use InvalidArgumentException;
 use MaxMind\Db\Reader;
@@ -300,8 +301,8 @@ class ReaderTest extends TestCase
 
     public function testTooManyConstructorArgs(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The constructor takes exactly one argument.');
+        $this->expectException(ArgumentCountError::class);
+        $this->expectExceptionMessage('MaxMind\Db\Reader::__construct() expects exactly 1 parameter, 2 given');
         new Reader('README.md', 1);
     }
 
@@ -310,18 +311,14 @@ class ReaderTest extends TestCase
      */
     public function testNoConstructorArgs(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        if (\extension_loaded('maxminddb')) {
-            new Reader();
-        } else {
-            throw new InvalidArgumentException();
-        }
+        $this->expectException(ArgumentCountError::class);
+        new Reader();
     }
 
-    public function testTooManyGetAgs(): void
+    public function testTooManyGetArgs(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Method takes exactly one argument.');
+        $this->expectException(ArgumentCountError::class);
+        $this->expectExceptionMessage('MaxMind\Db\Reader::get() expects exactly 1 parameter, 2 given');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
@@ -333,21 +330,17 @@ class ReaderTest extends TestCase
      */
     public function testNoGetArgs(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        if (\extension_loaded('maxminddb')) {
-            $reader = new Reader(
+        $this->expectException(ArgumentCountError::class);
+        $reader = new Reader(
                 'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
             );
-            $reader->get();
-        } else {
-            throw new InvalidArgumentException();
-        }
+        $reader->get();
     }
 
-    public function testMetadataAgs(): void
+    public function testMetadataArgs(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Method takes no arguments.');
+        $this->expectException(ArgumentCountError::class);
+        $this->expectExceptionMessage('MaxMind\Db\Reader::metadata() expects exactly 0 parameters, 1 given');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
@@ -362,6 +355,16 @@ class ReaderTest extends TestCase
         $reader->close();
 
         $this->assertTrue(true);
+    }
+
+    public function testCloseArgs(): void
+    {
+        $this->expectException(ArgumentCountError::class);
+        $this->expectExceptionMessage('MaxMind\Db\Reader::close() expects exactly 0 parameters, 1 given');
+        $reader = new Reader(
+            'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
+        );
+        $reader->close('blah');
     }
 
     public function testDoubleClose(): void
