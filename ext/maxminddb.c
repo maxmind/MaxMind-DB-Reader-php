@@ -695,11 +695,11 @@ PHP_METHOD(MaxMind_Db_Reader_Metadata, __construct) {
     }
 }
 
+// clang-format off
 static zend_function_entry metadata_methods[] = {
-    PHP_ME(MaxMind_Db_Reader_Metadata,
-           __construct,
-           arginfo_metadata_construct,
-           ZEND_ACC_PUBLIC | ZEND_ACC_CTOR){NULL, NULL, NULL}};
+    PHP_ME(MaxMind_Db_Reader_Metadata, __construct, arginfo_metadata_construct, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
+    {NULL, NULL, NULL}
+};
 // clang-format on
 
 PHP_MINIT_FUNCTION(maxminddb) {
