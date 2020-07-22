@@ -168,7 +168,8 @@ PHP_METHOD(MaxMind_Db_Reader, getWithPrefixLen) {
     zval record, z_prefix_len;
 
     int prefix_len = 0;
-    if (get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, &record, &prefix_len)) {
+    if (get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, &record, &prefix_len) ==
+        FAILURE) {
         return;
     }
 
@@ -192,7 +193,7 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                                      maxminddb_ce,
                                      &ip_address,
                                      &name_len) == FAILURE) {
-        return 1;
+        return FAILURE;
     }
 
     const maxminddb_obj *mmdb_obj = (maxminddb_obj *)Z_MAXMINDDB_P(getThis());
@@ -203,13 +204,13 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
         zend_throw_exception_ex(spl_ce_BadMethodCallException,
                                 0 TSRMLS_CC,
                                 "Attempt to read from a closed MaxMind DB.");
-        return 1;
+        return FAILURE;
     }
 
     struct addrinfo hints = {
         .ai_family = AF_UNSPEC,
         .ai_flags = AI_NUMERICHOST,
-        // We set ai_socktype so that we only get one result back
+        /* We set ai_socktype so that we only get one result back */
         .ai_socktype = SOCK_STREAM};
 
     struct addrinfo *addresses = NULL;
@@ -219,14 +220,14 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                                 0 TSRMLS_CC,
                                 "The value \"%s\" is not a valid IP address.",
                                 ip_address);
-        return 1;
+        return FAILURE;
     }
     if (!addresses || !addresses->ai_addr) {
         zend_throw_exception_ex(
             spl_ce_InvalidArgumentException,
             0 TSRMLS_CC,
             "getaddrinfo was successful but failed to set the addrinfo");
-        return 1;
+        return FAILURE;
     }
 
     int sa_family = addresses->ai_addr->sa_family;
@@ -249,20 +250,20 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                                 "Error looking up %s. %s",
                                 ip_address,
                                 MMDB_strerror(mmdb_error));
-        return 1;
+        return FAILURE;
     }
 
     *prefix_len = result.netmask;
 
     if (sa_family == AF_INET && mmdb->metadata.ip_version == 6) {
-        // We return the prefix length given the IPv4 address. If there is
-        // no IPv4 subtree, we return a prefix length of 0.
+        /* We return the prefix length given the IPv4 address. If there is
+           no IPv4 subtree, we return a prefix length of 0. */
         *prefix_len = *prefix_len >= 96 ? *prefix_len - 96 : 0;
     }
 
     if (!result.found_entry) {
         ZVAL_NULL(record);
-        return 0;
+        return SUCCESS;
     }
 
     MMDB_entry_data_list_s *entry_data_list = NULL;
@@ -275,7 +276,7 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
                                 ip_address,
                                 MMDB_strerror(status));
         MMDB_free_entry_data_list(entry_data_list);
-        return 1;
+        return FAILURE;
     } else if (NULL == entry_data_list) {
         zend_throw_exception_ex(
             maxminddb_exception_ce,
@@ -283,17 +284,18 @@ get_record(INTERNAL_FUNCTION_PARAMETERS, zval *record, int *prefix_len) {
             "Error while looking up data for %s. Your database may "
             "be corrupt or you have found a bug in libmaxminddb.",
             ip_address);
-        return 1;
+        return FAILURE;
     }
 
     const MMDB_entry_data_list_s *rv =
         handle_entry_data_list(entry_data_list, record TSRMLS_CC);
     if (rv == NULL) {
-        // We should have already thrown the exception in handle_entry_data_list
-        return 1;
+        /* We should have already thrown the exception in handle_entry_data_list
+         */
+        return FAILURE;
     }
     MMDB_free_entry_data_list(entry_data_list);
-    return 0;
+    return SUCCESS;
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_maxminddbreader_void, 0, 0, 0)
@@ -569,7 +571,7 @@ static zend_object *maxminddb_create_handler(zend_class_entry *type TSRMLS_DC) {
     return &obj->std;
 }
 
-// clang-format off
+/* clang-format off */
 static zend_function_entry maxminddb_methods[] = {
     PHP_ME(MaxMind_Db_Reader, __construct, arginfo_maxminddbreader_construct,
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
@@ -579,7 +581,7 @@ static zend_function_entry maxminddb_methods[] = {
     PHP_ME(MaxMind_Db_Reader, metadata, arginfo_maxminddbreader_void, ZEND_ACC_PUBLIC)
     { NULL, NULL, NULL }
 };
-// clang-format on
+/* clang-format on */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_metadata_construct, 0, 0, 1)
 ZEND_ARG_TYPE_INFO(0, metadata, IS_ARRAY, 0)
