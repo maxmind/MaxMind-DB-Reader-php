@@ -13,6 +13,8 @@ CHANGELOG
   metadata object rather than the actual object used by the reader.
 * Work around PHP `is_readable()` bug. Reported by Ben Roberts. GitHub
   #92.
+* This is the first release of the extension as a PECL package.
+  GitHub #34.
 
 1.6.0 (2019-12-19)
 ------------------

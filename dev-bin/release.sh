@@ -32,6 +32,8 @@ rm -fr vendor
 
 perl -pi -e "s/(?<=#define PHP_MAXMINDDB_VERSION \")\d+\.\d+\.\d+(?=\")/$version/" ext/php_maxminddb.h
 perl -pi -e "s/(?<=\"ext-maxminddb\": \"<)\d+.\d+.\d+(?=,)/$version/" composer.json
+perl -pi -e "s/(?<=<release>)\d+\.\d+\.\d+(?=<)/$version/" package.xml
+perl -0777 -pi -e "s{(?<=<notes>).*(?=</notes>)}{$notes}sm" package.xml
 
 pushd ext
 phpize
@@ -55,6 +57,7 @@ fi
 echo $'\nRelease notes:'
 echo "$notes"
 
+pecl package
 
 read -p "Push to origin? (y/n) " should_push
 
@@ -72,3 +75,5 @@ $notes"
 git push
 
 hub release create -m "$message" "$tag"
+
+echo "Upload PECL package to pecl.php.net!"
