@@ -34,6 +34,7 @@ perl -pi -e "s/(?<=#define PHP_MAXMINDDB_VERSION \")\d+\.\d+\.\d+(?=\")/$version
 perl -pi -e "s/(?<=\"ext-maxminddb\": \"<)\d+.\d+.\d+(?=,)/$version/" composer.json
 perl -pi -e "s/(?<=<release>)\d+\.\d+\.\d+(?=<)/$version/" package.xml
 perl -0777 -pi -e "s{(?<=<notes>).*(?=</notes>)}{$notes}sm" package.xml
+perl -pi -e "s/(?<=<date>)\d{4}-\d{2}-\d{2}(?=<)/$date/" package.xml
 
 pushd ext
 phpize
