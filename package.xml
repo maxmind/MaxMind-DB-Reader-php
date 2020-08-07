@@ -53,7 +53,7 @@
                 <min>7.2.0</min>
             </php>
             <pearinstaller>
-                <min>1.4.0dev13</min>
+                <min>1.10.0</min>
             </pearinstaller>
         </required>
     </dependencies>
