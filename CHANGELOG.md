@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+1.8.0
+------------------
+
+* Fixes for PHP 8.0. Pull Request by Remi Collet. GitHub #108.
+
 1.7.0 (2020-08-07)
 ------------------
 
