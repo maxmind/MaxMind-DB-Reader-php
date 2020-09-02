@@ -45,15 +45,21 @@ typedef size_t strsize_t;
 typedef zend_object free_obj_t;
 
 /* For PHP 8 compatibility */
-#ifndef TSRMLS_C
+#if PHP_VERSION_ID < 80000
+
+#define PROP_OBJ(zv) (zv)
+
+#else
+
+#define PROP_OBJ(zv) Z_OBJ_P(zv)
+
 #define TSRMLS_C
-#endif
-#ifndef TSRMLS_CC
 #define TSRMLS_CC
-#endif
-#ifndef TSRMLS_DC
 #define TSRMLS_DC
+
+/* End PHP 8 compatibility */
 #endif
+
 #ifndef ZEND_ACC_CTOR
 #define ZEND_ACC_CTOR 0
 #endif
@@ -334,23 +340,13 @@ PHP_METHOD(MaxMind_Db_Reader, metadata) {
         return;
     }
     MMDB_free_entry_data_list(entry_data_list);
-#if PHP_VERSION_ID >= 80000
-    zend_call_method_with_1_params(Z_OBJ_P(return_value),
+    zend_call_method_with_1_params(PROP_OBJ(return_value),
                                    metadata_ce,
                                    &metadata_ce->constructor,
                                    ZEND_CONSTRUCTOR_FUNC_NAME,
                                    NULL,
                                    &metadata_array);
     zval_ptr_dtor(&metadata_array);
-#else
-    zend_call_method_with_1_params(return_value,
-                                   metadata_ce,
-                                   &metadata_ce->constructor,
-                                   ZEND_CONSTRUCTOR_FUNC_NAME,
-                                   NULL,
-                                   &metadata_array);
-    zval_ptr_dtor(&metadata_array);
-#endif
 }
 
 PHP_METHOD(MaxMind_Db_Reader, close) {
@@ -607,7 +603,7 @@ PHP_METHOD(MaxMind_Db_Reader_Metadata, __construct) {
                                   "binary_format_major_version",
                                   sizeof("binary_format_major_version") - 1))) {
         zend_update_property(metadata_ce,
-                             object,
+                             PROP_OBJ(object),
                              "binaryFormatMajorVersion",
                              sizeof("binaryFormatMajorVersion") - 1,
                              tmp);
@@ -617,7 +613,7 @@ PHP_METHOD(MaxMind_Db_Reader_Metadata, __construct) {
                                   "binary_format_minor_version",
                                   sizeof("binary_format_minor_version") - 1))) {
         zend_update_property(metadata_ce,
-                             object,
+                             PROP_OBJ(object),
                              "binaryFormatMinorVersion",
                              sizeof("binaryFormatMinorVersion") - 1,
                              tmp);
@@ -626,15 +622,18 @@ PHP_METHOD(MaxMind_Db_Reader_Metadata, __construct) {
     if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
                                   "build_epoch",
                                   sizeof("build_epoch") - 1))) {
-        zend_update_property(
-            metadata_ce, object, "buildEpoch", sizeof("buildEpoch") - 1, tmp);
+        zend_update_property(metadata_ce,
+                             PROP_OBJ(object),
+                             "buildEpoch",
+                             sizeof("buildEpoch") - 1,
+                             tmp);
     }
 
     if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
                                   "database_type",
                                   sizeof("database_type") - 1))) {
         zend_update_property(metadata_ce,
-                             object,
+                             PROP_OBJ(object),
                              "databaseType",
                              sizeof("databaseType") - 1,
                              tmp);
@@ -643,28 +642,40 @@ PHP_METHOD(MaxMind_Db_Reader_Metadata, __construct) {
     if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
                                   "description",
                                   sizeof("description") - 1))) {
-        zend_update_property(
-            metadata_ce, object, "description", sizeof("description") - 1, tmp);
+        zend_update_property(metadata_ce,
+                             PROP_OBJ(object),
+                             "description",
+                             sizeof("description") - 1,
+                             tmp);
     }
 
     if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
                                   "ip_version",
                                   sizeof("ip_version") - 1))) {
-        zend_update_property(
-            metadata_ce, object, "ipVersion", sizeof("ipVersion") - 1, tmp);
+        zend_update_property(metadata_ce,
+                             PROP_OBJ(object),
+                             "ipVersion",
+                             sizeof("ipVersion") - 1,
+                             tmp);
     }
 
     if ((tmp = zend_hash_str_find(
              HASH_OF(metadata_array), "languages", sizeof("languages") - 1))) {
-        zend_update_property(
-            metadata_ce, object, "languages", sizeof("languages") - 1, tmp);
+        zend_update_property(metadata_ce,
+                             PROP_OBJ(object),
+                             "languages",
+                             sizeof("languages") - 1,
+                             tmp);
     }
 
     if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
                                   "record_size",
                                   sizeof("record_size") - 1))) {
-        zend_update_property(
-            metadata_ce, object, "recordSize", sizeof("recordSize") - 1, tmp);
+        zend_update_property(metadata_ce,
+                             PROP_OBJ(object),
+                             "recordSize",
+                             sizeof("recordSize") - 1,
+                             tmp);
         if (Z_TYPE_P(tmp) == IS_LONG) {
             record_size = Z_LVAL_P(tmp);
         }
@@ -672,7 +683,7 @@ PHP_METHOD(MaxMind_Db_Reader_Metadata, __construct) {
 
     if (record_size != 0) {
         zend_update_property_long(metadata_ce,
-                                  object,
+                                  PROP_OBJ(object),
                                   "nodeByteSize",
                                   sizeof("nodeByteSize") - 1,
                                   record_size / 4);
@@ -681,8 +692,11 @@ PHP_METHOD(MaxMind_Db_Reader_Metadata, __construct) {
     if ((tmp = zend_hash_str_find(HASH_OF(metadata_array),
                                   "node_count",
                                   sizeof("node_count") - 1))) {
-        zend_update_property(
-            metadata_ce, object, "nodeCount", sizeof("nodeCount") - 1, tmp);
+        zend_update_property(metadata_ce,
+                             PROP_OBJ(object),
+                             "nodeCount",
+                             sizeof("nodeCount") - 1,
+                             tmp);
         if (Z_TYPE_P(tmp) == IS_LONG) {
             node_count = Z_LVAL_P(tmp);
         }
@@ -690,7 +704,7 @@ PHP_METHOD(MaxMind_Db_Reader_Metadata, __construct) {
 
     if (record_size != 0) {
         zend_update_property_long(metadata_ce,
-                                  object,
+                                  PROP_OBJ(object),
                                   "searchTreeSize",
                                   sizeof("searchTreeSize") - 1,
                                   record_size * node_count / 4);
