@@ -44,7 +44,7 @@ class MetadataTest extends TestCase
     public function testTooManyConstructorArgs(): void
     {
         $this->expectException(ArgumentCountError::class);
-        $this->expectExceptionMessage('MaxMind\Db\Reader\Metadata::__construct() expects exactly 1 parameter, 2 given');
+        $this->expectExceptionMessage('MaxMind\Db\Reader\Metadata::__construct() expects exactly 1');
         new Metadata([], 1);
     }
 

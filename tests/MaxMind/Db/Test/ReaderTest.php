@@ -302,7 +302,7 @@ class ReaderTest extends TestCase
     public function testTooManyConstructorArgs(): void
     {
         $this->expectException(ArgumentCountError::class);
-        $this->expectExceptionMessage('MaxMind\Db\Reader::__construct() expects exactly 1 parameter, 2 given');
+        $this->expectExceptionMessage('MaxMind\Db\Reader::__construct() expects exactly 1');
         new Reader('README.md', 1);
     }
 
@@ -318,7 +318,7 @@ class ReaderTest extends TestCase
     public function testTooManyGetArgs(): void
     {
         $this->expectException(ArgumentCountError::class);
-        $this->expectExceptionMessage('MaxMind\Db\Reader::get() expects exactly 1 parameter, 2 given');
+        $this->expectExceptionMessage('MaxMind\Db\Reader::get() expects exactly 1');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
@@ -340,7 +340,7 @@ class ReaderTest extends TestCase
     public function testMetadataArgs(): void
     {
         $this->expectException(ArgumentCountError::class);
-        $this->expectExceptionMessage('MaxMind\Db\Reader::metadata() expects exactly 0 parameters, 1 given');
+        $this->expectExceptionMessage('MaxMind\Db\Reader::metadata() expects exactly 0');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
@@ -360,7 +360,7 @@ class ReaderTest extends TestCase
     public function testCloseArgs(): void
     {
         $this->expectException(ArgumentCountError::class);
-        $this->expectExceptionMessage('MaxMind\Db\Reader::close() expects exactly 0 parameters, 1 given');
+        $this->expectExceptionMessage('MaxMind\Db\Reader::close() expects exactly 0');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
