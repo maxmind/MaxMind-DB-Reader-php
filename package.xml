@@ -14,9 +14,9 @@
         <email>goschwald@maxmind.com</email>
         <active>yes</active>
     </lead>
-    <date>2020-08-07</date>
+    <date>2020-10-01</date>
     <version>
-        <release>1.7.0</release>
+        <release>1.8.0</release>
         <api>1.7.0</api>
     </version>
     <stability>
@@ -24,17 +24,7 @@
         <api>stable</api>
     </stability>
     <license uri="https://github.com/maxmind/MaxMind-DB-Reader-php/blob/master/LICENSE">Apache License 2.0</license>
-    <notes>* IMPORTANT: PHP 7.2 or greater is now required.
-* The extension no longer depends on the pure PHP classes in
-  `maxmind-db/reader`. You can use it independently.
-* Type hints have been added to both the pure PHP implementation
-  and the extension.
-* The `metadata` method on the reader now returns a new copy of the
-  metadata object rather than the actual object used by the reader.
-* Work around PHP `is_readable()` bug. Reported by Ben Roberts. GitHub
-  #92.
-* This is the first release of the extension as a PECL package.
-  GitHub #34.</notes>
+    <notes>* Fixes for PHP 8.0. Pull Request by Remi Collet. GitHub #108.</notes>
     <contents>
         <dir name="/">
             <file role="doc" name="LICENSE"/>
