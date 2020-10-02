@@ -17,7 +17,7 @@
     <date>2020-10-01</date>
     <version>
         <release>1.8.0</release>
-        <api>1.7.0</api>
+        <api>1.8.0</api>
     </version>
     <stability>
         <release>stable</release>
