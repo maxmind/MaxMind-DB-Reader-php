@@ -215,7 +215,9 @@ class Reader
             // Record is a data pointer
             return [$node, $i];
         }
-        throw new InvalidDatabaseException('Something bad happened');
+        throw new InvalidDatabaseException(
+            'Invalid or corrupt database. Maximum search depth reached without finding a leaf node'
+        );
     }
 
     private function ipV4StartNode(): int
