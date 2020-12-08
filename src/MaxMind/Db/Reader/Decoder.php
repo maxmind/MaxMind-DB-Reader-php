@@ -172,7 +172,7 @@ class Decoder
 
         for ($i = 0; $i < $size; ++$i) {
             [$value, $offset] = $this->decode($offset);
-            array_push($array, $value);
+            $array[] = $value;
         }
 
         return [$array, $offset];
