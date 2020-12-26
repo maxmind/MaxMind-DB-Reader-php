@@ -5,6 +5,6 @@ if (PHP_MAXMINDDB == "yes") {
 		CHECK_LIB("libmaxminddb.lib", "maxminddb", PHP_MAXMINDDB)) {
 		EXTENSION("maxminddb", "maxminddb.c");
 	} else {
-		WARNING('Could not find maxminddb.h or libmaxminddb lib; skipping');
+		WARNING('Could not find maxminddb.h or libmaxminddb.lib; skipping');
 	}
 }
