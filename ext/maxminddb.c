@@ -431,7 +431,7 @@ handle_map(const MMDB_entry_data_list_s *entry_data_list,
     array_init(z_value);
     const uint32_t map_size = entry_data_list->entry_data.data_size;
 
-    uint i;
+    uint32_t i;
     for (i = 0; i < map_size && entry_data_list; i++) {
         entry_data_list = entry_data_list->next;
 
@@ -463,7 +463,7 @@ handle_array(const MMDB_entry_data_list_s *entry_data_list,
 
     array_init(z_value);
 
-    uint i;
+    uint32_t i;
     for (i = 0; i < size && entry_data_list; i++) {
         entry_data_list = entry_data_list->next;
         zval new_value;
