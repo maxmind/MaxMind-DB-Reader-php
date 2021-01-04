@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+1.9.0
+------------------
+
+* The `maxminddb` extension is now buildable on Windows. Pull request
+  by Jan Ehrhardt. GitHub #115.
+
 1.8.0 (2020-10-01)
 ------------------
 
