@@ -14,17 +14,18 @@
         <email>goschwald@maxmind.com</email>
         <active>yes</active>
     </lead>
-    <date>2020-10-01</date>
+    <date>2021-01-07</date>
     <version>
-        <release>1.8.0</release>
-        <api>1.8.0</api>
+        <release>1.9.0</release>
+        <api>1.9.0</api>
     </version>
     <stability>
         <release>stable</release>
         <api>stable</api>
     </stability>
     <license uri="https://github.com/maxmind/MaxMind-DB-Reader-php/blob/master/LICENSE">Apache License 2.0</license>
-    <notes>* Fixes for PHP 8.0. Pull Request by Remi Collet. GitHub #108.</notes>
+    <notes>* The `maxminddb` extension is now buildable on Windows. Pull request
+  by Jan Ehrhardt. GitHub #115.</notes>
     <contents>
         <dir name="/">
             <file role="doc" name="LICENSE"/>
