@@ -402,7 +402,7 @@ class ReaderTest extends TestCase
 
     public function testReaderIsNotFinal(): void
     {
-        $reflectionClass = new ReflectionClass('MaxMind\Db\Reader');
+        $reflectionClass = new ReflectionClass(Reader::class);
         $this->assertFalse($reflectionClass->isFinal());
     }
 
