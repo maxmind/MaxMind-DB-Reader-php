@@ -406,7 +406,7 @@ class ReaderTest extends TestCase
         $this->assertFalse($reflectionClass->isFinal());
     }
 
-    private function checkMetadata($reader, $ipVersion, $recordSize): void
+    private function checkMetadata(Reader $reader, int $ipVersion, int $recordSize): void
     {
         $metadata = $reader->metadata();
 
@@ -433,7 +433,7 @@ class ReaderTest extends TestCase
         $this->assertGreaterThan(200, $metadata->searchTreeSize);
     }
 
-    private function checkIpV4(Reader $reader, $fileName): void
+    private function checkIpV4(Reader $reader, string $fileName): void
     {
         for ($i = 0; $i <= 5; ++$i) {
             $address = '1.1.1.' . 2 ** $i;
@@ -471,7 +471,7 @@ class ReaderTest extends TestCase
     }
 
     // XXX - logic could be combined with above
-    private function checkIpV6(Reader $reader, $fileName): void
+    private function checkIpV6(Reader $reader, string $fileName): void
     {
         $subnets = ['::1:ffff:ffff', '::2:0:0',
             '::2:0:40', '::2:0:50', '::2:0:58', ];
