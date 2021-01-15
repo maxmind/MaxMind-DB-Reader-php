@@ -158,17 +158,17 @@ class DecoderTest extends TestCase
     private function pointers(): array
     {
         return [
-        ['expected' => 0, 'input' => [0x20, 0x0]],
-        ['expected' => 5, 'input' => [0x20, 0x5]],
-        ['expected' => 10, 'input' => [0x20, 0xa]],
-        ['expected' => 1023, 'input' => [0x23, 0xff]],
-        ['expected' => 3017, 'input' => [0x28, 0x3, 0xc9]],
-        ['expected' => 524283, 'input' => [0x2f, 0xf7, 0xfb]],
-        ['expected' => 526335, 'input' => [0x2f, 0xff, 0xff]],
-        ['expected' => 134217726, 'input' => [0x37, 0xf7, 0xf7, 0xfe]],
-        ['expected' => PHP_INT_MAX < 4294967295 ? '2147483647' : 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
-        ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]],
-    ];
+            ['expected' => 0, 'input' => [0x20, 0x0]],
+            ['expected' => 5, 'input' => [0x20, 0x5]],
+            ['expected' => 10, 'input' => [0x20, 0xa]],
+            ['expected' => 1023, 'input' => [0x23, 0xff]],
+            ['expected' => 3017, 'input' => [0x28, 0x3, 0xc9]],
+            ['expected' => 524283, 'input' => [0x2f, 0xf7, 0xfb]],
+            ['expected' => 526335, 'input' => [0x2f, 0xff, 0xff]],
+            ['expected' => 134217726, 'input' => [0x37, 0xf7, 0xf7, 0xfe]],
+            ['expected' => PHP_INT_MAX < 4294967295 ? '2147483647' : 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
+            ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]],
+        ];
     }
 
     /**

@@ -155,10 +155,10 @@ class ReaderTest extends TestCase
             ],
             'uint128' => \extension_loaded('maxminddb') ? '0x01000000000000000000000000000000' : '1329227995784915872903807060280344576',
             'uint16' => 0x64,
-        'uint32' => PHP_INT_MAX < 4294967295 && !\extension_loaded('maxminddb') ? '268435456' : 268435456,
-        'uint64' => PHP_INT_MAX > 1152921504606846976 && \extension_loaded('maxminddb') ? 1152921504606846976 : '1152921504606846976',
+            'uint32' => PHP_INT_MAX < 4294967295 && !\extension_loaded('maxminddb') ? '268435456' : 268435456,
+            'uint64' => PHP_INT_MAX > 1152921504606846976 && \extension_loaded('maxminddb') ? 1152921504606846976 : '1152921504606846976',
             'utf8_string' => 'unicode! ☯ - ♫',
-       ];
+        ];
         $tests = [
                 [
                 'ip' => '1.1.1.1',
