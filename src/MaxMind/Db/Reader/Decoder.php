@@ -291,6 +291,7 @@ class Decoder
         return [$pointer, $offset];
     }
 
+    // @phpstan-ignore-next-line
     private function decodeUint(string $bytes, int $byteLength)
     {
         if ($byteLength === 0) {

@@ -63,6 +63,7 @@ class ReaderTest extends TestCase
         $this->assertSame(-268435456, $record['int32']);
         $this->assertSame(100, $record['uint16']);
         $this->assertSame(PHP_INT_MAX < 4294967295 && !\extension_loaded('maxminddb') ? '268435456' : 268435456, $record['uint32']);
+        // @phpstan-ignore-next-line
         $this->assertSame(PHP_INT_MAX > 1152921504606846976 && \extension_loaded('maxminddb') ? 1152921504606846976 : '1152921504606846976', $record['uint64']);
 
         $uint128 = $record['uint128'];
@@ -156,6 +157,7 @@ class ReaderTest extends TestCase
             'uint128' => \extension_loaded('maxminddb') ? '0x01000000000000000000000000000000' : '1329227995784915872903807060280344576',
             'uint16' => 0x64,
             'uint32' => PHP_INT_MAX < 4294967295 && !\extension_loaded('maxminddb') ? '268435456' : 268435456,
+            // @phpstan-ignore-next-line
             'uint64' => PHP_INT_MAX > 1152921504606846976 && \extension_loaded('maxminddb') ? 1152921504606846976 : '1152921504606846976',
             'utf8_string' => 'unicode! ☯ - ♫',
         ];
@@ -246,6 +248,7 @@ class ReaderTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Error looking up 2001::. You attempted to look up an IPv6 address in an IPv4-only database');
+        // @phpstan-ignore-next-line
         if (\defined('MaxMind\\Db\\Reader::MMDB_LIB_VERSION') && version_compare(Reader::MMDB_LIB_VERSION, '1.2.0', '<')) {
             $this->markTestSkipped('MMDB_LIB_VERSION < 1.2.0');
         }
@@ -312,6 +315,7 @@ class ReaderTest extends TestCase
     public function testNoConstructorArgs(): void
     {
         $this->expectException(ArgumentCountError::class);
+        // @phpstan-ignore-next-line
         new Reader();
     }
 
@@ -334,6 +338,7 @@ class ReaderTest extends TestCase
         $reader = new Reader(
                 'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
             );
+        // @phpstan-ignore-next-line
         $reader->get();
     }
 
