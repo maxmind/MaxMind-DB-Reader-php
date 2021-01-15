@@ -28,7 +28,8 @@
         "phpunit/phpunit": ">=8.0.0,<10.0.0",
         "php-coveralls/php-coveralls": "^2.1",
         "phpunit/phpcov": ">=6.0.0",
-        "squizlabs/php_codesniffer": "3.*"
+        "squizlabs/php_codesniffer": "3.*",
+        "phpstan/phpstan": "*"
     },
     "autoload": {
         "psr-4": {
