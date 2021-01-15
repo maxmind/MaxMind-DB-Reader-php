@@ -303,8 +303,6 @@ class DecoderTest extends TestCase
                 $expected = bcsub(bcpow('2', (string) (8 * $power)), '1');
             } else {
                 $this->markTestSkipped('This test requires gmp or bcmath.');
-
-                return;
             }
             $input = [$power, $ctrlByte];
             for ($i = 2; $i < 2 + $power; ++$i) {
