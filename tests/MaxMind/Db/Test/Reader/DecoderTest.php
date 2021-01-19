@@ -12,6 +12,9 @@ use PHPUnit\Framework\TestCase;
  */
 class DecoderTest extends TestCase
 {
+    /**
+     * @var array<array<string, mixed>>
+     */
     private $arrays = [
         [
             'expected' => [],
@@ -37,6 +40,9 @@ class DecoderTest extends TestCase
         ],
     ];
 
+    /**
+     * @var array<array<string, mixed>>
+     */
     private $booleans = [
         [
             'expected' => false,
@@ -48,6 +54,9 @@ class DecoderTest extends TestCase
         ],
     ];
 
+    /**
+     * @var array<array<string, mixed>>
+     */
     private $doubles = [
         ['expected' => 0.0, 'input' => [0x68, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]],
         ['expected' => 0.5, 'input' => [0x68, 0x3F, 0xE0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]],
@@ -59,6 +68,9 @@ class DecoderTest extends TestCase
         ['expected' => -1073741824.12457, 'input' => [0x68, 0xC1, 0xD0, 0x0, 0x0, 0x0, 0x7, 0xF8, 0xF4]],
     ];
 
+    /**
+     * @var array<array<string, mixed>>
+     */
     private $floats = [
         ['expected' => 0.0, 'input' => [0x4, 0x8, 0x0, 0x0, 0x0, 0x0]],
         ['expected' => 1.0, 'input' => [0x4, 0x8, 0x3F, 0x80, 0x0, 0x0]],
@@ -73,6 +85,9 @@ class DecoderTest extends TestCase
 
     // PHP can't have arrays/objects as keys. Maybe redo all of the tests
     // this way so that we can use one test runner
+    /**
+     * @var array<array<string, mixed>>
+     */
     private $maps = [
         [
             'expected' => [],
@@ -137,22 +152,28 @@ class DecoderTest extends TestCase
         ],
     ];
 
-    private function pointers()
+    /**
+     * @return array<array<string, mixed>>
+     */
+    private function pointers(): array
     {
         return [
-        ['expected' => 0, 'input' => [0x20, 0x0]],
-        ['expected' => 5, 'input' => [0x20, 0x5]],
-        ['expected' => 10, 'input' => [0x20, 0xa]],
-        ['expected' => 1023, 'input' => [0x23, 0xff]],
-        ['expected' => 3017, 'input' => [0x28, 0x3, 0xc9]],
-        ['expected' => 524283, 'input' => [0x2f, 0xf7, 0xfb]],
-        ['expected' => 526335, 'input' => [0x2f, 0xff, 0xff]],
-        ['expected' => 134217726, 'input' => [0x37, 0xf7, 0xf7, 0xfe]],
-        ['expected' => PHP_INT_MAX < 4294967295 ? '2147483647' : 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
-        ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]],
-    ];
+            ['expected' => 0, 'input' => [0x20, 0x0]],
+            ['expected' => 5, 'input' => [0x20, 0x5]],
+            ['expected' => 10, 'input' => [0x20, 0xa]],
+            ['expected' => 1023, 'input' => [0x23, 0xff]],
+            ['expected' => 3017, 'input' => [0x28, 0x3, 0xc9]],
+            ['expected' => 524283, 'input' => [0x2f, 0xf7, 0xfb]],
+            ['expected' => 526335, 'input' => [0x2f, 0xff, 0xff]],
+            ['expected' => 134217726, 'input' => [0x37, 0xf7, 0xf7, 0xfe]],
+            ['expected' => PHP_INT_MAX < 4294967295 ? '2147483647' : 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
+            ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]],
+        ];
     }
 
+    /**
+     * @var array<array<string, mixed>>
+     */
     private $uint16 = [
         ['expected' => 0, 'input' => [0xa0]],
         ['expected' => 255, 'input' => [0xa1, 0xff]],
@@ -161,6 +182,9 @@ class DecoderTest extends TestCase
         ['expected' => 65535, 'input' => [0xa2, 0xff, 0xff]],
     ];
 
+    /**
+     * @var array<array<string, mixed>>
+     */
     private $int32 = [
         ['expected' => 0, 'input' => [0x0, 0x1]],
         ['expected' => -1, 'input' => [0x4, 0x1, 0xff, 0xff, 0xff, 0xff]],
@@ -176,7 +200,10 @@ class DecoderTest extends TestCase
         ['expected' => -2147483647, 'input' => [0x4, 0x1, 0x80, 0x0, 0x0, 0x1]],
     ];
 
-    private function strings()
+    /**
+     * @return array<array<string, mixed>>
+     */
+    private function strings(): array
     {
         $strings = [
             ['expected' => '', 'input' => [0x40]],
@@ -228,20 +255,26 @@ class DecoderTest extends TestCase
         return $strings;
     }
 
-    private function uint32()
+    /**
+     * @return array<array<string, mixed>>
+     */
+    private function uint32(): array
     {
         return [
-        ['expected' => 0, 'input' => [0xc0]],
-        ['expected' => 255, 'input' => [0xc1, 0xff]],
-        ['expected' => 500, 'input' => [0xc2, 0x1, 0xf4]],
-        ['expected' => 10872, 'input' => [0xc2, 0x2a, 0x78]],
-        ['expected' => 65535, 'input' => [0xc2, 0xff, 0xff]],
-        ['expected' => 16777215, 'input' => [0xc3, 0xff, 0xff, 0xff]],
-        ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0xc4, 0xff, 0xff, 0xff, 0xff]],
-    ];
+            ['expected' => 0, 'input' => [0xc0]],
+            ['expected' => 255, 'input' => [0xc1, 0xff]],
+            ['expected' => 500, 'input' => [0xc2, 0x1, 0xf4]],
+            ['expected' => 10872, 'input' => [0xc2, 0x2a, 0x78]],
+            ['expected' => 65535, 'input' => [0xc2, 0xff, 0xff]],
+            ['expected' => 16777215, 'input' => [0xc3, 0xff, 0xff, 0xff]],
+            ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0xc4, 0xff, 0xff, 0xff, 0xff]],
+        ];
     }
 
-    private function bytes()
+    /**
+     * @return array<array<string, mixed>>
+     */
+    private function bytes(): array
     {
         // ugly deep clone
         $bytes = unserialize(serialize($this->strings()));
@@ -253,7 +286,7 @@ class DecoderTest extends TestCase
         return $bytes;
     }
 
-    public function generateLargeUint($bits)
+    public function generateLargeUint(int $bits): array
     {
         $ctrlByte = $bits === 64 ? 0x2 : 0x3;
 
@@ -270,8 +303,6 @@ class DecoderTest extends TestCase
                 $expected = bcsub(bcpow('2', (string) (8 * $power)), '1');
             } else {
                 $this->markTestSkipped('This test requires gmp or bcmath.');
-
-                return;
             }
             $input = [$power, $ctrlByte];
             for ($i = 2; $i < 2 + $power; ++$i) {
@@ -348,14 +379,14 @@ class DecoderTest extends TestCase
         $this->validateTypeDecoding('uint128', $this->generateLargeUint(128));
     }
 
-    private function validateTypeDecoding($type, $tests): void
+    private function validateTypeDecoding(string $type, array $tests): void
     {
         foreach ($tests as $expected => $input) {
             $this->checkDecoding($type, $input, $expected);
         }
     }
 
-    private function validateTypeDecodingList($type, $tests): void
+    private function validateTypeDecodingList(string $type, array $tests): void
     {
         foreach ($tests as $test) {
             $this->checkDecoding(
@@ -367,7 +398,8 @@ class DecoderTest extends TestCase
         }
     }
 
-    private function checkDecoding($type, $input, $expected, $name = null): void
+    // @phpstan-ignore-next-line
+    private function checkDecoding(string $type, array $input, $expected, $name = null): void
     {
         $name = $name || $expected;
         $description = "decoded $type - $name";

@@ -54,6 +54,7 @@ class MetadataTest extends TestCase
     public function testNoConstructorArgs(): void
     {
         $this->expectException(ArgumentCountError::class);
+        /** @phpstan-ignore-next-line */
         new Metadata();
     }
 }
