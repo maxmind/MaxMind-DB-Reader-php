@@ -12,7 +12,7 @@ use RuntimeException;
  *
  * We subtract 1 from the log to protect against precision loss.
  */
-\define(__NAMESPACE__ . '\_MM_MAX_INT_BYTES', (log(PHP_INT_MAX, 2) - 1) / 8);
+\define(__NAMESPACE__ . '\_MM_MAX_INT_BYTES', (log(\PHP_INT_MAX, 2) - 1) / 8);
 
 class Decoder
 {
@@ -209,7 +209,7 @@ class Decoder
             case 1:
             case 2:
             case 3:
-                $bytes = str_pad($bytes, 4, "\x00", STR_PAD_LEFT);
+                $bytes = str_pad($bytes, 4, "\x00", \STR_PAD_LEFT);
                 break;
             case 4:
                 break;

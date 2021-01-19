@@ -166,8 +166,8 @@ class DecoderTest extends TestCase
             ['expected' => 524283, 'input' => [0x2f, 0xf7, 0xfb]],
             ['expected' => 526335, 'input' => [0x2f, 0xff, 0xff]],
             ['expected' => 134217726, 'input' => [0x37, 0xf7, 0xf7, 0xfe]],
-            ['expected' => PHP_INT_MAX < 4294967295 ? '2147483647' : 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
-            ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]],
+            ['expected' => \PHP_INT_MAX < 4294967295 ? '2147483647' : 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
+            ['expected' => \PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]],
         ];
     }
 
@@ -267,7 +267,7 @@ class DecoderTest extends TestCase
             ['expected' => 10872, 'input' => [0xc2, 0x2a, 0x78]],
             ['expected' => 65535, 'input' => [0xc2, 0xff, 0xff]],
             ['expected' => 16777215, 'input' => [0xc3, 0xff, 0xff, 0xff]],
-            ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0xc4, 0xff, 0xff, 0xff, 0xff]],
+            ['expected' => \PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0xc4, 0xff, 0xff, 0xff, 0xff]],
         ];
     }
 
