@@ -14,6 +14,8 @@ use ReflectionClass;
 
 /**
  * @coversNothing
+ *
+ * @internal
  */
 class ReaderTest extends TestCase
 {
@@ -162,79 +164,79 @@ class ReaderTest extends TestCase
             'utf8_string' => 'unicode! ☯ - ♫',
         ];
         $tests = [
-                [
+            [
                 'ip' => '1.1.1.1',
                 'dbFile' => 'MaxMind-DB-test-ipv6-32.mmdb',
                 'expectedPrefixLength' => 8,
                 'expectedRecord' => null,
-                ],
-                [
+            ],
+            [
                 'ip' => '::1:ffff:ffff',
                 'dbFile' => 'MaxMind-DB-test-ipv6-24.mmdb',
                 'expectedPrefixLength' => 128,
                 'expectedRecord' => ['ip' => '::1:ffff:ffff'],
-                ],
-                [
+            ],
+            [
                 'ip' => '::2:0:1',
                 'dbFile' => 'MaxMind-DB-test-ipv6-24.mmdb',
                 'expectedPrefixLength' => 122,
                 'expectedRecord' => ['ip' => '::2:0:0'],
-                ],
-                [
+            ],
+            [
                 'ip' => '1.1.1.1',
                 'dbFile' => 'MaxMind-DB-test-ipv4-24.mmdb',
                 'expectedPrefixLength' => 32,
                 'expectedRecord' => ['ip' => '1.1.1.1'],
-                ],
-                [
+            ],
+            [
                 'ip' => '1.1.1.3',
                 'dbFile' => 'MaxMind-DB-test-ipv4-24.mmdb',
                 'expectedPrefixLength' => 31,
                 'expectedRecord' => ['ip' => '1.1.1.2'],
-                ],
-                [
+            ],
+            [
                 'ip' => '1.1.1.3',
                 'dbFile' => 'MaxMind-DB-test-decoder.mmdb',
                 'expectedPrefixLength' => 24,
                 'expectedRecord' => $decoderRecord,
-                ],
-                [
+            ],
+            [
                 'ip' => '::ffff:1.1.1.128',
                 'dbFile' => 'MaxMind-DB-test-decoder.mmdb',
                 'expectedPrefixLength' => 120,
                 'expectedRecord' => $decoderRecord,
-                ],
-                [
+            ],
+            [
                 'ip' => '::1.1.1.128',
                 'dbFile' => 'MaxMind-DB-test-decoder.mmdb',
                 'expectedPrefixLength' => 120,
                 'expectedRecord' => $decoderRecord,
-                ],
-                [
+            ],
+            [
                 'ip' => '200.0.2.1',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 0,
                 'expectedRecord' => '::0/64',
-                ],
-                [
+            ],
+            [
                 'ip' => '::200.0.2.1',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 64,
                 'expectedRecord' => '::0/64',
-                ],
-                [
+            ],
+            [
                 'ip' => '0:0:0:0:ffff:ffff:ffff:ffff',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 64,
                 'expectedRecord' => '::0/64',
-                ],
-                [
+            ],
+            [
                 'ip' => 'ef00::',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 1,
                 'expectedRecord' => null,
-                ],
-            ];
+            ],
+        ];
 
         foreach ($tests as $test) {
             $reader = new Reader('tests/data/test-data/' . $test['dbFile']);
@@ -336,8 +338,8 @@ class ReaderTest extends TestCase
     {
         $this->expectException(ArgumentCountError::class);
         $reader = new Reader(
-                'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
-            );
+            'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
+        );
         // @phpstan-ignore-next-line
         $reader->get();
     }
