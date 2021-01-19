@@ -14,6 +14,8 @@ use ReflectionClass;
 
 /**
  * @coversNothing
+ *
+ * @internal
  */
 class ReaderTest extends TestCase
 {
@@ -62,9 +64,9 @@ class ReaderTest extends TestCase
 
         $this->assertSame(-268435456, $record['int32']);
         $this->assertSame(100, $record['uint16']);
-        $this->assertSame(PHP_INT_MAX < 4294967295 && !\extension_loaded('maxminddb') ? '268435456' : 268435456, $record['uint32']);
+        $this->assertSame(\PHP_INT_MAX < 4294967295 && !\extension_loaded('maxminddb') ? '268435456' : 268435456, $record['uint32']);
         // @phpstan-ignore-next-line
-        $this->assertSame(PHP_INT_MAX > 1152921504606846976 && \extension_loaded('maxminddb') ? 1152921504606846976 : '1152921504606846976', $record['uint64']);
+        $this->assertSame(\PHP_INT_MAX > 1152921504606846976 && \extension_loaded('maxminddb') ? 1152921504606846976 : '1152921504606846976', $record['uint64']);
 
         $uint128 = $record['uint128'];
 
@@ -114,11 +116,11 @@ class ReaderTest extends TestCase
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
         $record = $reader->get('::255.255.255.255');
 
-        $this->assertSame(INF, $record['double']);
-        $this->assertSame(INF, $record['float'], 'float');
+        $this->assertSame(\INF, $record['double']);
+        $this->assertSame(\INF, $record['float'], 'float');
         $this->assertSame(2147483647, $record['int32']);
         $this->assertSame(0xFFFF, $record['uint16']);
-        $this->assertSame(PHP_INT_MAX < 0xFFFFFFFF ? '4294967295' : 0xFFFFFFFF, $record['uint32']);
+        $this->assertSame(\PHP_INT_MAX < 0xFFFFFFFF ? '4294967295' : 0xFFFFFFFF, $record['uint32']);
         $this->assertSame('18446744073709551615', $record['uint64'] . '');
 
         $uint128 = $record['uint128'];
@@ -156,85 +158,85 @@ class ReaderTest extends TestCase
             ],
             'uint128' => \extension_loaded('maxminddb') ? '0x01000000000000000000000000000000' : '1329227995784915872903807060280344576',
             'uint16' => 0x64,
-            'uint32' => PHP_INT_MAX < 4294967295 && !\extension_loaded('maxminddb') ? '268435456' : 268435456,
+            'uint32' => \PHP_INT_MAX < 4294967295 && !\extension_loaded('maxminddb') ? '268435456' : 268435456,
             // @phpstan-ignore-next-line
-            'uint64' => PHP_INT_MAX > 1152921504606846976 && \extension_loaded('maxminddb') ? 1152921504606846976 : '1152921504606846976',
+            'uint64' => \PHP_INT_MAX > 1152921504606846976 && \extension_loaded('maxminddb') ? 1152921504606846976 : '1152921504606846976',
             'utf8_string' => 'unicode! ☯ - ♫',
         ];
         $tests = [
-                [
+            [
                 'ip' => '1.1.1.1',
                 'dbFile' => 'MaxMind-DB-test-ipv6-32.mmdb',
                 'expectedPrefixLength' => 8,
                 'expectedRecord' => null,
-                ],
-                [
+            ],
+            [
                 'ip' => '::1:ffff:ffff',
                 'dbFile' => 'MaxMind-DB-test-ipv6-24.mmdb',
                 'expectedPrefixLength' => 128,
                 'expectedRecord' => ['ip' => '::1:ffff:ffff'],
-                ],
-                [
+            ],
+            [
                 'ip' => '::2:0:1',
                 'dbFile' => 'MaxMind-DB-test-ipv6-24.mmdb',
                 'expectedPrefixLength' => 122,
                 'expectedRecord' => ['ip' => '::2:0:0'],
-                ],
-                [
+            ],
+            [
                 'ip' => '1.1.1.1',
                 'dbFile' => 'MaxMind-DB-test-ipv4-24.mmdb',
                 'expectedPrefixLength' => 32,
                 'expectedRecord' => ['ip' => '1.1.1.1'],
-                ],
-                [
+            ],
+            [
                 'ip' => '1.1.1.3',
                 'dbFile' => 'MaxMind-DB-test-ipv4-24.mmdb',
                 'expectedPrefixLength' => 31,
                 'expectedRecord' => ['ip' => '1.1.1.2'],
-                ],
-                [
+            ],
+            [
                 'ip' => '1.1.1.3',
                 'dbFile' => 'MaxMind-DB-test-decoder.mmdb',
                 'expectedPrefixLength' => 24,
                 'expectedRecord' => $decoderRecord,
-                ],
-                [
+            ],
+            [
                 'ip' => '::ffff:1.1.1.128',
                 'dbFile' => 'MaxMind-DB-test-decoder.mmdb',
                 'expectedPrefixLength' => 120,
                 'expectedRecord' => $decoderRecord,
-                ],
-                [
+            ],
+            [
                 'ip' => '::1.1.1.128',
                 'dbFile' => 'MaxMind-DB-test-decoder.mmdb',
                 'expectedPrefixLength' => 120,
                 'expectedRecord' => $decoderRecord,
-                ],
-                [
+            ],
+            [
                 'ip' => '200.0.2.1',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 0,
                 'expectedRecord' => '::0/64',
-                ],
-                [
+            ],
+            [
                 'ip' => '::200.0.2.1',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 64,
                 'expectedRecord' => '::0/64',
-                ],
-                [
+            ],
+            [
                 'ip' => '0:0:0:0:ffff:ffff:ffff:ffff',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 64,
                 'expectedRecord' => '::0/64',
-                ],
-                [
+            ],
+            [
                 'ip' => 'ef00::',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 1,
                 'expectedRecord' => null,
-                ],
-            ];
+            ],
+        ];
 
         foreach ($tests as $test) {
             $reader = new Reader('tests/data/test-data/' . $test['dbFile']);
@@ -336,8 +338,8 @@ class ReaderTest extends TestCase
     {
         $this->expectException(ArgumentCountError::class);
         $reader = new Reader(
-                'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
-            );
+            'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
+        );
         // @phpstan-ignore-next-line
         $reader->get();
     }

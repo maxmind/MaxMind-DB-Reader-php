@@ -7,12 +7,12 @@ namespace MaxMind\Db\Reader;
 // @codingStandardsIgnoreLine
 use RuntimeException;
 
-/**
+/*
  * @ignore
  *
  * We subtract 1 from the log to protect against precision loss.
  */
-\define(__NAMESPACE__ . '\_MM_MAX_INT_BYTES', (log(PHP_INT_MAX, 2) - 1) / 8);
+\define(__NAMESPACE__ . '\_MM_MAX_INT_BYTES', (log(\PHP_INT_MAX, 2) - 1) / 8);
 
 class Decoder
 {
@@ -123,33 +123,41 @@ class Decoder
         switch ($type) {
             case self::_MAP:
                 return $this->decodeMap($size, $offset);
+
             case self::_ARRAY:
                 return $this->decodeArray($size, $offset);
+
             case self::_BOOLEAN:
                 return [$this->decodeBoolean($size), $offset];
         }
 
         $newOffset = $offset + $size;
         $bytes = Util::read($this->fileStream, $offset, $size);
+
         switch ($type) {
             case self::_BYTES:
             case self::_UTF8_STRING:
                 return [$bytes, $newOffset];
+
             case self::_DOUBLE:
                 $this->verifySize(8, $size);
 
                 return [$this->decodeDouble($bytes), $newOffset];
+
             case self::_FLOAT:
                 $this->verifySize(4, $size);
 
                 return [$this->decodeFloat($bytes), $newOffset];
+
             case self::_INT32:
                 return [$this->decodeInt32($bytes, $size), $newOffset];
+
             case self::_UINT16:
             case self::_UINT32:
             case self::_UINT64:
             case self::_UINT128:
                 return [$this->decodeUint($bytes, $size), $newOffset];
+
             default:
                 throw new InvalidDatabaseException(
                     'Unknown or unexpected type: ' . $type
@@ -206,13 +214,17 @@ class Decoder
         switch ($size) {
             case 0:
                 return 0;
+
             case 1:
             case 2:
             case 3:
-                $bytes = str_pad($bytes, 4, "\x00", STR_PAD_LEFT);
+                $bytes = str_pad($bytes, 4, "\x00", \STR_PAD_LEFT);
+
                 break;
+
             case 4:
                 break;
+
             default:
                 throw new InvalidDatabaseException(
                     "The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)"
@@ -249,12 +261,16 @@ class Decoder
                 $packed = \chr($ctrlByte & 0x7) . $buffer;
                 [, $pointer] = unpack('n', $packed);
                 $pointer += $this->pointerBase;
+
                 break;
+
             case 2:
                 $packed = "\x00" . \chr($ctrlByte & 0x7) . $buffer;
                 [, $pointer] = unpack('N', $packed);
                 $pointer += $this->pointerBase + 2048;
+
                 break;
+
             case 3:
                 $packed = \chr($ctrlByte & 0x7) . $buffer;
 
@@ -262,7 +278,9 @@ class Decoder
                 // first bit is 0.
                 [, $pointer] = unpack('N', $packed);
                 $pointer += $this->pointerBase + 526336;
+
                 break;
+
             case 4:
                 // We cannot use unpack here as we might overflow on 32 bit
                 // machines
@@ -281,7 +299,9 @@ class Decoder
                         'The gmp or bcmath extension must be installed to read this database.'
                     );
                 }
+
                 break;
+
             default:
                 throw new InvalidDatabaseException(
                     'Unexpected pointer size ' . $pointerSize

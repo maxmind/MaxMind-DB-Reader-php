@@ -9,6 +9,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @coversNothing
+ *
+ * @internal
  */
 class DecoderTest extends TestCase
 {
@@ -23,7 +25,7 @@ class DecoderTest extends TestCase
         ],
         [
             'expected' => ['Foo'],
-            'input' => [0x1, 0x4, /* Foo */
+            'input' => [0x1, 0x4, // Foo
                 0x43, 0x46, 0x6f, 0x6f, ],
             'name' => 'one element',
         ],
@@ -31,9 +33,9 @@ class DecoderTest extends TestCase
             'expected' => ['Foo', '人'],
             'input' => [
                 0x2, 0x4,
-                /* Foo */
+                // Foo
                 0x43, 0x46, 0x6f, 0x6f,
-                /* 人 */
+                // 人
                 0x43, 0xe4, 0xba, 0xba,
             ],
             'name' => 'two elements',
@@ -96,9 +98,9 @@ class DecoderTest extends TestCase
         ],
         [
             'expected' => ['en' => 'Foo'],
-            'input' => [0xe1, /* en */
+            'input' => [0xe1, // en
                 0x42, 0x65, 0x6e,
-                /* Foo */
+                // Foo
                 0x43, 0x46, 0x6f, 0x6f, ],
             'name' => 'one key',
         ],
@@ -106,13 +108,13 @@ class DecoderTest extends TestCase
             'expected' => ['en' => 'Foo', 'zh' => '人'],
             'input' => [
                 0xe2,
-                /* en */
+                // en
                 0x42, 0x65, 0x6e,
-                /* Foo */
+                // Foo
                 0x43, 0x46, 0x6f, 0x6f,
-                /* zh */
+                // zh
                 0x42, 0x7a, 0x68,
-                /* 人 */
+                // 人
                 0x43, 0xe4, 0xba, 0xba,
             ],
             'name' => 'two keys',
@@ -121,15 +123,15 @@ class DecoderTest extends TestCase
             'expected' => ['name' => ['en' => 'Foo', 'zh' => '人']],
             'input' => [
                 0xe1,
-                /* name */
+                // name
                 0x44, 0x6e, 0x61, 0x6d, 0x65, 0xe2,
-                /* en */
+                // en
                 0x42, 0x65, 0x6e,
-                /* Foo */
+                // Foo
                 0x43, 0x46, 0x6f, 0x6f,
-                /* zh */
+                // zh
                 0x42, 0x7a, 0x68,
-                /* 人 */
+                // 人
                 0x43, 0xe4, 0xba, 0xba,
             ],
             'name' => 'nested',
@@ -138,14 +140,14 @@ class DecoderTest extends TestCase
             'expected' => ['languages' => ['en', 'zh']],
             'input' => [
                 0xe1,
-                /* languages */
+                // languages
                 0x49, 0x6c, 0x61, 0x6e, 0x67, 0x75, 0x61,
                 0x67, 0x65, 0x73,
-                /* array */
+                // array
                 0x2, 0x4,
-                /* en */
+                // en
                 0x42, 0x65, 0x6e,
-                /* zh */
+                // zh
                 0x42, 0x7a, 0x68,
             ],
             'name' => 'map with array in it',
@@ -166,8 +168,8 @@ class DecoderTest extends TestCase
             ['expected' => 524283, 'input' => [0x2f, 0xf7, 0xfb]],
             ['expected' => 526335, 'input' => [0x2f, 0xff, 0xff]],
             ['expected' => 134217726, 'input' => [0x37, 0xf7, 0xf7, 0xfe]],
-            ['expected' => PHP_INT_MAX < 4294967295 ? '2147483647' : 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
-            ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]],
+            ['expected' => \PHP_INT_MAX < 4294967295 ? '2147483647' : 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
+            ['expected' => \PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]],
         ];
     }
 
@@ -205,7 +207,7 @@ class DecoderTest extends TestCase
      */
     private function strings(): array
     {
-        $strings = [
+        return [
             ['expected' => '', 'input' => [0x40]],
             ['expected' => '1', 'input' => [0x41, 0x31]],
             ['expected' => '人', 'input' => [0x43, 0xE4, 0xBA, 0xBA]],
@@ -228,15 +230,15 @@ class DecoderTest extends TestCase
                 0x36, 0x37, 0x38, 0x39, 0x30, ]],
 
             ['expected' => str_repeat('x', 500),
-             'input' => array_pad(
+                'input' => array_pad(
                     [0x5e, 0x0, 0xd7],
                     503,
                     0x78
                 ),
             ],
             [
-             'expected' => str_repeat('x', 2000),
-              'input' => array_pad(
+                'expected' => str_repeat('x', 2000),
+                'input' => array_pad(
                     [0x5e, 0x6, 0xb3],
                     2003,
                     0x78
@@ -251,8 +253,6 @@ class DecoderTest extends TestCase
                 ),
             ],
         ];
-
-        return $strings;
     }
 
     /**
@@ -267,7 +267,7 @@ class DecoderTest extends TestCase
             ['expected' => 10872, 'input' => [0xc2, 0x2a, 0x78]],
             ['expected' => 65535, 'input' => [0xc2, 0xff, 0xff]],
             ['expected' => 16777215, 'input' => [0xc3, 0xff, 0xff, 0xff]],
-            ['expected' => PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0xc4, 0xff, 0xff, 0xff, 0xff]],
+            ['expected' => \PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0xc4, 0xff, 0xff, 0xff, 0xff]],
         ];
     }
 
