@@ -23,7 +23,7 @@
         <release>stable</release>
         <api>stable</api>
     </stability>
-    <license uri="https://github.com/maxmind/MaxMind-DB-Reader-php/blob/master/LICENSE">Apache License 2.0</license>
+    <license uri="https://github.com/maxmind/MaxMind-DB-Reader-php/blob/main/LICENSE">Apache License 2.0</license>
     <notes>* The `maxminddb` extension is now buildable on Windows. Pull request
   by Jan Ehrhardt. GitHub #115.</notes>
     <contents>
