@@ -1,8 +1,8 @@
 CHANGELOG
 =========
 
-1.10.0
-------------------
+1.10.0 (2021-02-09)
+-------------------
 
 * When using the pure PHP reader, unsigned integers up to PHP_MAX_INT
   will now be integers in PHP rather than strings. Previously integers
