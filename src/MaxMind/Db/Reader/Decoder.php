@@ -12,7 +12,7 @@ use RuntimeException;
  *
  * We subtract 1 from the log to protect against precision loss.
  */
-\define(__NAMESPACE__ . '\_MM_MAX_INT_BYTES', (log(\PHP_INT_MAX, 2) - 1) / 8);
+\define(__NAMESPACE__ . '\_MM_MAX_INT_BYTES', (int) ((log(\PHP_INT_MAX, 2) - 1) / 8));
 
 class Decoder
 {
@@ -320,11 +320,17 @@ class Decoder
 
         $integer = 0;
 
+        // PHP integers are signed. _MM_MAX_INT_BYTES is the number of
+        // complete bytes that can be converted to an integer. However,
+        // we can convert another byte if the leading bit is zero.
+        $useRealInts = $byteLength <= _MM_MAX_INT_BYTES
+            || ($byteLength === _MM_MAX_INT_BYTES + 1 && (\ord($bytes[0]) & 0x80) === 0);
+
         for ($i = 0; $i < $byteLength; ++$i) {
             $part = \ord($bytes[$i]);
 
             // We only use gmp or bcmath if the final value is too big
-            if ($byteLength <= _MM_MAX_INT_BYTES) {
+            if ($useRealInts) {
                 $integer = ($integer << 8) + $part;
             } elseif (\extension_loaded('gmp')) {
                 $integer = gmp_strval(gmp_add(gmp_mul((string) $integer, '256'), $part));
