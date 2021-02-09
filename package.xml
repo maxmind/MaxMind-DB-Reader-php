@@ -14,18 +14,21 @@
         <email>goschwald@maxmind.com</email>
         <active>yes</active>
     </lead>
-    <date>2021-01-07</date>
+    <date>2021-02-09</date>
     <version>
-        <release>1.9.0</release>
-        <api>1.9.0</api>
+        <release>1.10.0</release>
+        <api>1.10.0</api>
     </version>
     <stability>
         <release>stable</release>
         <api>stable</api>
     </stability>
     <license uri="https://github.com/maxmind/MaxMind-DB-Reader-php/blob/main/LICENSE">Apache License 2.0</license>
-    <notes>* The `maxminddb` extension is now buildable on Windows. Pull request
-  by Jan Ehrhardt. GitHub #115.</notes>
+    <notes>* When using the pure PHP reader, unsigned integers up to PHP_MAX_INT
+  will now be integers in PHP rather than strings. Previously integers
+  greater than 2^24 on 32-bit platforms and 2^56 on 64-bit platforms
+  would be strings due to the use of `gmp` or `bcmath` to decode them.
+  Reported by Alejandro Celaya. GitHub #119.</notes>
     <contents>
         <dir name="/">
             <file role="doc" name="LICENSE"/>
