@@ -286,17 +286,13 @@ class Decoder
                 // machines
                 $pointerOffset = $this->decodeUint($buffer, $pointerSize);
 
-                $byteLength = $pointerSize + $this->pointerBaseByteSize;
+                $pointerBase = $this->pointerBase;
 
-                if ($byteLength <= _MM_MAX_INT_BYTES) {
-                    $pointer = $pointerOffset + $this->pointerBase;
-                } elseif (\extension_loaded('gmp')) {
-                    $pointer = gmp_strval(gmp_add($pointerOffset, $this->pointerBase));
-                } elseif (\extension_loaded('bcmath')) {
-                    $pointer = bcadd($pointerOffset, (string) $this->pointerBase);
+                if (\PHP_INT_MAX - $pointerBase >= $pointerOffset) {
+                    $pointer = $pointerOffset + $pointerBase;
                 } else {
                     throw new RuntimeException(
-                        'The gmp or bcmath extension must be installed to read this database.'
+                        'The database offset is too large to be represented on your platform.'
                     );
                 }
 

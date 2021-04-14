@@ -5,23 +5,27 @@ on: [push, pull_request]
 jobs:
   run:
     runs-on: ${{ matrix.operating-system }}
+    container: shivammathur/node:latest-${{ matrix.arch }}
     strategy:
       matrix:
+        arch: ["amd64", "i386"]
         operating-system: [ubuntu-latest]
         php-versions: ['7.2', '7.3', '7.4', '8.0']
-    name: "PHP ${{ matrix.php-versions }} test on ${{ matrix.operating-system }}"
+        php-extensions: ['bcmath', 'gmp']
+    name: "PHP ${{ matrix.php-versions }} (with ${{ matrix.php-extensions }}) test on ${{ matrix.operating-system }}/${{ matrix.arch }}"
     steps:
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php-versions }}
-          tools: composer, phpize
-
-      - name: Setup problem matchers for PHPUnit
-        run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+      - name: Install PHP
+        run: |
+          spc -U
+          spc --php-version "${{ matrix.php-versions }}" \
+              --extensions "mbstring, intl, ${{ matrix.php-extensions }}" \
+              --ini-values "post_max_size=256M, max_execution_time=180" \
+              --coverage "xdebug" \
+              --tools "composer,phpize"
 
       - name: Checkout
-        uses: actions/checkout@v2
+        # We use v1 due to https://github.com/actions/checkout/issues/334
+        uses: actions/checkout@v1
         with:
           submodules: true
 
