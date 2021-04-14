@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.10.1
+1.10.1 (2021-04-14)
 -------------------
 
 * Fix a `TypeError` exception in the pure PHP reader when using large
