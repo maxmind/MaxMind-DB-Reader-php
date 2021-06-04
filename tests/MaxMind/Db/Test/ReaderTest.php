@@ -131,6 +131,14 @@ class ReaderTest extends TestCase
         $this->assertSame('340282366920938463463374607431768211455', $uint128);
     }
 
+    public function testMetadataPointers(): void
+    {
+        $reader = new Reader(
+            'tests/data/test-data/MaxMind-DB-test-metadata-pointers.mmdb'
+        );
+        $this->assertSame('Lots of pointers in metadata', $reader->metadata()->databaseType);
+    }
+
     public function testNoIpV4SearchTree(): void
     {
         $reader = new Reader(
