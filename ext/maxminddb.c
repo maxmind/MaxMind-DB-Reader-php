@@ -155,20 +155,28 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
     mmdb_obj->mmdb = mmdb;
 }
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(
-    arginfo_maxminddbreader_get, 0, 1, IS_MIXED, 1)
+# if PHP_VERSION_ID >= 702000
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_maxminddbreader_get, 0, 1, IS_MIXED,  , 1)
 ZEND_ARG_TYPE_INFO(0, ip_address, IS_STRING, 0)
 ZEND_END_ARG_INFO()
+# else
+ZEND_BEGIN_ARG_INFO_EX(arginfo_maxminddbreader_get, 0, 0, 1)
+ZEND_ARG_INFO(0, ip_address)
+ZEND_END_ARG_INFO()
+# endif
+
 
 PHP_METHOD(MaxMind_Db_Reader, get) {
     int prefix_len = 0;
     get_record(INTERNAL_FUNCTION_PARAM_PASSTHRU, return_value, &prefix_len);
 }
 
+# if PHP_VERSION_ID >= 702000
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(
     arginfo_maxminddbreader_getWithPrefixLen, 0, 1, IS_ARRAY, 1)
 ZEND_ARG_TYPE_INFO(0, ip_address, IS_STRING, 0)
 ZEND_END_ARG_INFO()
+#endif
 
 PHP_METHOD(MaxMind_Db_Reader, getWithPrefixLen) {
     zval record, z_prefix_len;
@@ -573,7 +581,12 @@ static zend_function_entry maxminddb_methods[] = {
            ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
     PHP_ME(MaxMind_Db_Reader, close, arginfo_maxminddbreader_void, ZEND_ACC_PUBLIC)
     PHP_ME(MaxMind_Db_Reader, get, arginfo_maxminddbreader_get,  ZEND_ACC_PUBLIC)
-    PHP_ME(MaxMind_Db_Reader, getWithPrefixLen, arginfo_maxminddbreader_getWithPrefixLen,  ZEND_ACC_PUBLIC)
+
+#if PHP_VERSION_ID >= 702000
+    PHP_ME(MaxMind_Db_Reader, getWithPrefixLen, arginfo_maxminddbreader_getWithPrefixLen, ZEND_ACC_PUBLIC)
+# else
+    PHP_ME(MaxMind_Db_Reader, getWithPrefixLen, arginfo_maxminddbreader_get,  ZEND_ACC_PUBLIC)
+# endif
     PHP_ME(MaxMind_Db_Reader, metadata, arginfo_maxminddbreader_void, ZEND_ACC_PUBLIC)
     { NULL, NULL, NULL }
 };
