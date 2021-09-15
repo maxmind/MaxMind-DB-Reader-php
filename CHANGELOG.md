@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+1.10.2
+-------------------
+
+* Resolve minor issue found by the Clang static analyzer in the C
+  extension.
+
 1.10.1 (2021-04-14)
 -------------------
 
