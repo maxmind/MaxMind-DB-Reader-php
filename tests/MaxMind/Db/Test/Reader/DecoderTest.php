@@ -26,7 +26,7 @@ class DecoderTest extends TestCase
         [
             'expected' => ['Foo'],
             'input' => [0x1, 0x4, // Foo
-                0x43, 0x46, 0x6f, 0x6f, ],
+                0x43, 0x46, 0x6F, 0x6F, ],
             'name' => 'one element',
         ],
         [
@@ -34,9 +34,9 @@ class DecoderTest extends TestCase
             'input' => [
                 0x2, 0x4,
                 // Foo
-                0x43, 0x46, 0x6f, 0x6f,
+                0x43, 0x46, 0x6F, 0x6F,
                 // 人
-                0x43, 0xe4, 0xba, 0xba,
+                0x43, 0xE4, 0xBA, 0xBA,
             ],
             'name' => 'two elements',
         ],
@@ -93,62 +93,62 @@ class DecoderTest extends TestCase
     private $maps = [
         [
             'expected' => [],
-            'input' => [0xe0],
+            'input' => [0xE0],
             'name' => 'empty',
         ],
         [
             'expected' => ['en' => 'Foo'],
-            'input' => [0xe1, // en
-                0x42, 0x65, 0x6e,
+            'input' => [0xE1, // en
+                0x42, 0x65, 0x6E,
                 // Foo
-                0x43, 0x46, 0x6f, 0x6f, ],
+                0x43, 0x46, 0x6F, 0x6F, ],
             'name' => 'one key',
         ],
         [
             'expected' => ['en' => 'Foo', 'zh' => '人'],
             'input' => [
-                0xe2,
+                0xE2,
                 // en
-                0x42, 0x65, 0x6e,
+                0x42, 0x65, 0x6E,
                 // Foo
-                0x43, 0x46, 0x6f, 0x6f,
+                0x43, 0x46, 0x6F, 0x6F,
                 // zh
-                0x42, 0x7a, 0x68,
+                0x42, 0x7A, 0x68,
                 // 人
-                0x43, 0xe4, 0xba, 0xba,
+                0x43, 0xE4, 0xBA, 0xBA,
             ],
             'name' => 'two keys',
         ],
         [
             'expected' => ['name' => ['en' => 'Foo', 'zh' => '人']],
             'input' => [
-                0xe1,
+                0xE1,
                 // name
-                0x44, 0x6e, 0x61, 0x6d, 0x65, 0xe2,
+                0x44, 0x6E, 0x61, 0x6D, 0x65, 0xE2,
                 // en
-                0x42, 0x65, 0x6e,
+                0x42, 0x65, 0x6E,
                 // Foo
-                0x43, 0x46, 0x6f, 0x6f,
+                0x43, 0x46, 0x6F, 0x6F,
                 // zh
-                0x42, 0x7a, 0x68,
+                0x42, 0x7A, 0x68,
                 // 人
-                0x43, 0xe4, 0xba, 0xba,
+                0x43, 0xE4, 0xBA, 0xBA,
             ],
             'name' => 'nested',
         ],
         [
             'expected' => ['languages' => ['en', 'zh']],
             'input' => [
-                0xe1,
+                0xE1,
                 // languages
-                0x49, 0x6c, 0x61, 0x6e, 0x67, 0x75, 0x61,
+                0x49, 0x6C, 0x61, 0x6E, 0x67, 0x75, 0x61,
                 0x67, 0x65, 0x73,
                 // array
                 0x2, 0x4,
                 // en
-                0x42, 0x65, 0x6e,
+                0x42, 0x65, 0x6E,
                 // zh
-                0x42, 0x7a, 0x68,
+                0x42, 0x7A, 0x68,
             ],
             'name' => 'map with array in it',
         ],
@@ -162,17 +162,17 @@ class DecoderTest extends TestCase
         $v = [
             ['expected' => 0, 'input' => [0x20, 0x0]],
             ['expected' => 5, 'input' => [0x20, 0x5]],
-            ['expected' => 10, 'input' => [0x20, 0xa]],
-            ['expected' => 1023, 'input' => [0x23, 0xff]],
-            ['expected' => 3017, 'input' => [0x28, 0x3, 0xc9]],
-            ['expected' => 524283, 'input' => [0x2f, 0xf7, 0xfb]],
-            ['expected' => 526335, 'input' => [0x2f, 0xff, 0xff]],
-            ['expected' => 134217726, 'input' => [0x37, 0xf7, 0xf7, 0xfe]],
-            ['expected' => 2147483647, 'input' => [0x38, 0x7f, 0xff, 0xff, 0xff]],
+            ['expected' => 10, 'input' => [0x20, 0xA]],
+            ['expected' => 1023, 'input' => [0x23, 0xFF]],
+            ['expected' => 3017, 'input' => [0x28, 0x3, 0xC9]],
+            ['expected' => 524283, 'input' => [0x2F, 0xF7, 0xFB]],
+            ['expected' => 526335, 'input' => [0x2F, 0xFF, 0xFF]],
+            ['expected' => 134217726, 'input' => [0x37, 0xF7, 0xF7, 0xFE]],
+            ['expected' => 2147483647, 'input' => [0x38, 0x7F, 0xFF, 0xFF, 0xFF]],
         ];
 
         if (\PHP_INT_MAX > 4294967295) {
-            array_push($v, ['expected' => 4294967295, 'input' => [0x38, 0xff, 0xff, 0xff, 0xff]]);
+            array_push($v, ['expected' => 4294967295, 'input' => [0x38, 0xFF, 0xFF, 0xFF, 0xFF]]);
         }
 
         return $v;
@@ -182,11 +182,11 @@ class DecoderTest extends TestCase
      * @var array<array<string, mixed>>
      */
     private $uint16 = [
-        ['expected' => 0, 'input' => [0xa0]],
-        ['expected' => 255, 'input' => [0xa1, 0xff]],
-        ['expected' => 500, 'input' => [0xa2, 0x1, 0xf4]],
-        ['expected' => 10872, 'input' => [0xa2, 0x2a, 0x78]],
-        ['expected' => 65535, 'input' => [0xa2, 0xff, 0xff]],
+        ['expected' => 0, 'input' => [0xA0]],
+        ['expected' => 255, 'input' => [0xA1, 0xFF]],
+        ['expected' => 500, 'input' => [0xA2, 0x1, 0xF4]],
+        ['expected' => 10872, 'input' => [0xA2, 0x2A, 0x78]],
+        ['expected' => 65535, 'input' => [0xA2, 0xFF, 0xFF]],
     ];
 
     /**
@@ -194,16 +194,16 @@ class DecoderTest extends TestCase
      */
     private $int32 = [
         ['expected' => 0, 'input' => [0x0, 0x1]],
-        ['expected' => -1, 'input' => [0x4, 0x1, 0xff, 0xff, 0xff, 0xff]],
-        ['expected' => 255, 'input' => [0x1, 0x1, 0xff]],
-        ['expected' => -255, 'input' => [0x4, 0x1, 0xff, 0xff, 0xff, 0x1]],
-        ['expected' => 500, 'input' => [0x2, 0x1, 0x1, 0xf4]],
-        ['expected' => -500, 'input' => [0x4, 0x1, 0xff, 0xff, 0xfe, 0xc]],
-        ['expected' => 65535, 'input' => [0x2, 0x1, 0xff, 0xff]],
-        ['expected' => -65535, 'input' => [0x4, 0x1, 0xff, 0xff, 0x0, 0x1]],
-        ['expected' => 16777215, 'input' => [0x3, 0x1, 0xff, 0xff, 0xff]],
-        ['expected' => -16777215, 'input' => [0x4, 0x1, 0xff, 0x0, 0x0, 0x1]],
-        ['expected' => 2147483647, 'input' => [0x4, 0x1, 0x7f, 0xff, 0xff, 0xff]],
+        ['expected' => -1, 'input' => [0x4, 0x1, 0xFF, 0xFF, 0xFF, 0xFF]],
+        ['expected' => 255, 'input' => [0x1, 0x1, 0xFF]],
+        ['expected' => -255, 'input' => [0x4, 0x1, 0xFF, 0xFF, 0xFF, 0x1]],
+        ['expected' => 500, 'input' => [0x2, 0x1, 0x1, 0xF4]],
+        ['expected' => -500, 'input' => [0x4, 0x1, 0xFF, 0xFF, 0xFE, 0xC]],
+        ['expected' => 65535, 'input' => [0x2, 0x1, 0xFF, 0xFF]],
+        ['expected' => -65535, 'input' => [0x4, 0x1, 0xFF, 0xFF, 0x0, 0x1]],
+        ['expected' => 16777215, 'input' => [0x3, 0x1, 0xFF, 0xFF, 0xFF]],
+        ['expected' => -16777215, 'input' => [0x4, 0x1, 0xFF, 0x0, 0x0, 0x1]],
+        ['expected' => 2147483647, 'input' => [0x4, 0x1, 0x7F, 0xFF, 0xFF, 0xFF]],
         ['expected' => -2147483647, 'input' => [0x4, 0x1, 0x80, 0x0, 0x0, 0x1]],
     ];
 
@@ -217,26 +217,26 @@ class DecoderTest extends TestCase
             ['expected' => '1', 'input' => [0x41, 0x31]],
             ['expected' => '人', 'input' => [0x43, 0xE4, 0xBA, 0xBA]],
             ['expected' => '123', 'input' => [0x43, 0x31, 0x32, 0x33]],
-            ['expected' => '123456789012345678901234567', 'input' => [0x5b, 0x31, 0x32, 0x33, 0x34,
+            ['expected' => '123456789012345678901234567', 'input' => [0x5B, 0x31, 0x32, 0x33, 0x34,
                 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
                 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36,
                 0x37, ]],
-            ['expected' => '1234567890123456789012345678', 'input' => [0x5c, 0x31, 0x32, 0x33, 0x34,
+            ['expected' => '1234567890123456789012345678', 'input' => [0x5C, 0x31, 0x32, 0x33, 0x34,
                 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
                 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36,
                 0x37, 0x38, ]],
-            ['expected' => '12345678901234567890123456789', 'input' => [0x5d, 0x0, 0x31, 0x32, 0x33,
+            ['expected' => '12345678901234567890123456789', 'input' => [0x5D, 0x0, 0x31, 0x32, 0x33,
                 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34,
                 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
                 0x36, 0x37, 0x38, 0x39, ]],
-            ['expected' => '123456789012345678901234567890', 'input' => [0x5d, 0x1, 0x31, 0x32, 0x33,
+            ['expected' => '123456789012345678901234567890', 'input' => [0x5D, 0x1, 0x31, 0x32, 0x33,
                 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34,
                 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
                 0x36, 0x37, 0x38, 0x39, 0x30, ]],
 
             ['expected' => str_repeat('x', 500),
                 'input' => array_pad(
-                    [0x5e, 0x0, 0xd7],
+                    [0x5E, 0x0, 0xD7],
                     503,
                     0x78
                 ),
@@ -244,7 +244,7 @@ class DecoderTest extends TestCase
             [
                 'expected' => str_repeat('x', 2000),
                 'input' => array_pad(
-                    [0x5e, 0x6, 0xb3],
+                    [0x5E, 0x6, 0xB3],
                     2003,
                     0x78
                 ),
@@ -252,7 +252,7 @@ class DecoderTest extends TestCase
             [
                 'expected' => str_repeat('x', 70000),
                 'input' => array_pad(
-                    [0x5f, 0x0, 0x10, 0x53],
+                    [0x5F, 0x0, 0x10, 0x53],
                     70004,
                     0x78
                 ),
@@ -266,13 +266,13 @@ class DecoderTest extends TestCase
     private function uint32(): array
     {
         return [
-            ['expected' => 0, 'input' => [0xc0]],
-            ['expected' => 255, 'input' => [0xc1, 0xff]],
-            ['expected' => 500, 'input' => [0xc2, 0x1, 0xf4]],
-            ['expected' => 10872, 'input' => [0xc2, 0x2a, 0x78]],
-            ['expected' => 65535, 'input' => [0xc2, 0xff, 0xff]],
-            ['expected' => 16777215, 'input' => [0xc3, 0xff, 0xff, 0xff]],
-            ['expected' => \PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0xc4, 0xff, 0xff, 0xff, 0xff]],
+            ['expected' => 0, 'input' => [0xC0]],
+            ['expected' => 255, 'input' => [0xC1, 0xFF]],
+            ['expected' => 500, 'input' => [0xC2, 0x1, 0xF4]],
+            ['expected' => 10872, 'input' => [0xC2, 0x2A, 0x78]],
+            ['expected' => 65535, 'input' => [0xC2, 0xFF, 0xFF]],
+            ['expected' => 16777215, 'input' => [0xC3, 0xFF, 0xFF, 0xFF]],
+            ['expected' => \PHP_INT_MAX < 4294967295 ? '4294967295' : 4294967295, 'input' => [0xC4, 0xFF, 0xFF, 0xFF, 0xFF]],
         ];
     }
 
@@ -285,7 +285,7 @@ class DecoderTest extends TestCase
         $bytes = unserialize(serialize($this->strings()));
 
         foreach ($bytes as $key => $test) {
-            $test['input'][0] ^= 0xc0;
+            $test['input'][0] ^= 0xC0;
         }
 
         return $bytes;
@@ -297,8 +297,8 @@ class DecoderTest extends TestCase
 
         $uints = [
             0 => [0x0, $ctrlByte],
-            500 => [0x2, $ctrlByte, 0x1, 0xf4],
-            10872 => [0x2, $ctrlByte, 0x2a, 0x78],
+            500 => [0x2, $ctrlByte, 0x1, 0xF4],
+            10872 => [0x2, $ctrlByte, 0x2A, 0x78],
         ];
 
         for ($power = 1; $power <= $bits / 8; ++$power) {
@@ -311,7 +311,7 @@ class DecoderTest extends TestCase
             }
             $input = [$power, $ctrlByte];
             for ($i = 2; $i < 2 + $power; ++$i) {
-                $input[$i] = 0xff;
+                $input[$i] = 0xFF;
             }
             $uints[$expected] = $input;
         }

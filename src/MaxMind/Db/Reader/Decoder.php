@@ -344,7 +344,7 @@ class Decoder
 
     private function sizeFromCtrlByte(int $ctrlByte, int $offset): array
     {
-        $size = $ctrlByte & 0x1f;
+        $size = $ctrlByte & 0x1F;
 
         if ($size < 29) {
             return [$size, $offset];
