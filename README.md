@@ -132,7 +132,7 @@ make test
 sudo make install
 ```
 
-You then must load your extension. The recommend method is to add the
+You then must load your extension. The recommended method is to add the
 following to your `php.ini` file:
 
 ```
