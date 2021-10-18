@@ -8,6 +8,8 @@
 .deps
 .gh-pages
 /.idea
+/.php-cs-fixer.cache
+/.phpunit.result.cache
 .libs/
 .php_cs.cache
 _site

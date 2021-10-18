@@ -14,19 +14,20 @@
         <email>goschwald@maxmind.com</email>
         <active>yes</active>
     </lead>
-    <date>2021-04-14</date>
+    <date>2021-10-18</date>
     <version>
-        <release>1.10.1</release>
-        <api>1.10.1</api>
+        <release>1.11.0</release>
+        <api>1.11.0</api>
     </version>
     <stability>
         <release>stable</release>
         <api>stable</api>
     </stability>
     <license uri="https://github.com/maxmind/MaxMind-DB-Reader-php/blob/main/LICENSE">Apache License 2.0</license>
-    <notes>* Fix a `TypeError` exception in the pure PHP reader when using large
-  databases on 32-bit PHP builds with the `bcmath` extension. Reported
-  by dodo1708. GitHub #124.</notes>
+    <notes>* Replace runtime define of a constant to facilitate opcache preloading.
+  Reported by vedadkajtaz. GitHub #134.
+* Resolve minor issue found by the Clang static analyzer in the C
+  extension.</notes>
     <contents>
         <dir name="/">
             <file role="doc" name="LICENSE"/>

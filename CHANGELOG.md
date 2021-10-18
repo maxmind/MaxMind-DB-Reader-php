@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.11.0
+1.11.0 (2021-10-18)
 -------------------
 
 * Replace runtime define of a constant to facilitate opcache preloading.
