@@ -18,10 +18,6 @@ class Decoder
      */
     private $pointerBase;
     /**
-     * @var float
-     */
-    private $pointerBaseByteSize;
-    /**
      * This is only used for unit testing.
      *
      * @var bool
@@ -44,8 +40,8 @@ class Decoder
     private const _UINT64 = 9;
     private const _UINT128 = 10;
     private const _ARRAY = 11;
-    private const _CONTAINER = 12;
-    private const _END_MARKER = 13;
+    // 12 is the container type
+    // 13 is the end marker type
     private const _BOOLEAN = 14;
     private const _FLOAT = 15;
 
@@ -60,7 +56,6 @@ class Decoder
         $this->fileStream = $fileStream;
         $this->pointerBase = $pointerBase;
 
-        $this->pointerBaseByteSize = $pointerBase > 0 ? log($pointerBase, 2) / 8 : 0;
         $this->pointerTestHack = $pointerTestHack;
 
         $this->switchByteOrder = $this->isPlatformLittleEndian();
