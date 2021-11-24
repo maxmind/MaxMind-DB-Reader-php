@@ -70,12 +70,8 @@ fi
 
 echo "Creating tag $tag"
 
-message="$version
-
-$notes"
-
 git push
 
-hub release create -m "$message" "$tag"
+gh release create --target "$(git branch --show-current)" -t "$version" -n "$notes" "$tag"
 
 echo "Upload PECL package to pecl.php.net!"
