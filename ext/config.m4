@@ -3,7 +3,7 @@ PHP_ARG_WITH(maxminddb,
     [  --with-maxminddb      Enable MaxMind DB Reader extension support])
 
 PHP_ARG_ENABLE(maxminddb-debug, for MaxMind DB debug support,
-    [ --enable-maxminddb-debug    Enable enable MaxMind DB deubg support], no, no)
+    [ --enable-maxminddb-debug    Enable MaxMind DB debug support], no, no)
 
 if test $PHP_MAXMINDDB != "no"; then
 
