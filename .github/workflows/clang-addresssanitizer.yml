@@ -1,0 +1,74 @@
+name: Run Clang AddressSanitizer
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '53 3 * * SUN'
+
+jobs:
+  addresssanitizer:
+    name: Clang AddressSanitizer
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CFLAGS: -fsanitize=address
+      LDFLAGS: -fsanitize=address
+    steps:
+      - name: Checkout
+        # We use v1 due to https://github.com/actions/checkout/issues/334
+        uses: actions/checkout@v1
+        with:
+          submodules: true
+
+      - name: Install system dependencies
+        run: sudo apt install pkg-config clang build-essential libxml2-dev libsqlite3-dev wget libssl-dev libcurl4 zlib1g-dev libcurl4-openssl-dev libonig-dev libzip-dev -y
+
+      # We install PHP from source as I was unsuccessful building only the
+      # extension with AddressSanitizer and getting that to run.
+      #
+      # Specifically: Clang does not link the ASan runtime to libraries. PHP
+      # from the image we use or from Ubuntu does not have ASan linked. If we
+      # link our extension with -shared-asan and then use LD_PRELOAD to load
+      # ASan, we get RTLD_DEEPBIND errors. I don't know if it's possible, but
+      # building PHP from source with ASan linked works around the issue.
+      - name: Install PHP
+        run: |
+              wget https://www.php.net/distributions/php-8.1.0.tar.gz
+              tar xzf php-8.1.0.tar.gz
+              cd php-8.1.0
+              ./configure --with-openssl --with-curl --with-zlib --enable-mbstring --enable-intl --with-zip
+              make -j2
+              sudo make install
+
+      - name: Install composer
+        run: |
+              php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+              php -r "if (hash_file('sha384', 'composer-setup.php') === '906a84df04cea2aa72f40b5f787e49f22d4c2f19492ac310e8cba5b96ac8b64115ac402c8cd292b8a03482574915d1a8') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+              php composer-setup.php
+              php -r "unlink('composer-setup.php');"
+              sudo mv composer.phar /usr/local/bin/composer
+
+      - name: Install libmaxminddb
+        run: |
+              git clone --recursive git://github.com/maxmind/libmaxminddb
+              cd libmaxminddb
+              ./bootstrap
+              ./configure
+              make -j2
+              sudo make install
+
+      - name: Build extension
+        run: |
+              cd ext
+              phpize
+              ./configure --with-maxminddb --enable-maxminddb-debug
+              make clean
+              make -j2
+              NO_INTERACTION=1 make test
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Test with phpunit using extension
+        run: php -d extension=ext/modules/maxminddb.so vendor/bin/phpunit

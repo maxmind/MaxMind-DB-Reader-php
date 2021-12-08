@@ -14,7 +14,7 @@ jobs:
       matrix:
         arch: ["amd64", "i386"]
         operating-system: [ubuntu-latest]
-        php-versions: ['7.2', '7.3', '7.4', '8.0']
+        php-versions: ['7.2', '7.3', '7.4', '8.0', '8.1']
         php-extensions: ['bcmath', 'gmp']
     name: "PHP ${{ matrix.php-versions }} (with ${{ matrix.php-extensions }}) test on ${{ matrix.operating-system }}/${{ matrix.arch }}"
     steps:
