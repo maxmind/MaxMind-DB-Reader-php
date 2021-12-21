@@ -143,7 +143,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
     }
 
     MMDB_s *mmdb = (MMDB_s *)ecalloc(1, sizeof(MMDB_s));
-    uint16_t status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
+    int const status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
 
     if (MMDB_SUCCESS != status) {
         zend_throw_exception_ex(
