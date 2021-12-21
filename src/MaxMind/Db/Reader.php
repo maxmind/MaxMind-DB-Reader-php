@@ -64,21 +64,28 @@ class Reader
      *
      * @param string $database
      *                         the MaxMind DB file to use
-     *
+     * @param string $use_memory  the DB file load to RAM
      * @throws InvalidArgumentException for invalid database path or unknown arguments
      * @throws InvalidDatabaseException
      *                                  if the database is invalid or there is an error reading
      *                                  from it
      */
-    public function __construct(string $database)
+    public function __construct(string $database,bool $use_memory=false)
     {
         if (\func_num_args() !== 1) {
             throw new ArgumentCountError(
                 sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
             );
         }
-
-        $fileHandle = @fopen($database, 'rb');
+        
+        if($use_memory){
+            $path = 'php://memory';
+            $fileHandle = @fopen($path, "rwb+");
+            fwrite($fileHandle, file_get_contents($database));
+        }else{
+            $fileHandle = @fopen($database, 'rb');
+        }
+       
         if ($fileHandle === false) {
             throw new InvalidArgumentException(
                 "The file \"$database\" does not exist or is not readable."
