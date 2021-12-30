@@ -143,7 +143,7 @@ PHP_METHOD(MaxMind_Db_Reader, __construct) {
     }
 
     MMDB_s *mmdb = (MMDB_s *)ecalloc(1, sizeof(MMDB_s));
-    uint16_t status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
+    int const status = MMDB_open(db_file, MMDB_MODE_MMAP, mmdb);
 
     if (MMDB_SUCCESS != status) {
         zend_throw_exception_ex(
@@ -388,12 +388,12 @@ handle_entry_data_list(const MMDB_entry_data_list_s *entry_data_list,
             return handle_array(entry_data_list, z_value TSRMLS_CC);
         case MMDB_DATA_TYPE_UTF8_STRING:
             ZVAL_STRINGL(z_value,
-                         (char *)entry_data_list->entry_data.utf8_string,
+                         entry_data_list->entry_data.utf8_string,
                          entry_data_list->entry_data.data_size);
             break;
         case MMDB_DATA_TYPE_BYTES:
             ZVAL_STRINGL(z_value,
-                         (char *)entry_data_list->entry_data.bytes,
+                         (char const *)entry_data_list->entry_data.bytes,
                          entry_data_list->entry_data.data_size);
             break;
         case MMDB_DATA_TYPE_DOUBLE:
@@ -440,7 +440,7 @@ handle_map(const MMDB_entry_data_list_s *entry_data_list,
     for (i = 0; i < map_size && entry_data_list; i++) {
         entry_data_list = entry_data_list->next;
 
-        char *key = estrndup((char *)entry_data_list->entry_data.utf8_string,
+        char *key = estrndup(entry_data_list->entry_data.utf8_string,
                              entry_data_list->entry_data.data_size);
         if (NULL == key) {
             zend_throw_exception_ex(maxminddb_exception_ce,
