@@ -13,16 +13,19 @@ class Decoder
      * @var resource
      */
     private $fileStream;
+
     /**
      * @var int
      */
     private $pointerBase;
+
     /**
      * This is only used for unit testing.
      *
      * @var bool
      */
     private $pointerTestHack;
+
     /**
      * @var bool
      */

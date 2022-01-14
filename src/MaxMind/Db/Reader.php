@@ -24,14 +24,17 @@ class Reader
      * @var int
      */
     private static $DATA_SECTION_SEPARATOR_SIZE = 16;
+
     /**
      * @var string
      */
     private static $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
+
     /**
      * @var int
      */
     private static $METADATA_START_MARKER_LENGTH = 14;
+
     /**
      * @var int
      */
@@ -41,18 +44,22 @@ class Reader
      * @var Decoder
      */
     private $decoder;
+
     /**
      * @var resource
      */
     private $fileHandle;
+
     /**
      * @var int
      */
     private $fileSize;
+
     /**
      * @var int
      */
     private $ipV4Start;
+
     /**
      * @var Metadata
      */
