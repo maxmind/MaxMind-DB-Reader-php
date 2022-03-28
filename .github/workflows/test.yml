@@ -35,7 +35,7 @@ jobs:
       - name: Install libmaxminddb
         run: |
               mkdir -p "$HOME/libmaxminddb"
-              git clone --recursive git://github.com/maxmind/libmaxminddb
+              git clone --recursive https://github.com/maxmind/libmaxminddb.git
               cd libmaxminddb
               ./bootstrap
               ./configure --prefix="$HOME/libmaxminddb"
