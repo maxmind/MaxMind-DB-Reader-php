@@ -52,7 +52,7 @@ jobs:
 
       - name: Install libmaxminddb
         run: |
-              git clone --recursive git://github.com/maxmind/libmaxminddb
+              git clone --recursive https://github.com/maxmind/libmaxminddb.git
               cd libmaxminddb
               ./bootstrap
               ./configure
