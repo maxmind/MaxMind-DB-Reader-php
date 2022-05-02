@@ -23,7 +23,7 @@ jobs:
           submodules: true
 
       - name: Install system dependencies
-        run: sudo apt install pkg-config clang build-essential libxml2-dev libsqlite3-dev wget libssl-dev libcurl4 zlib1g-dev libcurl4-openssl-dev libonig-dev libzip-dev -y
+        run: sudo apt update && sudo apt install pkg-config clang build-essential libxml2-dev libsqlite3-dev wget libssl-dev libcurl4 zlib1g-dev libcurl4-openssl-dev libonig-dev libzip-dev -y
 
       # We install PHP from source as I was unsuccessful building only the
       # extension with AddressSanitizer and getting that to run.

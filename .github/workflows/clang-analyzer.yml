@@ -24,7 +24,7 @@ jobs:
           submodules: true
 
       - name: Install clang-tools and libmaxminddb
-        run: sudo apt-get install clang-tools libmaxminddb-dev
+        run: sudo apt update && sudo apt-get install clang-tools libmaxminddb-dev
 
       - name: Build extension
         run: |
