@@ -23,7 +23,7 @@ jobs:
           submodules: true
 
       - name: Install system dependencies
-        run: sudo apt install pkg-config clang build-essential libxml2-dev libsqlite3-dev wget libssl-dev libcurl4 zlib1g-dev libcurl4-openssl-dev libonig-dev libzip-dev -y
+        run: sudo apt update && sudo apt install pkg-config clang build-essential libxml2-dev libsqlite3-dev wget libssl-dev libcurl4 zlib1g-dev libcurl4-openssl-dev libonig-dev libzip-dev -y
 
       # We install PHP from source as I was unsuccessful building only the
       # extension with AddressSanitizer and getting that to run.
@@ -45,7 +45,6 @@ jobs:
       - name: Install composer
         run: |
               php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-              php -r "if (hash_file('sha384', 'composer-setup.php') === '906a84df04cea2aa72f40b5f787e49f22d4c2f19492ac310e8cba5b96ac8b64115ac402c8cd292b8a03482574915d1a8') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
               php composer-setup.php
               php -r "unlink('composer-setup.php');"
               sudo mv composer.phar /usr/local/bin/composer
