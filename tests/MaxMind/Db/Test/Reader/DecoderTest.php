@@ -172,7 +172,7 @@ class DecoderTest extends TestCase
         ];
 
         if (\PHP_INT_MAX > 4294967295) {
-            array_push($v, ['expected' => 4294967295, 'input' => [0x38, 0xFF, 0xFF, 0xFF, 0xFF]]);
+            $v[] = ['expected' => 4294967295, 'input' => [0x38, 0xFF, 0xFF, 0xFF, 0xFF]];
         }
 
         return $v;
