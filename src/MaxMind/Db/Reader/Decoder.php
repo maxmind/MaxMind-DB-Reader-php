@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MaxMind\Db\Reader;
 
 // @codingStandardsIgnoreLine
-use RuntimeException;
 
 class Decoder
 {
@@ -282,7 +281,7 @@ class Decoder
                 if (\PHP_INT_MAX - $pointerBase >= $pointerOffset) {
                     $pointer = $pointerOffset + $pointerBase;
                 } else {
-                    throw new RuntimeException(
+                    throw new \RuntimeException(
                         'The database offset is too large to be represented on your platform.'
                     );
                 }
@@ -324,7 +323,7 @@ class Decoder
             } elseif (\extension_loaded('bcmath')) {
                 $integer = bcadd(bcmul((string) $integer, '256'), (string) $part);
             } else {
-                throw new RuntimeException(
+                throw new \RuntimeException(
                     'The gmp or bcmath extension must be installed to read this database.'
                 );
             }

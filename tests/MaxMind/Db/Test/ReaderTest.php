@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace MaxMind\Db\Test\Reader;
 
-use ArgumentCountError;
-use BadMethodCallException;
-use InvalidArgumentException;
 use MaxMind\Db\Reader;
 use MaxMind\Db\Reader\InvalidDatabaseException;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 
 /**
  * @coversNothing
@@ -254,7 +250,7 @@ class ReaderTest extends TestCase
 
     public function testV6AddressV4Database(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Error looking up 2001::. You attempted to look up an IPv6 address in an IPv4-only database');
         // @phpstan-ignore-next-line
         if (\defined('MaxMind\\Db\\Reader::MMDB_LIB_VERSION') && version_compare(Reader::MMDB_LIB_VERSION, '1.2.0', '<')) {
@@ -266,7 +262,7 @@ class ReaderTest extends TestCase
 
     public function testIpValidation(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('The value "not_ip" is not a valid IP address.');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder.mmdb');
         $reader->get('not_ip');
@@ -298,7 +294,7 @@ class ReaderTest extends TestCase
 
     public function testMissingDatabase(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('The file "file-does-not-exist.mmdb" does not exist or is not readable.');
         new Reader('file-does-not-exist.mmdb');
     }
@@ -312,7 +308,7 @@ class ReaderTest extends TestCase
 
     public function testTooManyConstructorArgs(): void
     {
-        $this->expectException(ArgumentCountError::class);
+        $this->expectException(\ArgumentCountError::class);
         $this->expectExceptionMessage('MaxMind\Db\Reader::__construct() expects exactly 1');
         new Reader('README.md', 1);
     }
@@ -322,14 +318,14 @@ class ReaderTest extends TestCase
      */
     public function testNoConstructorArgs(): void
     {
-        $this->expectException(ArgumentCountError::class);
+        $this->expectException(\ArgumentCountError::class);
         // @phpstan-ignore-next-line
         new Reader();
     }
 
     public function testTooManyGetArgs(): void
     {
-        $this->expectException(ArgumentCountError::class);
+        $this->expectException(\ArgumentCountError::class);
         $this->expectExceptionMessage('MaxMind\Db\Reader::get() expects exactly 1');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
@@ -342,7 +338,7 @@ class ReaderTest extends TestCase
      */
     public function testNoGetArgs(): void
     {
-        $this->expectException(ArgumentCountError::class);
+        $this->expectException(\ArgumentCountError::class);
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
@@ -352,7 +348,7 @@ class ReaderTest extends TestCase
 
     public function testMetadataArgs(): void
     {
-        $this->expectException(ArgumentCountError::class);
+        $this->expectException(\ArgumentCountError::class);
         $this->expectExceptionMessage('MaxMind\Db\Reader::metadata() expects exactly 0');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
@@ -372,7 +368,7 @@ class ReaderTest extends TestCase
 
     public function testCloseArgs(): void
     {
-        $this->expectException(ArgumentCountError::class);
+        $this->expectException(\ArgumentCountError::class);
         $this->expectExceptionMessage('MaxMind\Db\Reader::close() expects exactly 0');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
@@ -382,7 +378,7 @@ class ReaderTest extends TestCase
 
     public function testDoubleClose(): void
     {
-        $this->expectException(BadMethodCallException::class);
+        $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage('Attempt to close a closed MaxMind DB.');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
@@ -393,7 +389,7 @@ class ReaderTest extends TestCase
 
     public function testClosedGet(): void
     {
-        $this->expectException(BadMethodCallException::class);
+        $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage('Attempt to read from a closed MaxMind DB.');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
@@ -404,7 +400,7 @@ class ReaderTest extends TestCase
 
     public function testClosedMetadata(): void
     {
-        $this->expectException(BadMethodCallException::class);
+        $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage('Attempt to read from a closed MaxMind DB.');
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
@@ -415,7 +411,7 @@ class ReaderTest extends TestCase
 
     public function testReaderIsNotFinal(): void
     {
-        $reflectionClass = new ReflectionClass(Reader::class);
+        $reflectionClass = new \ReflectionClass(Reader::class);
         $this->assertFalse($reflectionClass->isFinal());
     }
 
