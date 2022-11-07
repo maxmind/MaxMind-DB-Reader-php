@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MaxMind\Db\Test\Reader;
 
-use ArgumentCountError;
 use MaxMind\Db\Reader\Metadata;
 use PHPUnit\Framework\TestCase;
 
@@ -45,7 +44,7 @@ class MetadataTest extends TestCase
 
     public function testTooManyConstructorArgs(): void
     {
-        $this->expectException(ArgumentCountError::class);
+        $this->expectException(\ArgumentCountError::class);
         $this->expectExceptionMessage('MaxMind\Db\Reader\Metadata::__construct() expects exactly 1');
         new Metadata([], 1);
     }
@@ -55,7 +54,7 @@ class MetadataTest extends TestCase
      */
     public function testNoConstructorArgs(): void
     {
-        $this->expectException(ArgumentCountError::class);
+        $this->expectException(\ArgumentCountError::class);
         // @phpstan-ignore-next-line
         new Metadata();
     }
