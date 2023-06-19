@@ -12,7 +12,7 @@ jobs:
     container: shivammathur/node:latest-${{ matrix.arch }}
     strategy:
       matrix:
-        arch: ["amd64", "i386"]
+        arch: ["amd64"]
         operating-system: [ubuntu-latest]
         php-versions: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
         php-extensions: ['bcmath', 'gmp']
