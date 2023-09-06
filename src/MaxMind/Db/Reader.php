@@ -180,6 +180,11 @@ class Reader
         }
 
         $rawAddress = unpack('C*', $packedAddr);
+        if ($rawAddress === false) {
+            throw new InvalidDatabaseException(
+                "Could not unpack the unsigned char of the packed in_addr representation."
+            );
+        }
 
         $bitCount = \count($rawAddress) * 8;
 
@@ -247,7 +252,13 @@ class Reader
         switch ($this->metadata->recordSize) {
             case 24:
                 $bytes = Util::read($this->fileHandle, $baseOffset + $index * 3, 3);
-                [, $node] = unpack('N', "\x00" . $bytes);
+                $rc = unpack('N', "\x00" . $bytes);
+                if ($rc === false) {
+                    throw new InvalidDatabaseException(
+                        "Could not unpack the unsigned long of the node."
+                    );
+                }
+                [, $node] = $rc;
 
                 return $node;
 
@@ -258,13 +269,25 @@ class Reader
                 } else {
                     $middle = 0x0F & \ord($bytes[0]);
                 }
-                [, $node] = unpack('N', \chr($middle) . substr($bytes, $index, 3));
+                $rc = unpack('N', \chr($middle) . substr($bytes, $index, 3));
+                if ($rc === false) {
+                    throw new InvalidDatabaseException(
+                        "Could not unpack the unsigned long of the node."
+                    );
+                }
+                [, $node] = $rc;
 
                 return $node;
 
             case 32:
                 $bytes = Util::read($this->fileHandle, $baseOffset + $index * 4, 4);
-                [, $node] = unpack('N', $bytes);
+                $rc = unpack('N', $bytes);
+                if ($rc === false) {
+                    throw new InvalidDatabaseException(
+                        "Could not unpack the unsigned long of the node."
+                    );
+                }
+                [, $node] = $rc;
 
                 return $node;
 
@@ -303,6 +326,11 @@ class Reader
     {
         $handle = $this->fileHandle;
         $fstat = fstat($handle);
+        if ($fstat === false) {
+            throw new InvalidDatabaseException(
+                "Error getting file information ($filename)."
+            );
+        }
         $fileSize = $fstat['size'];
         $marker = self::$METADATA_START_MARKER;
         $markerLength = self::$METADATA_START_MARKER_LENGTH;
@@ -314,7 +342,7 @@ class Reader
                 break;
             }
 
-            $value = fread($handle, $markerLength);
+            $value = fread($handle, abs($markerLength));
             if ($value === $marker) {
                 return $offset + $markerLength;
             }
