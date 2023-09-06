@@ -26,7 +26,7 @@ class Reader
     private static $METADATA_START_MARKER = "\xAB\xCD\xEFMaxMind.com";
 
     /**
-     * @var int
+     * @var int<0, max>
      */
     private static $METADATA_START_MARKER_LENGTH = 14;
 
@@ -342,11 +342,6 @@ class Reader
                 break;
             }
 
-            /**
-             * METADATA_START_MARKER_LENGTH is a positive integer.
-             *
-             * @var int<0, max> $markerLength
-             */
             $value = fread($handle, $markerLength);
             if ($value === $marker) {
                 return $offset + $markerLength;
