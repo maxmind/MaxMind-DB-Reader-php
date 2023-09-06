@@ -182,7 +182,7 @@ class Reader
         $rawAddress = unpack('C*', $packedAddr);
         if ($rawAddress === false) {
             throw new InvalidDatabaseException(
-                "Could not unpack the unsigned char of the packed in_addr representation."
+                'Could not unpack the unsigned char of the packed in_addr representation.'
             );
         }
 
@@ -255,7 +255,7 @@ class Reader
                 $rc = unpack('N', "\x00" . $bytes);
                 if ($rc === false) {
                     throw new InvalidDatabaseException(
-                        "Could not unpack the unsigned long of the node."
+                        'Could not unpack the unsigned long of the node.'
                     );
                 }
                 [, $node] = $rc;
@@ -272,7 +272,7 @@ class Reader
                 $rc = unpack('N', \chr($middle) . substr($bytes, $index, 3));
                 if ($rc === false) {
                     throw new InvalidDatabaseException(
-                        "Could not unpack the unsigned long of the node."
+                        'Could not unpack the unsigned long of the node.'
                     );
                 }
                 [, $node] = $rc;
@@ -284,7 +284,7 @@ class Reader
                 $rc = unpack('N', $bytes);
                 if ($rc === false) {
                     throw new InvalidDatabaseException(
-                        "Could not unpack the unsigned long of the node."
+                        'Could not unpack the unsigned long of the node.'
                     );
                 }
                 [, $node] = $rc;
@@ -344,6 +344,7 @@ class Reader
 
             /**
              * METADATA_START_MARKER_LENGTH is a positive integer.
+             *
              * @var int<0, max> $markerLength
              */
             $value = fread($handle, $markerLength);
