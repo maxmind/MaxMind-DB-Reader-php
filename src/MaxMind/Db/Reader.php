@@ -342,7 +342,11 @@ class Reader
                 break;
             }
 
-            $value = fread($handle, abs($markerLength));
+            /**
+             * METADATA_START_MARKER_LENGTH is a positive integer.
+             * @var int<0, max> $markerLength
+             */
+            $value = fread($handle, $markerLength);
             if ($value === $marker) {
                 return $offset + $markerLength;
             }
