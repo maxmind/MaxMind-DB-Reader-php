@@ -355,11 +355,12 @@ class Decoder
                 $part = \ord($bytes[$i]);
                 $integer = ($integer << 8) + $part;
             }
+
             return $integer;
         }
 
         // We only use gmp or bcmath if the final value is too big
-        $integerAsString = "0";
+        $integerAsString = '0';
         for ($i = 0; $i < $byteLength; ++$i) {
             $part = \ord($bytes[$i]);
 
