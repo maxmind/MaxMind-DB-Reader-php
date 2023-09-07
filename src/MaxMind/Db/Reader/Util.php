@@ -15,11 +15,6 @@ class Util
         if ($numberOfBytes === 0) {
             return '';
         }
-        if ($numberOfBytes < 0) {
-            throw new InvalidDatabaseException(
-                'The number of bytes may not be a negative value'
-            );
-        }
         if (fseek($stream, $offset) === 0) {
             $value = fread($stream, $numberOfBytes);
 
