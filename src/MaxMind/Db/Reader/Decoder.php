@@ -108,6 +108,12 @@ class Decoder
         return $this->decodeByType($type, $offset, $size);
     }
 
+    /**
+     * @param int $type
+     * @param int $offset
+     * @param int<0, max> $size
+     * @return array
+     */
     private function decodeByType(int $type, int $offset, int $size): array
     {
         switch ($type) {
@@ -185,7 +191,13 @@ class Decoder
     {
         // This assumes IEEE 754 doubles, but most (all?) modern platforms
         // use them.
-        [, $double] = unpack('E', $bytes);
+        $rc = unpack('E', $bytes);
+        if ($rc === false) {
+            throw new InvalidDatabaseException(
+                'Could not unpack a double value from the given bytes.'
+            );
+        }
+        [, $double] = $rc;
 
         return $double;
     }
@@ -194,7 +206,13 @@ class Decoder
     {
         // This assumes IEEE 754 floats, but most (all?) modern platforms
         // use them.
-        [, $float] = unpack('G', $bytes);
+        $rc = unpack('G', $bytes);
+        if ($rc === false) {
+            throw new InvalidDatabaseException(
+                'Could not unpack a float value from the given bytes.'
+            );
+        }
+        [, $float] = $rc;
 
         return $float;
     }
@@ -221,7 +239,13 @@ class Decoder
                 );
         }
 
-        [, $int] = unpack('l', $this->maybeSwitchByteOrder($bytes));
+        $rc = unpack('l', $this->maybeSwitchByteOrder($bytes));
+        if ($rc === false) {
+            throw new InvalidDatabaseException(
+                'Could not unpack a 32bit integer value from the given bytes.'
+            );
+        }
+        [, $int] = $rc;
 
         return $int;
     }
@@ -249,14 +273,26 @@ class Decoder
         switch ($pointerSize) {
             case 1:
                 $packed = \chr($ctrlByte & 0x7) . $buffer;
-                [, $pointer] = unpack('n', $packed);
+                $rc = unpack('n', $packed);
+                if ($rc === false) {
+                    throw new InvalidDatabaseException(
+                        'Could not unpack an unsigned short value from the given bytes (pointerSize is 1).'
+                    );
+                }
+                [, $pointer] = $rc;
                 $pointer += $this->pointerBase;
 
                 break;
 
             case 2:
                 $packed = "\x00" . \chr($ctrlByte & 0x7) . $buffer;
-                [, $pointer] = unpack('N', $packed);
+                $rc = unpack('N', $packed);
+                if ($rc === false) {
+                    throw new InvalidDatabaseException(
+                        'Could not unpack an unsigned long value from the given bytes (pointerSize is 2).'
+                    );
+                }
+                [, $pointer] = $rc;
                 $pointer += $this->pointerBase + 2048;
 
                 break;
@@ -266,7 +302,13 @@ class Decoder
 
                 // It is safe to use 'N' here, even on 32 bit machines as the
                 // first bit is 0.
-                [, $pointer] = unpack('N', $packed);
+                $rc = unpack('N', $packed);
+                if ($rc === false) {
+                    throw new InvalidDatabaseException(
+                        'Could not unpack an unsigned long value from the given bytes (pointerSize is 3).'
+                    );
+                }
+                [, $pointer] = $rc;
                 $pointer += $this->pointerBase + 526336;
 
                 break;
@@ -346,10 +388,22 @@ class Decoder
         if ($size === 29) {
             $size = 29 + \ord($bytes);
         } elseif ($size === 30) {
-            [, $adjust] = unpack('n', $bytes);
+            $rc = unpack('n', $bytes);
+            if ($rc === false) {
+                throw new InvalidDatabaseException(
+                    'Could not unpack an unsigned short value from the given bytes.'
+                );
+            }
+            [, $adjust] = $rc;
             $size = 285 + $adjust;
         } else {
-            [, $adjust] = unpack('N', "\x00" . $bytes);
+            $rc = unpack('N', "\x00" . $bytes);
+            if ($rc === false) {
+                throw new InvalidDatabaseException(
+                    'Could not unpack an unsigned long value from the given bytes.'
+                );
+            }
+            [, $adjust] = $rc;
             $size = $adjust + 65821;
         }
 
