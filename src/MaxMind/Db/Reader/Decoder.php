@@ -109,10 +109,7 @@ class Decoder
     }
 
     /**
-     * @param int $type
-     * @param int $offset
      * @param int<0, max> $size
-     * @return array
      */
     private function decodeByType(int $type, int $offset, int $size): array
     {

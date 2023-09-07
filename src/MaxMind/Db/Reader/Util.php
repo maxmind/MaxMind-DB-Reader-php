@@ -7,16 +7,15 @@ namespace MaxMind\Db\Reader;
 class Util
 {
     /**
-     * @param resource $stream
-     * @param int $offset
+     * @param resource    $stream
      * @param int<0, max> $numberOfBytes
-     * @return string
      */
     public static function read($stream, int $offset, int $numberOfBytes): string
     {
         if ($numberOfBytes === 0) {
             return '';
-        } elseif ($numberOfBytes < 0) {
+        }
+        if ($numberOfBytes < 0) {
             throw new InvalidDatabaseException(
                 'The number of bytes may not be a negative value'
             );
