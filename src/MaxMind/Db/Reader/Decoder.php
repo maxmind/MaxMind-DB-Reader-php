@@ -343,24 +343,30 @@ class Decoder
             return 0;
         }
 
-        $integer = 0;
-
         // PHP integers are signed. PHP_INT_SIZE - 1 is the number of
         // complete bytes that can be converted to an integer. However,
         // we can convert another byte if the leading bit is zero.
         $useRealInts = $byteLength <= \PHP_INT_SIZE - 1
             || ($byteLength === \PHP_INT_SIZE && (\ord($bytes[0]) & 0x80) === 0);
 
+        if ($useRealInts) {
+            $integer = 0;
+            for ($i = 0; $i < $byteLength; ++$i) {
+                $part = \ord($bytes[$i]);
+                $integer = ($integer << 8) + $part;
+            }
+            return $integer;
+        }
+
+        // We only use gmp or bcmath if the final value is too big
+        $integerAsString = "0";
         for ($i = 0; $i < $byteLength; ++$i) {
             $part = \ord($bytes[$i]);
 
-            // We only use gmp or bcmath if the final value is too big
-            if ($useRealInts) {
-                $integer = ($integer << 8) + $part;
-            } elseif (\extension_loaded('gmp')) {
-                $integer = gmp_strval(gmp_add(gmp_mul((string) $integer, '256'), $part));
+            if (\extension_loaded('gmp')) {
+                $integerAsString = gmp_strval(gmp_add(gmp_mul($integerAsString, '256'), $part));
             } elseif (\extension_loaded('bcmath')) {
-                $integer = bcadd(bcmul((string) $integer, '256'), (string) $part);
+                $integerAsString = bcadd(bcmul($integerAsString, '256'), (string) $part);
             } else {
                 throw new \RuntimeException(
                     'The gmp or bcmath extension must be installed to read this database.'
@@ -368,7 +374,7 @@ class Decoder
             }
         }
 
-        return $integer;
+        return $integerAsString;
     }
 
     private function sizeFromCtrlByte(int $ctrlByte, int $offset): array
