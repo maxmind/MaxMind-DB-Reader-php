@@ -423,12 +423,13 @@ class Decoder
     {
         $testint = 0x00FF;
         $packed = pack('S', $testint);
-	$rc = unpack('v', $packed);
+        $rc = unpack('v', $packed);
         if ($rc === false) {
             throw new InvalidDatabaseException(
                 'Could not unpack an unsigned short value from the given bytes.'
             );
         }
+
         return $testint === current($rc);
     }
 }
