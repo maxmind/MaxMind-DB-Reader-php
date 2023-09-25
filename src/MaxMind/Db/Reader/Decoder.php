@@ -265,7 +265,7 @@ class Decoder
         $pointerSize = (($ctrlByte >> 3) & 0x3) + 1;
 
         $buffer = Util::read($this->fileStream, $offset, $pointerSize);
-        $offset = $offset + $pointerSize;
+        $offset += $pointerSize;
 
         switch ($pointerSize) {
             case 1:
