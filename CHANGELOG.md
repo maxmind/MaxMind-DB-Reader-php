@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+1.11.1 (2023-12-01)
+-------------------
+
+* Resolve warnings when compiling the C extension.
+* Fix various type issues detected by PHPStan level. Pull request by
+  LauraTaylorUK. GitHub #160.
+
 1.11.0 (2021-10-18)
 -------------------
 

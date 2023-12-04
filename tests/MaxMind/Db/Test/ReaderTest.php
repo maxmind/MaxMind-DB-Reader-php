@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MaxMind\Db\Test\Reader;
+namespace MaxMind\Db\Test;
 
 use MaxMind\Db\Reader;
 use MaxMind\Db\Reader\InvalidDatabaseException;
