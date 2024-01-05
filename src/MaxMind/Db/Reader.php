@@ -64,8 +64,7 @@ class Reader
      * Constructs a Reader for the MaxMind DB format. The file passed to it must
      * be a valid MaxMind DB file such as a GeoIp2 database file.
      *
-     * @param string $database
-     *                         the MaxMind DB file to use
+     * @param string $database the MaxMind DB file to use
      *
      * @throws \InvalidArgumentException for invalid database path or unknown arguments
      * @throws InvalidDatabaseException
@@ -110,8 +109,7 @@ class Reader
     /**
      * Retrieves the record for the IP address.
      *
-     * @param string $ipAddress
-     *                          the IP address to look up
+     * @param string $ipAddress the IP address to look up
      *
      * @throws \BadMethodCallException   if this method is called on a closed database
      * @throws \InvalidArgumentException if something other than a single IP address is passed to the method
@@ -136,8 +134,7 @@ class Reader
     /**
      * Retrieves the record for the IP address and its associated network prefix length.
      *
-     * @param string $ipAddress
-     *                          the IP address to look up
+     * @param string $ipAddress the IP address to look up
      *
      * @throws \BadMethodCallException   if this method is called on a closed database
      * @throws \InvalidArgumentException if something other than a single IP address is passed to the method
