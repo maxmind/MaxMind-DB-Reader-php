@@ -24,7 +24,6 @@ jobs:
           php-version: ${{ matrix.php-versions }}
           extensions: "mbstring, intl, ${{ matrix.php-extensions }}"
           tools: "composer, phpize"
-          coverage: xdebug
 
       - name: Checkout
         # We use v1 due to https://github.com/actions/checkout/issues/334
@@ -58,7 +57,7 @@ jobs:
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Test with phpunit without extension
-        run: vendor/bin/phpunit --coverage-text
+        run: vendor/bin/phpunit
 
       - name: Test with phpunit using extension
         run: php -d extension=ext/modules/maxminddb.so vendor/bin/phpunit
