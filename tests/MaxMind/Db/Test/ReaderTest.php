@@ -252,7 +252,7 @@ class ReaderTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Error looking up 2001::. You attempted to look up an IPv6 address in an IPv4-only database');
-        if (\defined('MaxMind\\Db\\Reader::MMDB_LIB_VERSION') && version_compare(Reader::MMDB_LIB_VERSION, '1.2.0', '<')) {
+        if (\defined('MaxMind\Db\Reader::MMDB_LIB_VERSION') && version_compare(Reader::MMDB_LIB_VERSION, '1.2.0', '<')) {
             $this->markTestSkipped('MMDB_LIB_VERSION < 1.2.0');
         }
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-ipv4-24.mmdb');
