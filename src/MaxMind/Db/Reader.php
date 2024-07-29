@@ -75,7 +75,7 @@ class Reader
     {
         if (\func_num_args() !== 1) {
             throw new \ArgumentCountError(
-                sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
+                \sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
             );
         }
 
@@ -123,7 +123,7 @@ class Reader
     {
         if (\func_num_args() !== 1) {
             throw new \ArgumentCountError(
-                sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
+                \sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
             );
         }
         [$record] = $this->getWithPrefixLen($ipAddress);
@@ -149,7 +149,7 @@ class Reader
     {
         if (\func_num_args() !== 1) {
             throw new \ArgumentCountError(
-                sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
+                \sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
             );
         }
 
@@ -361,7 +361,7 @@ class Reader
     {
         if (\func_num_args()) {
             throw new \ArgumentCountError(
-                sprintf('%s() expects exactly 0 parameters, %d given', __METHOD__, \func_num_args())
+                \sprintf('%s() expects exactly 0 parameters, %d given', __METHOD__, \func_num_args())
             );
         }
 
@@ -386,7 +386,7 @@ class Reader
     {
         if (\func_num_args()) {
             throw new \ArgumentCountError(
-                sprintf('%s() expects exactly 0 parameters, %d given', __METHOD__, \func_num_args())
+                \sprintf('%s() expects exactly 0 parameters, %d given', __METHOD__, \func_num_args())
             );
         }
 
