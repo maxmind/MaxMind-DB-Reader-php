@@ -305,6 +305,13 @@ class ReaderTest extends TestCase
         new Reader('README.md');
     }
 
+    public function testOpeningDir(): void
+    {
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage('Error opening database file (tests/). Is this a valid MaxMind DB file?');
+        new Reader('tests/');
+    }
+
     public function testTooManyConstructorArgs(): void
     {
         $this->expectException(\ArgumentCountError::class);
