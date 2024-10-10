@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+1.12.0
+-------------------
+
+* Improve the error handling when the user tries to open a directory
+  with the pure PHP reader.
+
 1.11.1 (2023-12-01)
 -------------------
 

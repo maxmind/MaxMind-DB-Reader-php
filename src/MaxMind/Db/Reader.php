@@ -79,6 +79,13 @@ class Reader
             );
         }
 
+        if (is_dir($database)) {
+            // This matches the error that the C extension throws.
+            throw new InvalidDatabaseException(
+                "Error opening database file ($database). Is this a valid MaxMind DB file?"
+            );
+        }
+
         $fileHandle = @fopen($database, 'rb');
         if ($fileHandle === false) {
             throw new \InvalidArgumentException(
