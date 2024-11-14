@@ -306,7 +306,14 @@ class DecoderTest extends TestCase
 
         for ($power = 1; $power <= $bits / 8; ++$power) {
             if (\extension_loaded('gmp')) {
-                $expected = gmp_strval(gmp_sub(gmp_pow('2', 8 * $power), '1'));
+                // This is to work around the limit added to gmp_pow here:
+                // https://github.com/php/php-src/commit/e0a0e216a909dc4ee4ea7c113a5f41d49525f02e
+                $v = 1;
+                for ($i = 0; $i < $power; $i++) {
+                    $v = gmp_mul($v, 256);
+                }
+
+                $expected = gmp_strval(gmp_sub($v, '1'));
             } elseif (\extension_loaded('bcmath')) {
                 $expected = bcsub(bcpow('2', (string) (8 * $power)), '1');
             } else {
