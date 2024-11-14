@@ -14,20 +14,20 @@ jobs:
       matrix:
         arch: ["amd64", "i386"]
         operating-system: [ubuntu-latest]
-        php-versions: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
-        php-extensions: ['bcmath', 'gmp']
+        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        php-extension: ['bcmath', 'gmp']
         exclude:
           # We are getting weird libxml2 failures on this combo
           - arch: "i386"
-            php-versions: 8.4
+            php-version: 8.4
 
-    name: "PHP ${{ matrix.php-versions }} (with ${{ matrix.php-extensions }}) test on ${{ matrix.operating-system }}/${{ matrix.arch }}"
+    name: "PHP ${{ matrix.php-version }} (with ${{ matrix.php-extension }}) test on ${{ matrix.operating-system }}/${{ matrix.arch }}"
     steps:
       - name: Install PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-versions }}
-          extensions: "mbstring, intl, ${{ matrix.php-extensions }}"
+          php-version: ${{ matrix.php-version }}
+          extensions: "mbstring, intl, ${{ matrix.php-extension }}"
           tools: "composer, phpize"
 
       - name: Checkout
