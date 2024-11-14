@@ -149,8 +149,8 @@ class Reader
      *                                   if the database is invalid or there is an error reading
      *                                   from it
      *
-     * @return array an array where the first element is the record and the
-     *               second the network prefix length for the record
+     * @return array{0:mixed, 1:int} an array where the first element is the record and the
+     *                               second the network prefix length for the record
      */
     public function getWithPrefixLen(string $ipAddress): array
     {
@@ -174,6 +174,9 @@ class Reader
         return [$this->resolveDataPointer($pointer), $prefixLen];
     }
 
+    /**
+     * @return array{0:int, 1:int}
+     */
     private function findAddressInTree(string $ipAddress): array
     {
         $packedAddr = @inet_pton($ipAddress);

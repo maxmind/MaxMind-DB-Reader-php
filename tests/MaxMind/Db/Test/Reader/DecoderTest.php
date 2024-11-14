@@ -291,6 +291,9 @@ class DecoderTest extends TestCase
         return $bytes;
     }
 
+    /**
+     * @return array<int, array<int>>
+     */
     public function generateLargeUint(int $bits): array
     {
         $ctrlByte = $bits === 64 ? 0x2 : 0x3;
@@ -384,6 +387,9 @@ class DecoderTest extends TestCase
         $this->validateTypeDecoding('uint128', $this->generateLargeUint(128));
     }
 
+    /**
+     * @param array<mixed> $tests
+     */
     private function validateTypeDecoding(string $type, array $tests): void
     {
         foreach ($tests as $expected => $input) {
@@ -391,6 +397,9 @@ class DecoderTest extends TestCase
         }
     }
 
+    /**
+     * @param array<mixed> $tests
+     */
     private function validateTypeDecodingList(string $type, array $tests): void
     {
         foreach ($tests as $test) {
