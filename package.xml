@@ -14,19 +14,19 @@
         <email>goschwald@maxmind.com</email>
         <active>yes</active>
     </lead>
-    <date>2023-12-01</date>
+    <date>2024-11-14</date>
     <version>
-        <release>1.11.1</release>
-        <api>1.11.1</api>
+        <release>1.12.0</release>
+        <api>1.12.0</api>
     </version>
     <stability>
         <release>stable</release>
         <api>stable</api>
     </stability>
     <license uri="https://github.com/maxmind/MaxMind-DB-Reader-php/blob/main/LICENSE">Apache License 2.0</license>
-    <notes>* Resolve warnings when compiling the C extension.
-* Fix various type issues detected by PHPStan level. Pull request by
-  LauraTaylorUK. GitHub #160.</notes>
+    <notes>* Improve the error handling when the user tries to open a directory
+  with the pure PHP reader.
+* Improve the typehints on arrays in the PHPDocs.</notes>
     <contents>
         <dir name="/">
             <file role="doc" name="LICENSE"/>
