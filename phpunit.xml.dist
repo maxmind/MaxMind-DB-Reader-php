@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<phpunit bootstrap="./vendor/autoload.php" colors="true">
-    <testsuites>
-        <testsuite name="MaxMind DB Test Suite">
-            <directory suffix="Test.php">./tests/MaxMind/Db/Test/</directory>
-        </testsuite>
-    </testsuites>
-
-    <filter>
-        <whitelist>
-            <directory suffix=".php">./src/MaxMind/Db/</directory>
-        </whitelist>
-    </filter>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="./vendor/autoload.php" colors="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
+  <coverage>
+    <include>
+      <directory suffix=".php">./src/MaxMind/Db/</directory>
+    </include>
+  </coverage>
+  <testsuites>
+    <testsuite name="MaxMind DB Test Suite">
+      <directory suffix="Test.php">./tests/MaxMind/Db/Test/</directory>
+    </testsuite>
+  </testsuites>
 </phpunit>
