@@ -364,12 +364,12 @@ class ReaderTest extends TestCase
 
     public function testClose(): void
     {
+        $this->expectNotToPerformAssertions();
+
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-test-decoder.mmdb'
         );
         $reader->close();
-
-        $this->assertTrue(true);
     }
 
     public function testCloseArgs(): void
