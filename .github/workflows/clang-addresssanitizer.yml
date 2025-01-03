@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+          persist-credentials: false
 
       - name: Install system dependencies
         run: sudo apt update && sudo apt install pkg-config clang build-essential libxml2-dev libsqlite3-dev wget libssl-dev libcurl4 zlib1g-dev libcurl4-openssl-dev libonig-dev libzip-dev -y
