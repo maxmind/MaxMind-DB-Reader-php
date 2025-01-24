@@ -6,6 +6,8 @@ on:
   schedule:
     - cron: '53 3 * * SUN'
 
+permissions: {}
+
 jobs:
   addresssanitizer:
     name: Clang AddressSanitizer
