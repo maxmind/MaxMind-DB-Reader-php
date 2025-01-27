@@ -336,7 +336,15 @@ PHP_METHOD(MaxMind_Db_Reader, metadata) {
     object_init_ex(return_value, metadata_ce);
 
     MMDB_entry_data_list_s *entry_data_list;
-    MMDB_get_metadata_as_entry_data_list(mmdb_obj->mmdb, &entry_data_list);
+    int status =
+        MMDB_get_metadata_as_entry_data_list(mmdb_obj->mmdb, &entry_data_list);
+    if (status != MMDB_SUCCESS) {
+        zend_throw_exception_ex(maxminddb_exception_ce,
+                                0 TSRMLS_CC,
+                                "Error while decoding metadata. %s",
+                                MMDB_strerror(status));
+        return;
+    }
 
     zval metadata_array;
     const MMDB_entry_data_list_s *rv =
