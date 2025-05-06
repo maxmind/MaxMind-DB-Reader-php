@@ -30,6 +30,7 @@ tag="v$version"
 
 rm -fr vendor
 
+perl -pi -e "s{(?<=php composer\.phar require maxmind-db/reader:).+}{^$version}g" README.md
 perl -pi -e "s/(?<=#define PHP_MAXMINDDB_VERSION \")\d+\.\d+\.\d+(?=\")/$version/" ext/php_maxminddb.h
 perl -pi -e "s/(?<=\"ext-maxminddb\": \"<)\d+.\d+.\d+(?=,)/$version/" composer.json
 perl -pi -e "s/(?<=<(?:api)>)\d+\.\d+\.\d+(?=<)/$version/" package.xml
