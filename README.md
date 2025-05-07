@@ -24,7 +24,7 @@ You should now have the file `composer.phar` in your project directory.
 Run in your project root:
 
 ```
-php composer.phar require maxmind-db/reader:~1.0
+php composer.phar require maxmind-db/reader:^1.12.1
 ```
 
 You should now have the files `composer.json` and `composer.lock` as well as
