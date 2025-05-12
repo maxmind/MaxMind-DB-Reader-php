@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+1.13.0
+-------------------
+
+* A redundant `filesize()` call in the reader's constructor was removed.
+  Pull request by Pavel Djundik. GitHub #189.
+
 1.12.1 (2025-05-05)
 -------------------
 
