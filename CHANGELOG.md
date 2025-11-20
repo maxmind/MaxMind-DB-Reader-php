@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.13.0
+1.13.0 (2025-11-20)
 -------------------
 
 * A redundant `filesize()` call in the reader's constructor was removed.

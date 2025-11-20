@@ -14,18 +14,18 @@
         <email>goschwald@maxmind.com</email>
         <active>yes</active>
     </lead>
-    <date>2025-05-05</date>
+    <date>2025-11-20</date>
     <version>
-        <release>1.12.1</release>
-        <api>1.12.1</api>
+        <release>1.13.0</release>
+        <api>1.13.0</api>
     </version>
     <stability>
         <release>stable</release>
         <api>stable</api>
     </stability>
     <license uri="https://github.com/maxmind/MaxMind-DB-Reader-php/blob/main/LICENSE">Apache License 2.0</license>
-    <notes>* The C extension now checks that the database metadata lookup was
-  successful.</notes>
+    <notes>* A redundant `filesize()` call in the reader's constructor was removed.
+  Pull request by Pavel Djundik. GitHub #189.</notes>
     <contents>
         <dir name="/">
             <file role="doc" name="LICENSE"/>
