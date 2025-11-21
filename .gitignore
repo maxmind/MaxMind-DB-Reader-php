@@ -6,6 +6,7 @@
 *.sublime-*
 *.sw?
 .deps
+.ext
 .gh-pages
 /.idea
 /.php-cs-fixer.cache
