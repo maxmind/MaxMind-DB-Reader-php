@@ -5,6 +5,7 @@
 *.old
 *.sublime-*
 *.sw?
+.claude
 .deps
 .ext
 .gh-pages
