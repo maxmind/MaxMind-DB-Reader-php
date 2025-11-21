@@ -46,6 +46,11 @@ fi
 
 tag="v$version"
 
+if [ -n "$(git status --porcelain)" ]; then
+    echo ". is not clean." >&2
+    exit 1
+fi
+
 rm -fr vendor
 
 perl -pi -e "s{(?<=php composer\.phar require maxmind-db/reader:).+}{^$version}g" README.md
