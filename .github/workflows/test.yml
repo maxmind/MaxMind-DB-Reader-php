@@ -10,20 +10,20 @@ permissions: {}
 
 jobs:
   run:
-    runs-on: ${{ matrix.operating-system }}
+    runs-on: ${{ matrix.runner }}
     container: shivammathur/node:latest-${{ matrix.arch }}
     strategy:
       matrix:
-        arch: ["amd64", "i386"]
-        operating-system: [ubuntu-latest]
+        arch: ["amd64", "arm64v8"]
         php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
         php-extension: ['bcmath', 'gmp']
-        exclude:
-          # We are getting weird libxml2 failures on this combo
-          - arch: "i386"
-            php-version: 8.4
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64v8
+            runner: ubuntu-24.04-arm
 
-    name: "PHP ${{ matrix.php-version }} (with ${{ matrix.php-extension }}) test on ${{ matrix.operating-system }}/${{ matrix.arch }}"
+    name: "PHP ${{ matrix.php-version }} (with ${{ matrix.php-extension }}) test on ${{ matrix.runner }}"
     steps:
       - name: Install PHP
         uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # 2.36.0

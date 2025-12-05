@@ -2,6 +2,39 @@
 
 set -eu -o pipefail
 
+# Pre-flight checks - verify all required tools are available and configured
+# before making any changes to the repository
+
+check_command() {
+    if ! command -v "$1" &>/dev/null; then
+        echo "Error: $1 is not installed or not in PATH"
+        exit 1
+    fi
+}
+
+# Verify gh CLI is authenticated
+if ! gh auth status &>/dev/null; then
+    echo "Error: gh CLI is not authenticated. Run 'gh auth login' first."
+    exit 1
+fi
+
+# Verify we can access this repository via gh
+if ! gh repo view --json name &>/dev/null; then
+    echo "Error: Cannot access repository via gh. Check your authentication and repository access."
+    exit 1
+fi
+
+# Verify git can connect to the remote (catches SSH key issues, etc.)
+if ! git ls-remote origin &>/dev/null; then
+    echo "Error: Cannot connect to git remote. Check your git credentials/SSH keys."
+    exit 1
+fi
+
+check_command perl
+check_command php
+check_command phpize
+check_command pecl
+
 # Check that we're not on the main branch
 current_branch=$(git branch --show-current)
 if [ "$current_branch" = "main" ]; then
@@ -23,7 +56,7 @@ fi
 changelog=$(cat CHANGELOG.md)
 
 regex='
-([0-9]+\.[0-9]+\.[0-9]+) \(([0-9]{4}-[0-9]{2}-[0-9]{2})\)
+([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?) \(([0-9]{4}-[0-9]{2}-[0-9]{2})\)
 -*
 
 ((.|
@@ -31,15 +64,15 @@ regex='
 '
 
 if [[ ! $changelog =~ $regex ]]; then
-      echo "Could not find date line in change log!"
-      exit 1
+    echo "Could not find date line in change log!"
+    exit 1
 fi
 
 version="${BASH_REMATCH[1]}"
-date="${BASH_REMATCH[2]}"
-notes="$(echo "${BASH_REMATCH[3]}" | sed -n -e '/^[0-9]\+\.[0-9]\+\.[0-9]\+/,$!p')"
+date="${BASH_REMATCH[3]}"
+notes="$(echo "${BASH_REMATCH[4]}" | sed -n -E '/^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?/,$!p')"
 
-if [[ "$date" !=  $(date +"%Y-%m-%d") ]]; then
+if [[ "$date" != "$(date +"%Y-%m-%d")" ]]; then
     echo "$date is not today!"
     exit 1
 fi
@@ -87,7 +120,7 @@ pecl package
 
 package="maxminddb-$version.tgz"
 
-read -p "Push to origin? (y/n) " should_push
+read -r -p "Push to origin? (y/n) " should_push
 
 if [ "$should_push" != "y" ]; then
     echo "Aborting"
@@ -126,13 +159,13 @@ if [ ! -d "$ext_repo_dir" ]; then
 fi
 
 # Navigate to extension repository
-pushd "$ext_repo_dir" > /dev/null
+pushd "$ext_repo_dir" >/dev/null
 
 # Safety check: ensure working directory is clean
 if [ -n "$(git status --porcelain)" ]; then
     echo "ERROR: Extension repository has uncommitted changes"
     echo "Please commit or stash changes in: $ext_repo_dir"
-    popd > /dev/null
+    popd >/dev/null
     exit 1
 fi
 
@@ -155,7 +188,7 @@ git checkout "$tag"
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to checkout tag $tag in submodule"
-    popd > /dev/null
+    popd >/dev/null
     exit 1
 fi
 
@@ -167,7 +200,7 @@ git add MaxMind-DB-Reader-php
 # Check if there are actual changes
 if [ -z "$(git status --porcelain)" ]; then
     echo "No changes needed in extension repository (already at $tag)"
-    popd > /dev/null
+    popd >/dev/null
     echo "Extension repository is up to date"
 else
     # Commit submodule update
@@ -185,7 +218,7 @@ $notes"
 
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to push to extension repository"
-        popd > /dev/null
+        popd >/dev/null
         exit 1
     fi
 
@@ -196,13 +229,13 @@ $notes"
 
     # Create tarball with files at root level (PIE requirement)
     # Note: naming must be {extension-name}-v{version}.tgz
-    pushd MaxMind-DB-Reader-php/ext > /dev/null
+    pushd MaxMind-DB-Reader-php/ext >/dev/null
     tar -czf "../../$pie_tarball" *
-    popd > /dev/null
+    popd >/dev/null
 
     if [ ! -f "$pie_tarball" ]; then
         echo "ERROR: Failed to create source tarball"
-        popd > /dev/null
+        popd >/dev/null
         exit 1
     fi
 
@@ -226,7 +259,7 @@ $notes" \
         echo "ERROR: Failed to create release in extension repository"
         echo "You may need to create it manually at:"
         echo "https://github.com/maxmind/MaxMind-DB-Reader-php-ext/releases/new?tag=$tag"
-        popd > /dev/null
+        popd >/dev/null
         exit 1
     fi
 
@@ -239,7 +272,7 @@ $notes" \
     echo "✓ Pre-packaged source uploaded: $pie_tarball"
 fi
 
-popd > /dev/null
+popd >/dev/null
 
 echo ""
 echo "==================================================================="
