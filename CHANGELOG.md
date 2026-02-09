@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.13.2
+1.14.0
 -------------------
 
 * Updated the Windows build configuration to use the correct libmaxminddb
