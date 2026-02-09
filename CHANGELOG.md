@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+1.14.0
+-------------------
+
+* Updated the Windows build configuration to use the correct libmaxminddb
+  name (`maxminddb.lib` instead of `libmaxminddb.lib`) when building the
+  extension. The `lib` prefix was removed in libmaxminddb 1.6.0. Pull
+  request by Jean-Baptiste Nahan. GitHub #231.
+
 1.13.1 (2025-11-21)
 -------------------
 
