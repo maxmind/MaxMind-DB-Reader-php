@@ -62,7 +62,7 @@ class Reader
 
     /**
      * Constructs a Reader for the MaxMind DB format. The file passed to it must
-     * be a valid MaxMind DB file such as a GeoIp2 database file.
+     * be a valid MaxMind DB file such as a GeoIP database file.
      *
      * @param string $database the MaxMind DB file to use
      *
