@@ -1,0 +1,9 @@
+[settings]
+lockfile = true
+
+[tools]
+lychee = "latest"
+
+[tasks.check-links]
+description = "Check links with lychee"
+run = "lychee --no-progress './**/*.md' './src/**/*.php' './composer.json'"

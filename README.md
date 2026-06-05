@@ -75,7 +75,7 @@ $reader = new Reader('example.mmdb');
 
 ## Installation (RPM)
 
-RPMs are available in the [official Fedora repository](https://apps.fedoraproject.org/packages/php-maxminddb).
+RPMs are available in the [official Fedora repository](https://packages.fedoraproject.org/pkgs/php-maxminddb/php-maxminddb/).
 
 To install on Fedora, run:
 
@@ -83,7 +83,7 @@ To install on Fedora, run:
 dnf install php-maxminddb
 ```
 
-To install on CentOS or RHEL 7, first [enable the EPEL repository](https://fedoraproject.org/wiki/EPEL)
+To install on CentOS or RHEL 7, first [enable the EPEL repository](https://docs.fedoraproject.org/en-US/epel/)
 and then run:
 
 ```bash
@@ -139,7 +139,7 @@ for prerequisites including libmaxminddb installation instructions.
 
 First install [libmaxminddb](https://github.com/maxmind/libmaxminddb) as
 described in its [README.md
-file](https://github.com/maxmind/libmaxminddb/blob/main/README.md#installing-from-a-tarball).
+file](https://github.com/maxmind/libmaxminddb/blob/main/README.md#from-a-named-release-tarball).
 After successfully installing libmaxmindb, you may install the extension
 from [PECL](https://pecl.php.net/package/maxminddb):
 
@@ -189,7 +189,7 @@ breaking change.
 Please report all issues with this code using the [GitHub issue tracker](https://github.com/maxmind/MaxMind-DB-Reader-php/issues).
 
 If you are having an issue with a MaxMind service that is not specific to the
-client API, please see [our support page](https://www.maxmind.com/en/support).
+client API, please see [our support page](https://support.maxmind.com/knowledge-base).
 
 ## Requirements  ##
 
