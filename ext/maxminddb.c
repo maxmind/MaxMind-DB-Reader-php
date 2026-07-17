@@ -110,7 +110,7 @@ static zend_class_entry *maxminddb_ce, *maxminddb_exception_ce, *metadata_ce;
 
 static inline maxminddb_obj *
 php_maxminddb_fetch_object(zend_object *obj TSRMLS_DC) {
-    return (maxminddb_obj *)((char *)(obj)-XtOffsetOf(maxminddb_obj, std));
+    return (maxminddb_obj *)((char *)(obj)-offsetof(maxminddb_obj, std));
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_maxminddbreader_construct, 0, 0, 1)
@@ -781,7 +781,7 @@ PHP_MINIT_FUNCTION(maxminddb) {
            zend_get_std_object_handlers(),
            sizeof(zend_object_handlers));
     maxminddb_obj_handlers.clone_obj = NULL;
-    maxminddb_obj_handlers.offset = XtOffsetOf(maxminddb_obj, std);
+    maxminddb_obj_handlers.offset = offsetof(maxminddb_obj, std);
     maxminddb_obj_handlers.free_obj = maxminddb_free_storage;
     zend_declare_class_constant_string(maxminddb_ce,
                                        "MMDB_LIB_VERSION",
