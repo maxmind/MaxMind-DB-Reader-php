@@ -35,6 +35,9 @@ check_command php
 check_command phpize
 check_command pecl
 
+# composer.phar is managed by mise (see mise.toml)
+check_command composer.phar
+
 # Check that we're not on the main branch
 current_branch=$(git branch --show-current)
 if [ "$current_branch" = "main" ]; then
@@ -100,8 +103,7 @@ phpize
 make
 popd
 
-php -n -dextension=ext/modules/maxminddb.so composer.phar self-update
-php -n -dextension=ext/modules/maxminddb.so composer.phar update
+php -n -dextension=ext/modules/maxminddb.so "$(mise which composer.phar)" update
 
 php -n -dextension=ext/modules/maxminddb.so ./vendor/bin/phpunit
 php -n ./vendor/bin/phpunit

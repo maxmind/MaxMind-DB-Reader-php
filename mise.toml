@@ -2,6 +2,7 @@
 lockfile = true
 
 [tools]
+"github:composer/composer" = "latest"
 lychee = "latest"
 
 [tasks.check-links]
