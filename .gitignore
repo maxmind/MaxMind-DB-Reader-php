@@ -20,7 +20,6 @@ ac*.m4
 autom4te.cache/
 build/
 composer.lock
-composer.phar
 config.[^mw]*
 configure*
 core
