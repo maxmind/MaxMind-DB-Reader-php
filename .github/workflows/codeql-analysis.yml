@@ -1,0 +1,51 @@
+name: "Code scanning - action"
+
+on:
+  pull_request:
+  schedule:
+    - cron: '0 7 * * 2'
+
+permissions:
+  security-events: write # Used by this action.
+
+jobs:
+  CodeQL-Build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Setup PHP
+      uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+      with:
+        php-version: '8.4'
+        tools: phpize
+
+    - name: Checkout repository
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        fetch-depth: 2
+        persist-credentials: false
+
+    - run: git checkout HEAD^2
+      if: ${{ github.event_name == 'pull_request' }}
+
+    - name: Install libmaxminddb
+      run: sudo apt-get update && sudo apt-get install -y libmaxminddb-dev
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
+      with:
+        languages: c-cpp
+
+    # A PHP extension is not built by CodeQL's Autobuild, so we build it
+    # explicitly (mirroring this repo's other C build workflows) between the
+    # init and analyze steps so CodeQL can trace the compilation.
+    - name: Build extension
+      run: |
+            cd ext
+            phpize
+            ./configure --with-maxminddb --enable-maxminddb-debug
+            make
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
