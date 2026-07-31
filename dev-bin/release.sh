@@ -91,7 +91,7 @@ rm -fr vendor
 
 perl -pi -e "s{(?<=php composer\.phar require maxmind-db/reader:).+}{^$version}g" README.md
 perl -pi -e "s/(?<=#define PHP_MAXMINDDB_VERSION \")\d+\.\d+\.\d+(?=\")/$version/" ext/php_maxminddb.h
-perl -pi -e "s/(?<=\"ext-maxminddb\": \"<)\d+.\d+.\d+(?=,)/$version/" composer.json
+perl -pi -e "s/(?<=\"ext-maxminddb\": \"<)\d+\.\d+\.\d+(?= )/$version/" composer.json
 perl -pi -e "s/(?<=<(?:api)>)\d+\.\d+\.\d+(?=<)/$version/" package.xml
 perl -pi -e "s/(?<=<(?:release)>)\d+\.\d+\.\d+(?=<)/$version/" package.xml
 perl -0777 -pi -e "s{(?<=<notes>).*(?=</notes>)}{$notes}sm" package.xml
@@ -201,9 +201,7 @@ git add MaxMind-DB-Reader-php
 
 # Check if there are actual changes
 if [ -z "$(git status --porcelain)" ]; then
-    echo "No changes needed in extension repository (already at $tag)"
-    popd >/dev/null
-    echo "Extension repository is up to date"
+    echo "No commit needed in extension repository (submodule already at $tag)"
 else
     # Commit submodule update
     echo "Committing submodule update..."
@@ -217,62 +215,45 @@ $notes"
     # Push changes
     echo "Pushing to origin..."
     git push origin main
-
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to push to extension repository"
-        popd >/dev/null
-        exit 1
-    fi
-
-    # Create pre-packaged source tarball for PIE
-    # PIE needs this because it doesn't handle git submodules automatically
-    echo "Creating pre-packaged source tarball for PIE..."
-    pie_tarball="maxminddb-${tag}.tgz"
-
-    # Create tarball with files at root level (PIE requirement)
-    # Note: naming must be {extension-name}-v{version}.tgz
-    pushd MaxMind-DB-Reader-php/ext >/dev/null
-    tar -czf "../../$pie_tarball" *
-    popd >/dev/null
-
-    if [ ! -f "$pie_tarball" ]; then
-        echo "ERROR: Failed to create source tarball"
-        popd >/dev/null
-        exit 1
-    fi
-
-    echo "Created $pie_tarball"
-
-    # Create corresponding release in extension repo with same tag
-    echo "Creating release $tag in extension repository..."
-    gh release create "$tag" \
-        --repo maxmind/MaxMind-DB-Reader-php-ext \
-        --title "$version" \
-        --notes "Extension release for MaxMind-DB-Reader-php $version
-
-This release tracks the $tag tag of the main repository.
-
-## Release notes from main repository
-
-$notes" \
-        "$pie_tarball"
-
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to create release in extension repository"
-        echo "You may need to create it manually at:"
-        echo "https://github.com/maxmind/MaxMind-DB-Reader-php-ext/releases/new?tag=$tag"
-        popd >/dev/null
-        exit 1
-    fi
-
-    # Clean up tarball
-    rm -f "$pie_tarball"
-
-    echo ""
-    echo "✓ Extension repository updated successfully!"
-    echo "✓ Release created: https://github.com/maxmind/MaxMind-DB-Reader-php-ext/releases/tag/$tag"
-    echo "✓ Pre-packaged source uploaded: $pie_tarball"
 fi
+
+# Tagging the extension repository is what triggers its release workflow, which
+# builds the pre-packaged source tarball and the precompiled binaries, uploads
+# them all, and publishes the release. This has to happen even when the submodule
+# commit above turned out to be unnecessary: on a re-run, or after someone bumped
+# the submodule by hand, that commit is a no-op but the tag has still never been
+# pushed, and it is the tag rather than the commit that starts the release.
+if ! ext_remote_tag="$(git ls-remote --tags origin "refs/tags/$tag")"; then
+    echo "ERROR: Could not list tags in the extension repository remote"
+    popd >/dev/null
+    exit 1
+fi
+
+if [ -n "$ext_remote_tag" ]; then
+    echo "ERROR: Tag $tag already exists in the extension repository."
+    echo "The release workflow only runs on a newly pushed tag, so re-pushing"
+    echo "it would build nothing. Check whether the release is already there:"
+    echo "https://github.com/maxmind/MaxMind-DB-Reader-php-ext/releases/tag/$tag"
+    echo "To rebuild the assets for a tag that has already been pushed, run the"
+    echo "workflow by hand against that tag:"
+    echo "gh workflow run release.yml --repo maxmind/MaxMind-DB-Reader-php-ext -f tag=$tag"
+    popd >/dev/null
+    exit 1
+fi
+
+# The tag must be annotated: the workflow creates the release with
+# --notes-from-tag, which reads the annotation as the release notes.
+# -f replaces a tag left behind by an earlier failed run rather than aborting;
+# the check above has already established that it was never pushed.
+echo "Tagging $tag in extension repository..."
+git tag -f -a "$tag" -m "$notes"
+
+echo "Pushing tag $tag..."
+git push origin "refs/tags/$tag"
+
+echo ""
+echo "✓ Extension repository tagged $tag"
+echo "✓ Its release workflow will build and publish the release assets"
 
 popd >/dev/null
 
@@ -283,9 +264,15 @@ echo "==================================================================="
 echo ""
 echo "Main repository: https://github.com/maxmind/MaxMind-DB-Reader-php/releases/tag/$tag"
 echo "Extension repository: https://github.com/maxmind/MaxMind-DB-Reader-php-ext/releases/tag/$tag"
+echo "  (published by CI once the release workflow finishes)"
 echo ""
 echo "Action items:"
-echo "1. Upload PECL package to pecl.php.net: https://pecl.php.net/package-new.php"
+echo "1. Watch the extension repository's release workflow and confirm that it"
+echo "   published the release with all of its assets:"
+echo "   https://github.com/maxmind/MaxMind-DB-Reader-php-ext/actions/workflows/release.yml"
+echo "   It builds the pre-packaged source tarball and the precompiled binaries,"
+echo "   checks them, and only then un-drafts the release. Until it succeeds the"
+echo "   release stays a draft, and it smoke tests 'pie install' itself at the end."
+echo "2. Upload PECL package to pecl.php.net: https://pecl.php.net/package-new.php"
 echo "   File: $package"
-echo "2. Verify PIE installation: pie install maxmind-db/reader-ext:^$version"
 echo "3. Announce release"
