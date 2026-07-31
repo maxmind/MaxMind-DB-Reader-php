@@ -21,3 +21,11 @@ updates:
       codeql:
         patterns:
           - github/codeql-action*
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '14:00'
+    cooldown:
+      default-days: 7
