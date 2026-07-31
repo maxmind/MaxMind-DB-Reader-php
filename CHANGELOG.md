@@ -4,10 +4,11 @@ CHANGELOG
 1.14.0
 -------------------
 
-* Updated the Windows build configuration to use the correct libmaxminddb
-  name (`maxminddb.lib` instead of `libmaxminddb.lib`) when building the
-  extension. The `lib` prefix was removed in libmaxminddb 1.6.0. Pull
-  request by Jean-Baptiste Nahan. GitHub #231.
+* The Windows build configuration now accepts either `libmaxminddb.lib` or
+  `maxminddb.lib` when building the extension. The `lib` prefix was removed
+  in libmaxminddb 1.6.0, but the libmaxminddb that PHP publishes for Windows
+  builds is still 1.5.0, which uses the prefixed name. Pull request by
+  Jean-Baptiste Nahan. GitHub #231.
 * Replaced `XtOffsetOf()` with `offsetof()`. The `XtOffsetOf()` alias has
   been removed in PHP 8.6. Pull request by Remi Collet. GitHub #252.
 
