@@ -21,3 +21,17 @@ updates:
       codeql:
         patterns:
           - github/codeql-action*
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '14:00'
+    cooldown:
+      default-days: 7
+    ignore:
+      # libmaxminddb is pinned to release tags and compiled into the
+      # extension. Dependabot moves submodules to the latest commit on the
+      # tracked branch when no newer tag exists, which would take us off
+      # release tags.
+      - dependency-name: ext/libmaxminddb
