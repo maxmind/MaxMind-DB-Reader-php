@@ -11,6 +11,14 @@ CHANGELOG
   Jean-Baptiste Nahan. GitHub #231.
 * Replaced `XtOffsetOf()` with `offsetof()`. The `XtOffsetOf()` alias has
   been removed in PHP 8.6. Pull request by Remi Collet. GitHub #252.
+* The extension can now be built from a bundled copy of libmaxminddb, on
+  both Unix-like systems and Windows, by passing `--with-maxminddb-bundled`
+  to `configure` (or to `configure.bat` on Windows). This produces an
+  extension that does not depend on a system libmaxminddb, which is a
+  prerequisite for distributing precompiled builds; on Windows it also
+  replaces the 1.5.0 import library that PHP publishes for Windows builds.
+  The default is unchanged: without the flag, the extension links against a
+  system libmaxminddb as before. GitHub #265.
 
 1.13.1 (2025-11-21)
 -------------------

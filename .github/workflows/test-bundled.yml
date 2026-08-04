@@ -1,0 +1,193 @@
+name: Bundled libmaxminddb
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '15 4 * * SUN'
+
+permissions: {}
+
+env:
+  # The highest glibc symbol version a bundled build here is allowed to
+  # reference. This repository publishes no binaries, so nobody inherits this
+  # number directly -- it is a tripwire on the sources, and the floor that
+  # actually reaches users is the extension repository's.
+  #
+  # The floor measured here is the *build container's*, not the runner's: the
+  # jobs below run in shivammathur/node:latest-<arch>. That tag is unpinned, so
+  # this is an assertion about a moving target -- an upstream image rebuild
+  # onto a newer glibc will either fail this job or shift what the number
+  # means. Pinning the image by digest is the way to make it stable.
+  #
+  # The extension repository builds what it publishes inside a digest-pinned
+  # bookworm container and holds itself to 2.36. The two numbers differ on
+  # purpose, which is why dev-bin/gate-extension.sh takes the limit from its
+  # caller rather than hard-coding one.
+  MAX_GLIBC: '2.38'
+
+jobs:
+  bundled:
+    runs-on: ${{ matrix.runner }}
+    container: shivammathur/node:latest-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["amd64", "arm64v8"]
+        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64v8
+            runner: ubuntu-24.04-arm
+
+    name: "PHP ${{ matrix.php-version }} bundled build on ${{ matrix.runner }}"
+    steps:
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php-version }}
+          # gmp so ReaderTest's uint128 boundary cases run rather than skip;
+          # they are gated on it, and uint128 is the branch this job is the
+          # only one to compile.
+          extensions: "mbstring, intl, gmp"
+          tools: "composer, phpize"
+
+      - name: Checkout
+        # We use v1 due to https://github.com/actions/checkout/issues/334
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+
+      # We deliberately do not install libmaxminddb, and we do not set
+      # PKG_CONFIG_PATH, so that the build cannot silently fall back to a
+      # system library.
+      - name: Check that no system libmaxminddb is available
+        run: |
+              # Without this, an image with no pkg-config makes the check below
+              # exit 127, the `if` false, and the step green having proved
+              # nothing.
+              if ! command -v pkg-config >/dev/null; then
+                echo "::error::pkg-config is not installed, so this precondition cannot be verified"
+                exit 1
+              fi
+              if pkg-config --exists libmaxminddb; then
+                echo "::error::a system libmaxminddb is installed, so this job would not test the bundled sources"
+                exit 1
+              fi
+              # pkg-config only sees libraries that ship a .pc file on
+              # PKG_CONFIG_PATH, so a `make install` into /usr/local would slip
+              # past it. What actually proves the bundled code is inside the
+              # object is gate-extension.sh's NEEDED and undefined-MMDB_ checks.
+
+      - name: Build extension
+        run: |
+              cd ext
+              phpize
+              ./configure --with-maxminddb --with-maxminddb-bundled
+              make clean
+              make
+              ../dev-bin/run-ext-tests.sh
+
+      # Shared with maxmind/MaxMind-DB-Reader-php-ext, which runs this same
+      # script over the objects it publishes. Keeping one implementation means
+      # a check added for the released binaries is a check this job performs
+      # too, and neither can quietly weaken relative to the other.
+      - name: Check that the extension is self-contained
+        run: dev-bin/gate-extension.sh ext/modules/maxminddb.so
+
+      # A prebuilt extension is installed as a lone maxminddb.so, so check that
+      # the object loads with no ini file and no build tree beside it. Note
+      # that this is not a self-containment proof: every library present at
+      # build time is still installed on this machine. gate-extension.sh above
+      # is what establishes that.
+      # A prebuilt extension is installed as a lone maxminddb.so, so check that
+      # the object loads with no ini file and no build tree beside it. Note
+      # that this is not a self-containment proof: every library present at
+      # build time is still installed on this machine. gate-extension.sh above
+      # is what establishes that.
+      - name: Load the extension on its own
+        run: |
+              # autoupdate and autoconf >= 2.70 routinely rewrite AC_INIT's
+              # spacing, at which point this sed yields nothing and the
+              # comparison below would fail with an empty "expected".
+              version="$(sed -n 's/^AC_INIT(\[libmaxminddb\], \[\([^]]*\)\].*/\1/p' \
+                ext/libmaxminddb/configure.ac)"
+              if [ -z "$version" ]; then
+                echo "::error::could not read the libmaxminddb version from ext/libmaxminddb/configure.ac"
+                exit 1
+              fi
+              dir="$(mktemp -d)"
+              cp ext/modules/maxminddb.so "$dir/"
+              php -n -d extension="$dir/maxminddb.so" dev-bin/verify-extension.php \
+                tests/data/test-data/GeoIP2-City-Test.mmdb "$version"
+
+      # ext/tests is three .phpt files that decode nothing. Every behavioural
+      # assertion against the C code -- all twelve MMDB data types, the
+      # corrupt-database paths, the closed-reader paths -- lives in the PHPUnit
+      # suite, which test.yml runs against a system-libmaxminddb build and
+      # which this job did not run at all.
+      #
+      # It matters most for uint128. MMDB_UINT128_IS_BYTE_ARRAY=1 is the path
+      # every bundled build takes, and no other job in this repository
+      # exercises it: they all link a system libmaxminddb, whose own configure
+      # finds unsigned __int128 and compiles the other branch. ReaderTest
+      # asserts the exact string the extension returns for 2^120, so a swapped
+      # high/low word or a wrong shift is caught here and nowhere else -- it
+      # would otherwise produce a plausible-looking hex string and crash
+      # nothing.
+      #
+      # The suite also reads floats and doubles, which are the only consumers
+      # of MMDB_LITTLE_ENDIAN.
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Test with phpunit using the bundled extension
+        run: php -d extension=ext/modules/maxminddb.so vendor/bin/phpunit
+
+  bundled-debug:
+    runs-on: ubuntu-latest
+    container: shivammathur/node:latest-amd64
+
+    name: "Bundled build with debug flags"
+    steps:
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.4'
+          extensions: "mbstring, intl"
+          tools: "composer, phpize"
+
+      - name: Checkout
+        # We use v1 due to https://github.com/actions/checkout/issues/334
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+
+      # --enable-maxminddb-debug adds -Werror, so this shows that the bundled
+      # libmaxminddb sources build warning free too.
+      - name: Build extension
+        run: |
+              cd ext
+              phpize
+              ./configure --with-maxminddb --with-maxminddb-bundled --enable-maxminddb-debug
+              make clean
+              make
+              ../dev-bin/run-ext-tests.sh
+
+      # The debug build differs in flags and codegen, so it is the object most
+      # likely to pick up something the release build does not -- a RUNPATH
+      # from a different link line, say. It was the one bundled object the gate
+      # never saw.
+      - name: Check that the extension is self-contained
+        run: dev-bin/gate-extension.sh ext/modules/maxminddb.so
+
+      # Nothing else exercises the gate's failure paths: every other caller
+      # runs it over a good object, so an inverted grep or a dropped `!` would
+      # leave this repository and the extension repository green for good.
+      # These are the cheap cases -- a ceiling below the measured floor, and an
+      # input that is not an object at all.
+      - name: Check that the gate rejects what it should
+        run: dev-bin/test-gate-extension.sh ext/modules/maxminddb.so
