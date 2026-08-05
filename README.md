@@ -149,17 +149,38 @@ pecl install maxminddb
 
 ### Installing Extension from Source ###
 
-Alternatively, you may install it from the source. To do so, run the following
-commands from the top-level directory of this distribution:
+Alternatively, you may install it from the source. This links against the
+libmaxminddb installed on your system, so install that first as described
+above. Run the following commands from the top-level directory of this
+distribution:
 
 ```
 cd ext
 phpize
-./configure
+./configure --with-maxminddb
 make
 make test
 sudo make install
 ```
+
+#### Building without a system libmaxminddb ####
+
+Passing `--with-maxminddb-bundled` compiles a bundled copy of libmaxminddb
+into the extension instead, so the result depends on nothing but the C
+runtime. This is what the precompiled builds use. The bundled sources are a
+git submodule, so they have to be checked out first:
+
+```
+git submodule update --init
+cd ext
+phpize
+./configure --with-maxminddb --with-maxminddb-bundled
+make
+make test
+sudo make install
+```
+
+The same flag works on Windows, passed to `configure.bat`.
 
 You then must load your extension. The recommended method is to add the
 following to your `php.ini` file:
