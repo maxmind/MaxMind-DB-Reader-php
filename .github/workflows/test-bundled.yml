@@ -204,10 +204,8 @@ jobs:
         run: dev-bin/gate-extension.sh ext/modules/maxminddb.so
 
       # Nothing else exercises the gate's failure paths: every other caller
-      # runs it over a good object, so an inverted grep or a dropped `!` would
-      # leave this repository and the extension repository green for good.
-      # These are the cheap cases -- a ceiling below the measured floor, and an
-      # input that is not an object at all.
+      # runs it over an object it expects to pass. See the script's header for
+      # what it refutes and why.
       - name: Check that the gate rejects what it should
         run: dev-bin/test-gate-extension.sh ext/modules/maxminddb.so
 

@@ -45,8 +45,8 @@ at_most() {
 
 # Checks 3, 3b and 3c. They differ between platforms only in the nm invocation
 # and Mach-O's leading underscore, so the caller sets $undefined and $defined
-# and passes the prefix. Keeping one copy is not cosmetic: the two have already
-# drifted once, when only the Linux greps were anchored.
+# and passes the prefix. One copy rather than two because the platforms differ
+# in the tool invocation, not in what is being asserted.
 #
 # 3b exists because vendoring makes libmaxminddb's API part of this object's
 # exports, and PHP dlopens extensions with RTLD_GLOBAL, so a process that also
