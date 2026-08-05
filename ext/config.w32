@@ -1,7 +1,114 @@
 ARG_WITH("maxminddb", "Enable MaxMind DB Reader extension support", "no");
+ARG_WITH("maxminddb-bundled", "Build the bundled libmaxminddb sources into the extension instead of linking a system library", "no");
 
 if (PHP_MAXMINDDB == "yes") {
-	if (CHECK_HEADER_ADD_INCLUDE("maxminddb.h", "CFLAGS_MAXMINDDB", PHP_MAXMINDDB +  ";" + PHP_PHP_BUILD + "\\include\\maxminddb") &&
+	if (PHP_MAXMINDDB_BUNDLED != "no") {
+		var maxminddb_bundled = configure_module_dirname + "\\libmaxminddb";
+
+		/* The file, not just the directory: an empty or half-populated leftover
+		 * src\\ passes a folder check and then fails opaquely at compile time,
+		 * which is what the matching check in config.m4 was added to avoid. */
+		if (!FSO.FileExists(maxminddb_bundled + "\\src\\maxminddb.c")) {
+			ERROR("--with-maxminddb-bundled needs the bundled libmaxminddb sources; run \"git submodule update --init\"");
+		}
+
+		/* Read the version out of the submodule rather than repeating it here.
+		 * Nothing else checks this file -- there is no Windows workflow in this
+		 * repository -- so a bump that updated config.m4 and forgot this line
+		 * would ship a PACKAGE_VERSION that lies, with nothing to notice it.
+		 * config.m4 keeps a literal because test-bundled.yml compares
+		 * MMDB_LIB_VERSION against configure.ac on every build. */
+		var maxminddb_ac = file_get_contents(maxminddb_bundled + "\\configure.ac");
+		/* The match is captured rather than read back out of RegExp.$1, which is
+		 * engine-global state shared with every other config.w32 evaluated in
+		 * the same scope. */
+		var maxminddb_match = maxminddb_ac
+			? maxminddb_ac.match(/AC_INIT\(\[libmaxminddb\], \[([^\]]+)\]/)
+			: null;
+		if (!maxminddb_match) {
+			ERROR("could not read the libmaxminddb version from ext/libmaxminddb/configure.ac");
+		}
+		var maxminddb_version = maxminddb_match[1];
+
+		/* ext/bundled-include supplies maxminddb_config.h, which
+		 * libmaxminddb's maxminddb.h includes unconditionally and its own build
+		 * system would generate. It is a tracked file: writing it at configure
+		 * time meant writing into the submodule, which left it dirty after
+		 * every build. Nothing is included from the submodule root, so that
+		 * directory is deliberately not on the path. */
+		ADD_FLAG("CFLAGS_MAXMINDDB", '/I "' + configure_module_dirname + '\\bundled-include" ' +
+			'/I "' + maxminddb_bundled + '\\include" ' +
+			'/I "' + maxminddb_bundled + '\\src"');
+
+		/* The uint128 defines match ext/config.m4. Three things deliberately do
+		 * not: HAVE_CONFIG_H is left alone here (below); MMDB_LITTLE_ENDIAN is
+		 * hardcoded because every Windows target is little-endian, where
+		 * config.m4 derives it and may leave it undefined; and there is no
+		 * -fvisibility=hidden counterpart, because MSVC exports nothing that is
+		 * not marked __declspec(dllexport).
+		 * config.m4 has to define it as 0 because PHP's Unix CPPFLAGS already
+		 * define it, and libmaxminddb's maxminddb.c tests the *value* with
+		 * `#if HAVE_CONFIG_H`, so it would otherwise include the config.h it
+		 * finds on the include path -- PHP's. Our own maxminddb.c tests
+		 * *definedness* with `#ifdef`, which is why =0 suppresses libmaxminddb's
+		 * include without suppressing ours. That asymmetry is the hinge of this
+		 * design and would break if upstream ever switched to `#ifdef`.
+		 *
+		 * The Windows build never defines HAVE_CONFIG_H, so libmaxminddb
+		 * already does the right thing, and defining it here would instead
+		 * make our own maxminddb.c include a config.h that does not exist.
+		 *
+		 * MSVC has no unsigned __int128, so the byte array is the only option
+		 * for uint128 values. Both this file and config.m4 have to define
+		 * MMDB_UINT128_IS_BYTE_ARRAY the same way, because it decides the
+		 * layout of the MMDB_entry_data_s union that maxminddb.c and the
+		 * bundled sources pass between each other.
+		 *
+		 * MMDB_lib_version() returns PACKAGE_VERSION, and the extension exposes
+		 * that as MMDB_LIB_VERSION and through phpinfo(). The inner quotes are
+		 * escaped so that they survive the compiler's own command line parsing
+		 * and PACKAGE_VERSION ends up a string literal. */
+		ADD_FLAG("CFLAGS_MAXMINDDB", '/D MMDB_LITTLE_ENDIAN=1 /D MMDB_UINT128_USING_MODE=0 ' +
+			'/D MMDB_UINT128_IS_BYTE_ARRAY=1 /D PACKAGE_VERSION=\\"' + maxminddb_version + '\\"');
+
+		/* MaxMind's Python reader passes -wd4068 for these same sources.
+		 * libmaxminddb guards its #pragma clang lines with __clang__, so cl
+		 * should not warn about them, but keeping the suppression costs nothing
+		 * and survives a bump that drops a guard. */
+		ADD_FLAG("CFLAGS_MAXMINDDB", "/wd4068");
+
+		/* MMDB_open() calls WSAStartup() and maxminddb.h pulls in winsock2.h.
+		 * php-src already has ws2_32.lib in $(LIBS), but sapi/cli and sapi/cgi
+		 * ask for it explicitly too, and the dependency is ours now. */
+		ADD_FLAG("LIBS_MAXMINDDB", "ws2_32.lib");
+
+		EXTENSION("maxminddb", "maxminddb.c");
+
+		/* This has to come after EXTENSION, which is what makes CFLAGS_MAXMINDDB
+		 * reach the compiler calls that ADD_SOURCES writes.
+		 *
+		 * The fourth argument is the object directory, and it is not optional
+		 * here: libmaxminddb/src/maxminddb.c and our own maxminddb.c share a
+		 * basename. In a php-src tree ADD_SOURCES derives the object directory
+		 * from its first argument, so the two would land in separate
+		 * directories and nothing would collide -- that is how ext/gd gets away
+		 * with libgd/gd.c next to gd.c. Under phpize, which is how this
+		 * extension is built for Windows, confutils.js takes a different branch
+		 * in ADD_SOURCES that derives the build directory from the dirname of
+		 * each file_list entry and ignores the fourth argument. Our entries are
+		 * bare filenames, so both sources resolve to
+		 * $(BUILD_DIR)\maxminddb.obj, the makefile gets two rules for one
+		 * target, and whichever compiles last wins. When libmaxminddb's won,
+		 * the DLL linked without our get_module() and PHP rejected it with
+		 * "Invalid library (maybe not a PHP library)" -- a build that succeeds
+		 * and produces an extension that cannot load.
+		 *
+		 * Passing the object directory explicitly takes the branch that honours
+		 * it, so these objects land in $(BUILD_DIR)\libmaxminddb. ADD_SOURCES
+		 * registers that in build_dirs and configure creates it. */
+		ADD_SOURCES(maxminddb_bundled + "\\src", "maxminddb.c data-pool.c",
+			"maxminddb", "libmaxminddb");
+	} else if (CHECK_HEADER_ADD_INCLUDE("maxminddb.h", "CFLAGS_MAXMINDDB", PHP_MAXMINDDB +  ";" + PHP_PHP_BUILD + "\\include\\maxminddb") &&
 		CHECK_LIB("libmaxminddb.lib;maxminddb.lib", "maxminddb", PHP_MAXMINDDB)) {
 		EXTENSION("maxminddb", "maxminddb.c");
 	} else {

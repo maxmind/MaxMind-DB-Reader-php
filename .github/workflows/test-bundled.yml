@@ -1,0 +1,277 @@
+name: Bundled libmaxminddb
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '15 4 * * SUN'
+
+permissions: {}
+
+env:
+  # The highest glibc symbol version a bundled build here is allowed to
+  # reference. This repository publishes no binaries, so nobody inherits this
+  # number directly -- it is a tripwire on the sources, and the floor that
+  # actually reaches users is the extension repository's.
+  #
+  # The floor measured here is the *build container's*, not the runner's: the
+  # jobs below run in shivammathur/node:latest-<arch>. That tag is unpinned, so
+  # this is an assertion about a moving target -- an upstream image rebuild
+  # onto a newer glibc will either fail this job or shift what the number
+  # means. Pinning the image by digest is the way to make it stable.
+  #
+  # The extension repository builds what it publishes inside a digest-pinned
+  # bookworm container and holds itself to 2.36. The two numbers differ on
+  # purpose, which is why dev-bin/gate-extension.sh takes the limit from its
+  # caller rather than hard-coding one.
+  MAX_GLIBC: '2.38'
+
+jobs:
+  bundled:
+    runs-on: ${{ matrix.runner }}
+    container: shivammathur/node:latest-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["amd64", "arm64v8"]
+        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64v8
+            runner: ubuntu-24.04-arm
+
+    name: "PHP ${{ matrix.php-version }} bundled build on ${{ matrix.runner }}"
+    steps:
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php-version }}
+          # gmp so ReaderTest's uint128 boundary cases run rather than skip;
+          # they are gated on it, and uint128 is the branch this job is the
+          # only one to compile.
+          extensions: "mbstring, intl, gmp"
+          tools: "composer, phpize"
+
+      - name: Checkout
+        # We use v1 due to https://github.com/actions/checkout/issues/334
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+
+      # We deliberately do not install libmaxminddb, and we do not set
+      # PKG_CONFIG_PATH, so that the build cannot silently fall back to a
+      # system library.
+      - name: Check that no system libmaxminddb is available
+        run: |
+              # Without this, an image with no pkg-config makes the check below
+              # exit 127, the `if` false, and the step green having proved
+              # nothing.
+              if ! command -v pkg-config >/dev/null; then
+                echo "::error::pkg-config is not installed, so this precondition cannot be verified"
+                exit 1
+              fi
+              if pkg-config --exists libmaxminddb; then
+                echo "::error::a system libmaxminddb is installed, so this job would not test the bundled sources"
+                exit 1
+              fi
+              # pkg-config only sees libraries that ship a .pc file on
+              # PKG_CONFIG_PATH, so a `make install` into /usr/local would slip
+              # past it. What actually proves the bundled code is inside the
+              # object is gate-extension.sh's NEEDED and undefined-MMDB_ checks.
+
+      - name: Build extension
+        run: |
+              cd ext
+              phpize
+              ./configure --with-maxminddb --with-maxminddb-bundled
+              make clean
+              make
+              ../dev-bin/run-ext-tests.sh
+
+      # Shared with maxmind/MaxMind-DB-Reader-php-ext, which runs this same
+      # script over the objects it publishes. Keeping one implementation means
+      # a check added for the released binaries is a check this job performs
+      # too, and neither can quietly weaken relative to the other.
+      - name: Check that the extension is self-contained
+        run: dev-bin/gate-extension.sh ext/modules/maxminddb.so
+
+      # A prebuilt extension is installed as a lone maxminddb.so, so check that
+      # the object loads with no ini file and no build tree beside it. Note
+      # that this is not a self-containment proof: every library present at
+      # build time is still installed on this machine. gate-extension.sh above
+      # is what establishes that.
+      - name: Load the extension on its own
+        run: |
+              # autoupdate and autoconf >= 2.70 routinely rewrite AC_INIT's
+              # spacing, at which point this sed yields nothing and the
+              # comparison below would fail with an empty "expected".
+              version="$(sed -n 's/^AC_INIT(\[libmaxminddb\], \[\([^]]*\)\].*/\1/p' \
+                ext/libmaxminddb/configure.ac)"
+              if [ -z "$version" ]; then
+                echo "::error::could not read the libmaxminddb version from ext/libmaxminddb/configure.ac"
+                exit 1
+              fi
+              dir="$(mktemp -d)"
+              cp ext/modules/maxminddb.so "$dir/"
+              php -n -d extension="$dir/maxminddb.so" dev-bin/verify-extension.php \
+                tests/data/test-data/GeoIP2-City-Test.mmdb "$version"
+
+      # The phpt files in ext/tests decode nothing. Every behavioural assertion
+      # against the C code -- all twelve MMDB data types, the corrupt-database
+      # paths, the closed-reader paths -- lives in the PHPUnit suite, which
+      # test.yml runs against a libmaxminddb built from git, and which this job
+      # did not previously run at all. Hence the steps below.
+      #
+      # It matters most for uint128. MMDB_UINT128_IS_BYTE_ARRAY=1 is the path
+      # every bundled build takes, and no other job in this repository
+      # exercises it: they all link an external libmaxminddb, whose own
+      # configure finds unsigned __int128 and compiles the other branch.
+      # ReaderTest asserts the exact string the extension returns for 2^120, so
+      # a swapped high/low word or a wrong shift is caught here and nowhere
+      # else -- it would otherwise produce a plausible-looking hex string and
+      # crash nothing.
+      #
+      # The suite also reads floats and doubles, which are the only consumers
+      # of MMDB_LITTLE_ENDIAN.
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      # Both preconditions are load-bearing, and neither failure is loud on its
+      # own.
+      #
+      # A failed `extension=` load is a warning, not a fatal, and PHP carries
+      # on. phpunit.xml.dist bootstraps vendor/autoload.php, whose PSR-4 map
+      # resolves MaxMind\Db\Reader to the pure-PHP implementation, and the
+      # suite is written to pass either way -- so an extension that does not
+      # load leaves every assertion above testing src/ rather than the object
+      # this job built.
+      #
+      # gmp is what turns ReaderTest's decimal uint128 case from
+      # markTestIncomplete into a real assertion, and markTestIncomplete does
+      # not fail a run. (The hex form at ReaderTest.php:162 is gated on
+      # extension_loaded('maxminddb'), not on gmp, so only half the uint128
+      # coverage depends on this -- but it is the half that checks the value
+      # rather than the format.)
+      - name: Check the extension and gmp are actually loaded
+        run: |
+              php -d extension="$PWD/ext/modules/maxminddb.so" -r \
+                'exit(extension_loaded("maxminddb") ? 0 : 1);' ||
+                { echo "::error::the bundled extension did not load; PHPUnit would silently test the pure-PHP reader"; exit 1; }
+              php -r 'exit(extension_loaded("gmp") ? 0 : 1);' ||
+                { echo "::error::gmp is not loaded; ReaderTest's uint128 value assertions would be skipped, not run"; exit 1; }
+
+      - name: Test with phpunit using the bundled extension
+        run: php -d extension="$PWD/ext/modules/maxminddb.so" vendor/bin/phpunit
+
+  bundled-debug:
+    runs-on: ubuntu-latest
+    container: shivammathur/node:latest-amd64
+
+    name: "Bundled build with debug flags"
+    steps:
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.4'
+          extensions: "mbstring, intl"
+          tools: "composer, phpize"
+
+      - name: Checkout
+        # We use v1 due to https://github.com/actions/checkout/issues/334
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+
+      # --enable-maxminddb-debug adds -Werror, so this shows that the bundled
+      # libmaxminddb sources build warning free too.
+      - name: Build extension
+        run: |
+              cd ext
+              phpize
+              ./configure --with-maxminddb --with-maxminddb-bundled --enable-maxminddb-debug
+              make clean
+              make
+              ../dev-bin/run-ext-tests.sh
+
+      # The debug build differs in flags and codegen, so it is the object most
+      # likely to pick up something the release build does not -- a RUNPATH
+      # from a different link line, say. It was the one bundled object the gate
+      # never saw.
+      - name: Check that the extension is self-contained
+        run: dev-bin/gate-extension.sh ext/modules/maxminddb.so
+
+      # Nothing else exercises the gate's failure paths: every other caller
+      # runs it over an object it expects to pass. See the script's header for
+      # what it refutes and why.
+      - name: Check that the gate rejects what it should
+        run: dev-bin/test-gate-extension.sh ext/modules/maxminddb.so
+
+  windows-bundled:
+    runs-on: windows-latest
+    name: "Windows bundled build (x64, nts, PHP 8.4)"
+    steps:
+      # The action clones and initialises its own copy to build from; this
+      # checkout supplies dev-bin/verify-extension.php and the tests/data
+      # database the gate below queries.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      # extension-url rather than the action's local mode, which cannot be used
+      # here: local mode selects itself by finding a config.w32 anywhere in the
+      # tree, but Get-ExtensionName then reads "config.w32" relative to the
+      # repository root, so an extension living in ext/ is detected and then
+      # immediately fails. Cloning also gets the action's own recursive
+      # submodule init, which local mode does not do. This is the shape
+      # maxmind/MaxMind-DB-Reader-php-ext already builds this config.w32 with.
+      #
+      # One job is enough. config.w32 does not vary by PHP version, arch or
+      # thread safety in any way this exercises, and PHP <= 7.4 needs a
+      # toolchain windows-latest no longer carries.
+      - name: Build the extension
+        uses: php/php-windows-builder/extension@29352c0ef9e8ce65264ea9e287881a6f7758a953 # 1.9.0
+        with:
+          extension-url: https://github.com/${{ github.repository }}
+          extension-ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          build-directory: winbuild
+          php-version: '8.4'
+          arch: x64
+          ts: nts
+          args: --with-maxminddb --with-maxminddb-bundled
+
+      # Load-bearing, not belt-and-braces. 001 and 002 skip when the extension
+      # is not loaded and 003 skips on Windows outright, so every phpt skips
+      # and run-tests.php exits 0 -- a DLL that builds but cannot load is
+      # otherwise a green job. That is not hypothetical: a DLL with no
+      # get_module export shipped from the sibling repository exactly this way.
+      #
+      # Uses the php.exe the build downloaded, not the runner's: version, arch,
+      # thread safety and toolset all have to match. Neither is on PATH in a
+      # later step, so both are located by search.
+      - name: Gate the built DLL
+        shell: pwsh
+        run: |
+          $dll = @(Get-ChildItem winbuild -Recurse -File -Filter php_maxminddb.dll)
+          $php = @(Get-ChildItem winbuild -Recurse -File -Filter php.exe |
+                     Where-Object { $_.Directory.Name -eq 'php-bin' })
+          if ($dll.Count -ne 1) { throw "expected one php_maxminddb.dll, found $($dll.Count)" }
+          if ($php.Count -ne 1) { throw "expected one php-bin\php.exe, found $($php.Count)" }
+
+          $ac = Get-Content ext/libmaxminddb/configure.ac -Raw
+          if ($ac -notmatch 'AC_INIT\(\[libmaxminddb\], \[([^\]]+)\]') {
+            throw "could not read the libmaxminddb version from ext/libmaxminddb/configure.ac"
+          }
+          $version = $Matches[1]
+
+          # verify-extension.php asserts the extension is loaded, queries a real
+          # database and compares MMDB_LIB_VERSION -- which also covers the
+          # version config.w32 scrapes out of the submodule.
+          & $php[0].FullName -n -d "extension=$($dll[0].FullName)" `
+              dev-bin/verify-extension.php `
+              tests/data/test-data/GeoIP2-City-Test.mmdb $version
+          if ($LASTEXITCODE -ne 0) { throw "the DLL did not load and query cleanly" }

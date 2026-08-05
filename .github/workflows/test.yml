@@ -58,7 +58,7 @@ jobs:
               ./configure --with-maxminddb --enable-maxminddb-debug
               make clean
               make
-              NO_INTERACTION=1 make test
+              ../dev-bin/run-ext-tests.sh
               cd ..
 
       - name: Install dependencies
