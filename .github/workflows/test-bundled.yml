@@ -102,11 +102,6 @@ jobs:
       # that this is not a self-containment proof: every library present at
       # build time is still installed on this machine. gate-extension.sh above
       # is what establishes that.
-      # A prebuilt extension is installed as a lone maxminddb.so, so check that
-      # the object loads with no ini file and no build tree beside it. Note
-      # that this is not a self-containment proof: every library present at
-      # build time is still installed on this machine. gate-extension.sh above
-      # is what establishes that.
       - name: Load the extension on its own
         run: |
               # autoupdate and autoconf >= 2.70 routinely rewrite AC_INIT's
@@ -123,28 +118,52 @@ jobs:
               php -n -d extension="$dir/maxminddb.so" dev-bin/verify-extension.php \
                 tests/data/test-data/GeoIP2-City-Test.mmdb "$version"
 
-      # ext/tests is three .phpt files that decode nothing. Every behavioural
-      # assertion against the C code -- all twelve MMDB data types, the
-      # corrupt-database paths, the closed-reader paths -- lives in the PHPUnit
-      # suite, which test.yml runs against a system-libmaxminddb build and
-      # which this job did not run at all.
+      # The phpt files in ext/tests decode nothing. Every behavioural assertion
+      # against the C code -- all twelve MMDB data types, the corrupt-database
+      # paths, the closed-reader paths -- lives in the PHPUnit suite, which
+      # test.yml runs against a libmaxminddb built from git, and which this job
+      # did not previously run at all. Hence the steps below.
       #
       # It matters most for uint128. MMDB_UINT128_IS_BYTE_ARRAY=1 is the path
       # every bundled build takes, and no other job in this repository
-      # exercises it: they all link a system libmaxminddb, whose own configure
-      # finds unsigned __int128 and compiles the other branch. ReaderTest
-      # asserts the exact string the extension returns for 2^120, so a swapped
-      # high/low word or a wrong shift is caught here and nowhere else -- it
-      # would otherwise produce a plausible-looking hex string and crash
-      # nothing.
+      # exercises it: they all link an external libmaxminddb, whose own
+      # configure finds unsigned __int128 and compiles the other branch.
+      # ReaderTest asserts the exact string the extension returns for 2^120, so
+      # a swapped high/low word or a wrong shift is caught here and nowhere
+      # else -- it would otherwise produce a plausible-looking hex string and
+      # crash nothing.
       #
       # The suite also reads floats and doubles, which are the only consumers
       # of MMDB_LITTLE_ENDIAN.
       - name: Install dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
+      # Both preconditions are load-bearing, and neither failure is loud on its
+      # own.
+      #
+      # A failed `extension=` load is a warning, not a fatal, and PHP carries
+      # on. phpunit.xml.dist bootstraps vendor/autoload.php, whose PSR-4 map
+      # resolves MaxMind\Db\Reader to the pure-PHP implementation, and the
+      # suite is written to pass either way -- so an extension that does not
+      # load leaves every assertion above testing src/ rather than the object
+      # this job built.
+      #
+      # gmp is what turns ReaderTest's decimal uint128 case from
+      # markTestIncomplete into a real assertion, and markTestIncomplete does
+      # not fail a run. (The hex form at ReaderTest.php:162 is gated on
+      # extension_loaded('maxminddb'), not on gmp, so only half the uint128
+      # coverage depends on this -- but it is the half that checks the value
+      # rather than the format.)
+      - name: Check the extension and gmp are actually loaded
+        run: |
+              php -d extension="$PWD/ext/modules/maxminddb.so" -r \
+                'exit(extension_loaded("maxminddb") ? 0 : 1);' ||
+                { echo "::error::the bundled extension did not load; PHPUnit would silently test the pure-PHP reader"; exit 1; }
+              php -r 'exit(extension_loaded("gmp") ? 0 : 1);' ||
+                { echo "::error::gmp is not loaded; ReaderTest's uint128 value assertions would be skipped, not run"; exit 1; }
+
       - name: Test with phpunit using the bundled extension
-        run: php -d extension=ext/modules/maxminddb.so vendor/bin/phpunit
+        run: php -d extension="$PWD/ext/modules/maxminddb.so" vendor/bin/phpunit
 
   bundled-debug:
     runs-on: ubuntu-latest
