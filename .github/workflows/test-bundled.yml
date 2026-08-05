@@ -210,3 +210,66 @@ jobs:
       # input that is not an object at all.
       - name: Check that the gate rejects what it should
         run: dev-bin/test-gate-extension.sh ext/modules/maxminddb.so
+
+  windows-bundled:
+    runs-on: windows-latest
+    name: "Windows bundled build (x64, nts, PHP 8.4)"
+    steps:
+      # submodules: recursive because php-windows-builder does not initialise
+      # them in local mode -- ext/libmaxminddb is the build input, and
+      # tests/data holds the database the gate below queries.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      # No extension-url on purpose: with none set the action looks for a
+      # config.w32 in the workspace and builds a copy of this checkout rather
+      # than cloning, which is the point -- the thing under test is this tree's
+      # ext/config.w32. build-directory puts the build where the gate can find
+      # it; the action otherwise uses a temporary directory.
+      #
+      # One job is enough. config.w32 does not vary by PHP version, arch or
+      # thread safety in any way this exercises, and PHP <= 7.4 needs a
+      # toolchain windows-latest no longer carries.
+      - name: Build the extension
+        uses: php/php-windows-builder/extension@29352c0ef9e8ce65264ea9e287881a6f7758a953 # 1.9.0
+        with:
+          build-directory: winbuild
+          php-version: '8.4'
+          arch: x64
+          ts: nts
+          args: --with-maxminddb --with-maxminddb-bundled
+
+      # Load-bearing, not belt-and-braces. 001 and 002 skip when the extension
+      # is not loaded and 003 skips on Windows outright, so every phpt skips
+      # and run-tests.php exits 0 -- a DLL that builds but cannot load is
+      # otherwise a green job. That is not hypothetical: a DLL with no
+      # get_module export shipped from the sibling repository exactly this way.
+      #
+      # Uses the php.exe the build downloaded, not the runner's: version, arch,
+      # thread safety and toolset all have to match. Neither is on PATH in a
+      # later step, so both are located by search.
+      - name: Gate the built DLL
+        shell: pwsh
+        run: |
+          $dll = @(Get-ChildItem winbuild -Recurse -File -Filter php_maxminddb.dll)
+          $php = @(Get-ChildItem winbuild -Recurse -File -Filter php.exe |
+                     Where-Object { $_.Directory.Name -eq 'php-bin' })
+          if ($dll.Count -ne 1) { throw "expected one php_maxminddb.dll, found $($dll.Count)" }
+          if ($php.Count -ne 1) { throw "expected one php-bin\php.exe, found $($php.Count)" }
+
+          $ac = Get-Content ext/libmaxminddb/configure.ac -Raw
+          if ($ac -notmatch 'AC_INIT\(\[libmaxminddb\], \[([^\]]+)\]') {
+            throw "could not read the libmaxminddb version from ext/libmaxminddb/configure.ac"
+          }
+          $version = $Matches[1]
+
+          # verify-extension.php asserts the extension is loaded, queries a real
+          # database and compares MMDB_LIB_VERSION -- which also covers the
+          # version config.w32 scrapes out of the submodule.
+          & $php[0].FullName -n -d "extension=$($dll[0].FullName)" `
+              dev-bin/verify-extension.php `
+              tests/data/test-data/GeoIP2-City-Test.mmdb $version
+          if ($LASTEXITCODE -ne 0) { throw "the DLL did not load and query cleanly" }
