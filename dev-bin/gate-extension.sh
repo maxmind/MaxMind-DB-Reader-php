@@ -13,8 +13,11 @@
 # floor or minos -- is fatal rather than a pass.
 #
 # Usage: gate-extension.sh <path to the extension object>
-# Reads MAX_GLIBC (Linux) or MACOSX_DEPLOYMENT_TARGET (macOS); the two callers
-# set different values, so the limit belongs at the call site.
+#
+# Reads MAX_GLIBC on Linux. The two repositories that run this set different
+# values -- they build in different containers -- so the limit belongs at the
+# call site. MACOSX_DEPLOYMENT_TARGET is its macOS counterpart and is set only
+# by the extension repository; nothing here reaches the Darwin branch.
 
 set -euo pipefail
 
@@ -48,13 +51,13 @@ at_most() {
 # and passes the prefix. One copy rather than two because the platforms differ
 # in the tool invocation, not in what is being asserted.
 #
-# 3b exists because vendoring makes libmaxminddb's API part of this object's
+# The exported-symbol check exists because vendoring makes libmaxminddb's API part of this object's
 # exports, and PHP dlopens extensions with RTLD_GLOBAL, so a process that also
 # loads a system libmaxminddb could bind across the two. config.m4 passes
 # -fvisibility=hidden to prevent it; this asserts that worked. MSVC exports
 # nothing unmarked, so config.w32 needs no equivalent.
 #
-# 3c is its counterweight: -fvisibility=hidden covers our own maxminddb.c too,
+# The get_module check is its counterweight: -fvisibility=hidden covers our own maxminddb.c too,
 # and get_module survives only because ZEND_GET_MODULE expands through
 # ZEND_DLEXPORT, which carries visibility("default").
 check_symbols() {
@@ -81,6 +84,10 @@ file "$so" || echo "file(1) is unavailable; skipping the object summary."
 
 case "$(uname -s)" in
 Linux)
+    # Checked here rather than left to `set -u`, so a caller that forgets it
+    # gets this script's annotation like every other failure.
+    [ -n "${MAX_GLIBC:-}" ] || fail "MAX_GLIBC is not set; the glibc ceiling has no value to compare against."
+
     dynamic="$(readelf -d "$so")"
 
     # 1. No libmaxminddb dependency -- the point of the bundled build is that
@@ -88,7 +95,9 @@ Linux)
     #    readelf prints `(NEEDED)` and llvm-readelf a bare `NEEDED`.
     needed="$(sed -n 's/.*(\{0,1\}NEEDED)\{0,1\}.*\[\(.*\)\]/\1/p' <<<"$dynamic")"
     printf 'NEEDED:\n%s\n' "$needed"
-    # Every shared object needs at least libc, so none means the parse failed.
+    # An extension object always links libc, so an empty list here means the
+    # parse failed rather than that there are no dependencies. (A trivial
+    # gcc -shared object genuinely has none, but that is not what we gate.)
     if [ -z "$needed" ]; then
         fail "Could not read any DT_NEEDED entries from $so; the gate proved nothing."
     fi
@@ -102,26 +111,29 @@ Linux)
         fail "The object carries a RUNPATH/RPATH."
     fi
 
-    # 3, 3b, 3c -- the symbol checks.
+    # 3. The symbol checks: no undefined MMDB_, no exported MMDB_, get_module
+    #    still exported. See check_symbols above.
     undefined="$(nm -D -u "$so")"
     defined="$(nm -D --defined-only "$so")"
     check_symbols ''
 
-    # 4a. Nothing but the C runtime. Check 1 rejects libmaxminddb by name; this
-    #     makes any other new dependency a deliberate decision. musl spells its
-    #     libc libc.musl-<arch>.so.1, and libatomic turns up for 64-bit atomics
-    #     on some 32-bit architectures; neither is built here today.
+    # 4. Nothing but the C runtime. Check 1 rejects libmaxminddb by name; this
+    #     makes any other new dependency a deliberate decision. libatomic turns
+    #     up for 64-bit atomics on some 32-bit architectures.
+    #
+    #     No musl spellings: check 4 below requires a measurable GLIBC_x.y floor
+    #     and treats its absence as fatal, so a musl-linked object cannot reach
+    #     this list. Allowlisting one would only look like support.
     while read -r lib; do
         [ -n "$lib" ] || continue
         case "$lib" in
-        libc.so.* | libc.musl-*.so.* | libm.so.* | libdl.so.* | librt.so.* | \
-        libpthread.so.* | ld-linux*.so.* | ld-musl-*.so.* | libgcc_s.so.* | \
-        libatomic.so.*) ;;
+        libc.so.* | libm.so.* | libdl.so.* | librt.so.* | libpthread.so.* | \
+        ld-linux*.so.* | libgcc_s.so.* | libatomic.so.*) ;;
         *) fail "Unexpected runtime dependency $lib; the object should need nothing but the C runtime." ;;
         esac
     done <<<"$needed"
 
-    # 4. Measured glibc floor must not exceed the documented maximum. The
+    # 5. Measured glibc floor must not exceed the documented maximum. The
     #    `|| true` is scoped to the grep, which legitimately exits non-zero on
     #    no match; wrapping the whole pipeline would swallow a sed, sort or
     #    tail failure too, and a partial result yields a floor lower than the
@@ -149,6 +161,8 @@ Linux)
     fi
     ;;
 Darwin)
+    [ -n "${MACOSX_DEPLOYMENT_TARGET:-}" ] || fail "MACOSX_DEPLOYMENT_TARGET is not set; the deployment-target ceiling has no value to compare against."
+
     # Reached only from the extension repository's macOS lane; the
     # bundled-build workflow here is Linux-only.
     linked="$(otool -L "$so")"
@@ -168,13 +182,13 @@ Darwin)
         fail "The object carries an LC_RPATH."
     fi
 
-    # 3, 3b, 3c -- the symbol checks, with Mach-O's leading underscore.
+    # 3. The symbol checks, with Mach-O's leading underscore.
     # `nm -gU` (external only, defined only) means the same to Apple's nm and
     # to the llvm-nm now behind it.
     defined="$(nm -gU "$so")"
     check_symbols _
 
-    # 4a. Nothing but libSystem, the Mach-O counterpart of the NEEDED
+    # 4. Nothing but libSystem, the Mach-O counterpart of the NEEDED
     #     allowlist. Only indented lines whose first field is an absolute path
     #     are dependencies, which skips otool's echo of the object's own path
     #     and, on a universal binary, the architecture headers.
@@ -190,7 +204,7 @@ Darwin)
         esac
     done <<<"$dylibs"
 
-    # 4. The macOS analogue of the glibc floor. Every slice is measured, not
+    # 5. The macOS analogue of the glibc floor. Every slice is measured, not
     #    just the first: otool -l emits load commands per architecture, arm64
     #    has a hard 11.0 floor, and Xcode clamps minos per architecture, so an
     #    x86_64 slice at 11.0 can hide an arm64 slice at 14.0.

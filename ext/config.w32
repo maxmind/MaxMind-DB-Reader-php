@@ -19,10 +19,16 @@ if (PHP_MAXMINDDB == "yes") {
 		 * config.m4 keeps a literal because test-bundled.yml compares
 		 * MMDB_LIB_VERSION against configure.ac on every build. */
 		var maxminddb_ac = file_get_contents(maxminddb_bundled + "\\configure.ac");
-		if (!maxminddb_ac || !maxminddb_ac.match(/AC_INIT\(\[libmaxminddb\], \[([^\]]+)\]/)) {
+		/* The match is captured rather than read back out of RegExp.$1, which is
+		 * engine-global state shared with every other config.w32 evaluated in
+		 * the same scope. */
+		var maxminddb_match = maxminddb_ac
+			? maxminddb_ac.match(/AC_INIT\(\[libmaxminddb\], \[([^\]]+)\]/)
+			: null;
+		if (!maxminddb_match) {
 			ERROR("could not read the libmaxminddb version from ext/libmaxminddb/configure.ac");
 		}
-		var maxminddb_version = RegExp.$1;
+		var maxminddb_version = maxminddb_match[1];
 
 		/* ext/bundled-include supplies maxminddb_config.h, which
 		 * libmaxminddb's maxminddb.h includes unconditionally and its own build
@@ -34,7 +40,12 @@ if (PHP_MAXMINDDB == "yes") {
 			'/I "' + maxminddb_bundled + '\\include" ' +
 			'/I "' + maxminddb_bundled + '\\src"');
 
-		/* These match ext/config.m4, except that HAVE_CONFIG_H is left alone.
+		/* The uint128 defines match ext/config.m4. Three things deliberately do
+		 * not: HAVE_CONFIG_H is left alone here (below); MMDB_LITTLE_ENDIAN is
+		 * hardcoded because every Windows target is little-endian, where
+		 * config.m4 derives it and may leave it undefined; and there is no
+		 * -fvisibility=hidden counterpart, because MSVC exports nothing that is
+		 * not marked __declspec(dllexport).
 		 * config.m4 has to define it as 0 because PHP's Unix CPPFLAGS already
 		 * define it, and libmaxminddb's maxminddb.c tests the *value* with
 		 * `#if HAVE_CONFIG_H`, so it would otherwise include the config.h it
@@ -83,13 +94,9 @@ if (PHP_MAXMINDDB == "yes") {
 		 * directories and nothing would collide -- that is how ext/gd gets away
 		 * with libgd/gd.c next to gd.c. Under phpize, which is how this
 		 * extension is built for Windows, confutils.js takes a different branch
-		 * and ignores that argument:
-		 *
-		 *     if (MODE_PHPIZE) {
-		 *         var build_dir = (dirname ? dirname : "")...
-		 *
-		 * where dirname is only the directory part of each file_list entry. Our
-		 * entries are bare filenames, so both sources resolve to
+		 * in ADD_SOURCES that derives the build directory from the dirname of
+		 * each file_list entry and ignores the fourth argument. Our entries are
+		 * bare filenames, so both sources resolve to
 		 * $(BUILD_DIR)\maxminddb.obj, the makefile gets two rules for one
 		 * target, and whichever compiles last wins. When libmaxminddb's won,
 		 * the DLL linked without our get_module() and PHP rejected it with

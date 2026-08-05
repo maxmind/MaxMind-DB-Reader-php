@@ -10,6 +10,12 @@ PHP_ARG_WITH(maxminddb-bundled,
 PHP_ARG_ENABLE(maxminddb-debug, for MaxMind DB debug support,
     [ --enable-maxminddb-debug    Enable MaxMind DB debug support], no, no)
 
+dnl --with-maxminddb-bundled on its own is otherwise a silent no-op: the whole
+dnl block below is skipped, configure exits 0, and make builds nothing.
+if test "$PHP_MAXMINDDB_BUNDLED" != "no" && test "$PHP_MAXMINDDB" = "no"; then
+    AC_MSG_ERROR([--with-maxminddb-bundled requires --with-maxminddb])
+fi
+
 if test $PHP_MAXMINDDB != "no"; then
 
     maxminddb_sources="maxminddb.c"
@@ -42,9 +48,10 @@ if test $PHP_MAXMINDDB != "no"; then
         dnl warning-free under it, and --enable-maxminddb-debug turns warnings
         dnl into errors.
         dnl
-        dnl The last two actions must be non-empty: autoconf treats an empty
-        dnl argument as absent and substitutes its own default, which for
-        dnl action-if-unknown is to abort rather than fall through.
+        dnl The third action must be non-empty: autoconf treats an empty
+        dnl argument as absent, and its default for action-if-unknown is to
+        dnl abort rather than fall through. The fourth is passed for symmetry;
+        dnl its default is a harmless AC_DEFINE libmaxminddb never reads.
         m4_define([_mmdb_endian_unknown],
                   [AC_MSG_NOTICE([endianness undetermined; letting maxminddb.h derive MMDB_LITTLE_ENDIAN from __BYTE_ORDER__])])
         AC_C_BIGENDIAN([CFLAGS="$CFLAGS -DMMDB_LITTLE_ENDIAN=0"],
@@ -58,7 +65,7 @@ if test $PHP_MAXMINDDB != "no"; then
         dnl something linked against a system libmaxminddb could bind across
         dnl the two. dev-bin/gate-extension.sh asserts the result.
         dnl
-        dnl -UHAVE_CONFIG_H must come first: PHP's CPPFLAGS already define
+        dnl -UHAVE_CONFIG_H must precede -DHAVE_CONFIG_H=0: PHP's CPPFLAGS define
         dnl HAVE_CONFIG_H, and redefining it is a warning that becomes an error
         dnl under --enable-maxminddb-debug, which adds -Werror.
         dnl
@@ -108,9 +115,8 @@ if test $PHP_MAXMINDDB != "no"; then
     dnl directory for the bundled sources is never created and they fail to
     dnl compile.
     if test "$PHP_MAXMINDDB_BUNDLED" != "no"; then
-        dnl config.w32 has had this check since it was written; config.m4 had
-        dnl none, so a clone without --recursive produced a stray "No such file
-        dnl or directory", a *successful* configure -- autoconf-generated
+        dnl A clone without --recursive otherwise produces a stray "No such
+        dnl file or directory", a *successful* configure -- autoconf-generated
         dnl configure does not run under set -e -- and then an opaque failure
         dnl much later at maxminddb.h.
         if test ! -f "$ext_srcdir/libmaxminddb/src/maxminddb.c"; then
