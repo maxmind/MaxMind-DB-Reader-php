@@ -62,20 +62,12 @@ if test $PHP_MAXMINDDB != "no"; then
         dnl HAVE_CONFIG_H, and redefining it is a warning that becomes an error
         dnl under --enable-maxminddb-debug, which adds -Werror.
         dnl
-        dnl MMDB_lib_version() returns PACKAGE_VERSION, and the extension
-        dnl exposes that as MMDB_LIB_VERSION and through phpinfo(), so it must
-        dnl be kept in sync with the version of the libmaxminddb submodule.
-        dnl dev-bin/check-libmaxminddb-version.sh asserts that.
-        dnl
-        dnl These deliberately go to the global CFLAGS and not to
-        dnl PHP_NEW_EXTENSION's extra-cflags argument, which would be the
-        dnl tidier home for them: on PHP 7.2 and 7.3 that argument does not
-        dnl reach these sources, PACKAGE_VERSION is left to PHP's own empty
-        dnl definition, and MMDB_LIB_VERSION comes out as "". It builds and
-        dnl loads, so only a version assertion catches it. 7.4 and later are
-        dnl fine, which is what makes the breakage easy to miss. Do not move
-        dnl them while 7.2 and 7.3 are supported.
-        CFLAGS="$CFLAGS -fvisibility=hidden -UHAVE_CONFIG_H -DHAVE_CONFIG_H=0 -DMMDB_UINT128_USING_MODE=0 -DMMDB_UINT128_IS_BYTE_ARRAY=1 -DPACKAGE_VERSION='\"1.13.3\"'"
+        dnl PACKAGE_VERSION is deliberately absent: it is defined in
+        dnl ext/bundled-include/maxminddb_config.h instead, because a -D here
+        dnl also reaches ext/maxminddb.c, which includes php.h -- and PHP only
+        dnl began stripping PACKAGE_* from its generated headers in 7.4, so on
+        dnl 7.2 and 7.3 this redefined PHP's own macro. See that header.
+        CFLAGS="$CFLAGS -fvisibility=hidden -UHAVE_CONFIG_H -DHAVE_CONFIG_H=0 -DMMDB_UINT128_USING_MODE=0 -DMMDB_UINT128_IS_BYTE_ARRAY=1"
 
         maxminddb_sources="$maxminddb_sources libmaxminddb/src/maxminddb.c libmaxminddb/src/data-pool.c"
     else
