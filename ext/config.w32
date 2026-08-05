@@ -5,7 +5,10 @@ if (PHP_MAXMINDDB == "yes") {
 	if (PHP_MAXMINDDB_BUNDLED != "no") {
 		var maxminddb_bundled = configure_module_dirname + "\\libmaxminddb";
 
-		if (!FSO.FolderExists(maxminddb_bundled + "\\src")) {
+		/* The file, not just the directory: an empty or half-populated leftover
+		 * src\\ passes a folder check and then fails opaquely at compile time,
+		 * which is what the matching check in config.m4 was added to avoid. */
+		if (!FSO.FileExists(maxminddb_bundled + "\\src\\maxminddb.c")) {
 			ERROR("--with-maxminddb-bundled needs the bundled libmaxminddb sources; run \"git submodule update --init\"");
 		}
 
