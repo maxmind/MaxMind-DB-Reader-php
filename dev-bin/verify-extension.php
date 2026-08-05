@@ -13,6 +13,31 @@ use MaxMind\Db\Reader;
 // Shared with maxmind/MaxMind-DB-Reader-php-ext, which needs the same check
 // against the binaries it publishes.
 
+// Validated rather than assumed: this script is shared with
+// maxmind/MaxMind-DB-Reader-php-ext, where the caller is out of sight. An empty
+// $expected against an empty MMDB_LIB_VERSION would compare equal and exit 0
+// having proved nothing -- and "" is exactly the value a PACKAGE_VERSION that
+// never reached the compiler produces.
+if ($argc !== 3) {
+    fwrite(\STDERR, "usage: verify-extension.php <mmdb path> <expected MMDB_LIB_VERSION>\n");
+
+    exit(1);
+}
+if ($argv[2] === '') {
+    fwrite(\STDERR, "the expected MMDB_LIB_VERSION must not be empty\n");
+
+    exit(1);
+}
+
+// Does not rely on the caller passing -n: with an autoloader in scope the
+// pure-PHP Reader would satisfy everything below and prove nothing about the
+// object under test.
+if (!\extension_loaded('maxminddb')) {
+    fwrite(\STDERR, "the maxminddb extension is not loaded\n");
+
+    exit(1);
+}
+
 $reader = new Reader($argv[1]);
 $record = $reader->get('81.2.69.160');
 $city = isset($record['city']['names']['en'])
