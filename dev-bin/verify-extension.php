@@ -32,7 +32,7 @@ if ($argv[2] === '') {
 // Does not rely on the caller passing -n: with an autoloader in scope the
 // pure-PHP Reader would satisfy everything below and prove nothing about the
 // object under test.
-if (!\extension_loaded('maxminddb')) {
+if (!extension_loaded('maxminddb')) {
     fwrite(\STDERR, "the maxminddb extension is not loaded\n");
 
     exit(1);

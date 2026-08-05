@@ -213,20 +213,22 @@ jobs:
     runs-on: windows-latest
     name: "Windows bundled build (x64, nts, PHP 8.4)"
     steps:
-      # submodules: recursive because php-windows-builder does not initialise
-      # them in local mode -- ext/libmaxminddb is the build input, and
-      # tests/data holds the database the gate below queries.
+      # The action clones and initialises its own copy to build from; this
+      # checkout supplies dev-bin/verify-extension.php and the tests/data
+      # database the gate below queries.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
 
-      # No extension-url on purpose: with none set the action looks for a
-      # config.w32 in the workspace and builds a copy of this checkout rather
-      # than cloning, which is the point -- the thing under test is this tree's
-      # ext/config.w32. build-directory puts the build where the gate can find
-      # it; the action otherwise uses a temporary directory.
+      # extension-url rather than the action's local mode, which cannot be used
+      # here: local mode selects itself by finding a config.w32 anywhere in the
+      # tree, but Get-ExtensionName then reads "config.w32" relative to the
+      # repository root, so an extension living in ext/ is detected and then
+      # immediately fails. Cloning also gets the action's own recursive
+      # submodule init, which local mode does not do. This is the shape
+      # maxmind/MaxMind-DB-Reader-php-ext already builds this config.w32 with.
       #
       # One job is enough. config.w32 does not vary by PHP version, arch or
       # thread safety in any way this exercises, and PHP <= 7.4 needs a
@@ -234,6 +236,8 @@ jobs:
       - name: Build the extension
         uses: php/php-windows-builder/extension@29352c0ef9e8ce65264ea9e287881a6f7758a953 # 1.9.0
         with:
+          extension-url: https://github.com/${{ github.repository }}
+          extension-ref: ${{ github.event.pull_request.head.sha || github.sha }}
           build-directory: winbuild
           php-version: '8.4'
           arch: x64
