@@ -121,14 +121,17 @@ Linux)
         esac
     done <<<"$needed"
 
-    # 4. Measured glibc floor must not exceed the documented maximum. `|| true`
-    #    covers only the grep, which legitimately exits non-zero on no match.
+    # 4. Measured glibc floor must not exceed the documented maximum. The
+    #    `|| true` is scoped to the grep, which legitimately exits non-zero on
+    #    no match; wrapping the whole pipeline would swallow a sed, sort or
+    #    tail failure too, and a partial result yields a floor lower than the
+    #    real one, which passes the ceiling check.
     syms="$(objdump -T "$so")"
     # Unstable at any version, so an absolute bar rather than part of the floor.
     if grep -qE 'GLIBC_PRIVATE' <<<"$syms"; then
         fail "The object references GLIBC_PRIVATE, which is not a stable interface."
     fi
-    floor="$(grep -oE 'GLIBC_[0-9]+(\.[0-9]+)+' <<<"$syms" | sed 's/^GLIBC_//' | sort -uV | tail -n1 || true)"
+    floor="$({ grep -oE 'GLIBC_[0-9]+(\.[0-9]+)+' <<<"$syms" || true; } | sed 's/^GLIBC_//' | sort -uV | tail -n1)"
     if [ -z "$floor" ]; then
         fail "Could not measure a glibc floor for $so; the gate proved nothing."
     fi
@@ -191,6 +194,14 @@ Darwin)
     #    just the first: otool -l emits load commands per architecture, arm64
     #    has a hard 11.0 floor, and Xcode clamps minos per architecture, so an
     #    x86_64 slice at 11.0 can hide an arm64 slice at 14.0.
+    # A slice targeting 10.13 or lower carries LC_VERSION_MIN_MACOSX instead,
+    # which the awk below cannot see. On a universal object mixing the two the
+    # empty-result guard never fires -- all_minos is non-empty from the modern
+    # slices -- and the old-style one is silently unmeasured, so reject it
+    # outright rather than measuring around it.
+    if grep -q LC_VERSION_MIN_MACOSX <<<"$loadcmds"; then
+        fail "$so carries LC_VERSION_MIN_MACOSX; its deployment target cannot be measured here."
+    fi
     all_minos="$(awk '/LC_BUILD_VERSION/{f=1} f && $1=="minos"{print $2; f=0}' <<<"$loadcmds")"
     minos="$(sort -V <<<"$all_minos" | tail -n1)"
     printf 'Measured minimum macOS per slice: %s (documented maximum %s)\n' \
