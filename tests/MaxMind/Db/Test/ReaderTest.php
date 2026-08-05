@@ -140,8 +140,8 @@ class ReaderTest extends TestCase
         $reader = new Reader(
             'tests/data/test-data/MaxMind-DB-no-ipv4-search-tree.mmdb'
         );
-        $this->assertSame('::0/64', $reader->get('1.1.1.1'));
-        $this->assertSame('::0/64', $reader->get('192.1.1.1'));
+        $this->assertSame('::/64', $reader->get('1.1.1.1'));
+        $this->assertSame('::/64', $reader->get('192.1.1.1'));
     }
 
     public function testGetWithPrefixLen(): void
@@ -218,19 +218,19 @@ class ReaderTest extends TestCase
                 'ip' => '200.0.2.1',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 0,
-                'expectedRecord' => '::0/64',
+                'expectedRecord' => '::/64',
             ],
             [
                 'ip' => '::200.0.2.1',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 64,
-                'expectedRecord' => '::0/64',
+                'expectedRecord' => '::/64',
             ],
             [
                 'ip' => '0:0:0:0:ffff:ffff:ffff:ffff',
                 'dbFile' => 'MaxMind-DB-no-ipv4-search-tree.mmdb',
                 'expectedPrefixLength' => 64,
-                'expectedRecord' => '::0/64',
+                'expectedRecord' => '::/64',
             ],
             [
                 'ip' => 'ef00::',
