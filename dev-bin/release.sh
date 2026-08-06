@@ -292,18 +292,11 @@ This updates the submodule reference to track the $tag release.
 
 Release notes from main repository:
 $notes"
-
-    # Push changes
-    echo "Pushing to origin..."
-    git push origin main
 fi
 
-# Tagging the extension repository is what triggers its release workflow, which
-# builds the pre-packaged source tarball and the precompiled binaries, uploads
-# them all, and publishes the release. This has to happen even when the submodule
-# commit above turned out to be unnecessary: on a re-run, or after someone bumped
-# the submodule by hand, that commit is a no-op but the tag has still never been
-# pushed, and it is the tag rather than the commit that starts the release.
+# Refuse to re-push a tag that is already there. A tag push is what starts the
+# release, and pushing a tag that already exists raises no event, so the run
+# would build nothing while this script reported success.
 if ! ext_remote_tag="$(git ls-remote --tags origin "refs/tags/$tag")"; then
     echo "ERROR: Could not list tags in the extension repository remote"
     popd >/dev/null
@@ -312,29 +305,49 @@ fi
 
 if [ -n "$ext_remote_tag" ]; then
     echo "ERROR: Tag $tag already exists in the extension repository."
-    echo "The release workflow only runs on a newly pushed tag, so re-pushing"
-    echo "it would build nothing. Check whether the release is already there:"
+    echo "Pushing it again raises no event, so the release workflow would not"
+    echo "run. Check whether the release is already there:"
     echo "https://github.com/maxmind/MaxMind-DB-Reader-php-ext/releases/tag/$tag"
-    echo "To rebuild the assets for a tag that has already been pushed, run the"
-    echo "workflow by hand against that tag:"
+    echo "If it is still a draft, or absent, you can rebuild its assets by hand:"
     echo "gh workflow run release.yml --repo maxmind/MaxMind-DB-Reader-php-ext -f tag=$tag"
+    echo "That will not help once the release is published: the workflow refuses"
+    echo "to stage assets onto a published release, and there is nothing to be"
+    echo "done about one except cut a new version."
     popd >/dev/null
     exit 1
 fi
 
-# The tag must be annotated: the workflow creates the release with
-# --notes-from-tag, which reads the annotation as the release notes.
-# -f replaces a tag left behind by an earlier failed run rather than aborting;
-# the check above has already established that it was never pushed.
+# Tagging the extension repository is what triggers its release workflow, which
+# builds the pre-packaged source tarball and the precompiled binaries, uploads
+# them all, and publishes the release. That has to happen even when the
+# submodule commit above turned out to be unnecessary -- on a re-run, or after
+# someone bumped the submodule by hand, the commit is a no-op but the tag may
+# still not be on the remote, and it is the tag that starts the release.
+#
+# --cleanup=verbatim because git's default for -m is --cleanup=strip, which
+# removes every line beginning with '#'. The annotation is the extension
+# release's notes, and '#' begins a Markdown heading and a "#123" issue
+# reference, so the default would silently publish notes that differ from the
+# ones this repository's release carries.
 echo "Tagging $tag in extension repository..."
-git tag -f -a "$tag" -m "$notes"
+git tag -f -a --cleanup=verbatim "$tag" -m "$notes"
 
-echo "Pushing tag $tag..."
-git push origin "refs/tags/$tag"
+# One transaction. Pushed separately, a failure between them leaves the branch
+# public and the tag missing -- the half-done state this whole change exists to
+# remove, and one that cannot be repaired by re-running, because release.sh
+# dies far earlier at `gh release create` and never reaches this block again.
+#
+# Pushing main here also settles what the tag names. The cleanliness check
+# above says nothing about ahead-ness, so a local-only commit in a
+# pre-existing .ext clone could otherwise be tagged and pushed while the commit
+# itself stayed on no branch GitHub knows about. Sending both together means
+# the tag can only ever point at something reachable from main -- and a main
+# that does not fast-forward now fails the whole push instead of half of it.
+echo "Pushing main and tag $tag..."
+git push --atomic origin main "refs/tags/$tag"
 
 echo ""
 echo "✓ Extension repository tagged $tag"
-echo "✓ Its release workflow will build and publish the release assets"
 
 popd >/dev/null
 
