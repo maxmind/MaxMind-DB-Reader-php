@@ -151,9 +151,7 @@ echo "==================================================================="
 if [ ! -d "$ext_repo_dir" ]; then
     echo "Extension repository not found at: $ext_repo_dir"
     echo "Cloning extension repository..."
-    git clone --recurse-submodules "$ext_repo_url" "$ext_repo_dir"
-
-    if [ $? -ne 0 ]; then
+    if ! git clone --recurse-submodules "$ext_repo_url" "$ext_repo_dir"; then
         echo "ERROR: Failed to clone extension repository"
         echo "Please clone manually: git clone --recurse-submodules $ext_repo_url $ext_repo_dir"
         exit 1
@@ -186,9 +184,7 @@ git pull origin main
 echo "Updating submodule to $tag..."
 cd MaxMind-DB-Reader-php
 git fetch --tags origin
-git checkout "$tag"
-
-if [ $? -ne 0 ]; then
+if ! git checkout "$tag"; then
     echo "ERROR: Failed to checkout tag $tag in submodule"
     popd >/dev/null
     exit 1
