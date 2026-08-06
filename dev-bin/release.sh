@@ -349,6 +349,32 @@ git push --atomic origin main "refs/tags/$tag"
 echo ""
 echo "✓ Extension repository tagged $tag"
 
+# The script's last real action was that push; everything after it used to be a
+# printed promise. Confirm the workflow actually picked the tag up, because the
+# only remedy is manual and the main repository's release is already public by
+# now.
+echo "Waiting for the extension release workflow to start..."
+ext_run=""
+for _ in $(seq 1 12); do
+    ext_run="$(gh run list --workflow=release.yml \
+        --repo maxmind/MaxMind-DB-Reader-php-ext \
+        --branch "$tag" --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+    [ -n "$ext_run" ] && break
+    sleep 10
+done
+
+if [ -n "$ext_run" ]; then
+    echo "✓ Its release workflow is running:"
+    echo "  https://github.com/maxmind/MaxMind-DB-Reader-php-ext/actions/runs/$ext_run"
+else
+    echo ""
+    echo "WARNING: no release workflow run appeared for $tag after two minutes."
+    echo "This repository's $tag release is already published, so this needs a"
+    echo "human. Check for a run, and start one by hand if none arrived:"
+    echo "  https://github.com/maxmind/MaxMind-DB-Reader-php-ext/actions/workflows/release.yml"
+    echo "  gh workflow run release.yml --repo maxmind/MaxMind-DB-Reader-php-ext -f tag=$tag"
+fi
+
 popd >/dev/null
 
 echo ""
@@ -365,8 +391,11 @@ echo "1. Watch the extension repository's release workflow and confirm that it"
 echo "   published the release with all of its assets:"
 echo "   https://github.com/maxmind/MaxMind-DB-Reader-php-ext/actions/workflows/release.yml"
 echo "   It builds the pre-packaged source tarball and the precompiled binaries,"
-echo "   checks them, and only then un-drafts the release. Until it succeeds the"
-echo "   release stays a draft, and it smoke tests 'pie install' itself at the end."
+echo "   checks them, and only then un-drafts the release, so the release stays"
+echo "   a draft until its publish job's last step."
+echo "   Its final job smoke tests 'pie install' *after* that step, so a red"
+echo "   workflow can still mean an already-published release. That one needs a"
+echo "   human rather than a re-run."
 echo "2. Upload PECL package to pecl.php.net: https://pecl.php.net/package-new.php"
 echo "   File: $package"
 echo "3. Announce release"
