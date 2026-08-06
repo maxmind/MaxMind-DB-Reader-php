@@ -19,10 +19,14 @@ CHANGELOG
   replaces the 1.5.0 import library that PHP publishes for Windows builds.
   The default is unchanged: without the flag, the extension links against a
   system libmaxminddb as before. GitHub #265.
-* The `conflict` constraint on `ext-maxminddb` in `composer.json` is updated
-  when a release is cut again. The substitution that maintains it had
-  silently stopped matching, leaving the constraint at `<1.11.1` since
-  December 2023.
+* The `conflict` constraint on `ext-maxminddb` in `composer.json` is again
+  updated when a release is cut. The substitution that maintains it stopped
+  matching in April 2024, when the constraint's separator changed from a comma
+  to `||`, so the constraint has read `<1.11.1` through four releases. Users of
+  the C extension should note the effect of reviving it: `ext-maxminddb` is a
+  Composer platform package, so this release conflicts with an older compiled
+  extension and `composer update` will require upgrading the two together.
+  GitHub #266.
 
 1.13.1 (2025-11-21)
 -------------------
