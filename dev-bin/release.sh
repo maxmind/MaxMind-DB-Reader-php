@@ -253,6 +253,20 @@ git pull origin main
 
 # Update submodule to the new tag
 echo "Updating submodule to $tag..."
+
+# .ext is only cloned when it is absent, so a pre-existing clone made without
+# --recurse-submodules leaves this an empty directory. git's repository
+# discovery walks *up*, so the fetch and checkout below would then run against
+# .ext itself and detach its HEAD at its own same-named tag -- and succeed, so
+# set -e never fires and the branch reports contentment.
+if [ ! -e MaxMind-DB-Reader-php/.git ]; then
+    echo "ERROR: $ext_repo_dir/MaxMind-DB-Reader-php is not a git checkout."
+    echo "The clone was probably made without --recurse-submodules. Run:"
+    echo "  git -C $ext_repo_dir submodule update --init"
+    popd >/dev/null
+    exit 1
+fi
+
 cd MaxMind-DB-Reader-php
 git fetch --tags origin
 if ! git checkout "$tag"; then
