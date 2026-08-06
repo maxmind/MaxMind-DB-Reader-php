@@ -30,6 +30,19 @@ if ! git ls-remote origin &>/dev/null; then
     exit 1
 fi
 
+# The extension release is a handoff: this script pushes a tag and the
+# extension repository's release.yml does the rest. If that workflow is not on
+# its default branch, the tag push triggers nothing -- and the tag guard
+# further down then refuses every retry, while `gh workflow run` cannot help
+# either, because workflow_dispatch also resolves the workflow from the default
+# branch. Checked here, before anything has been published.
+if ! gh workflow view release.yml --repo maxmind/MaxMind-DB-Reader-php-ext &>/dev/null; then
+    echo "Error: release.yml is not on the extension repository's default branch."
+    echo "Pushing a tag there would build nothing, and it cannot be retried."
+    echo "Merge maxmind/MaxMind-DB-Reader-php-ext#2 first. Nothing has been published yet."
+    exit 1
+fi
+
 check_command perl
 check_command php
 check_command phpize
