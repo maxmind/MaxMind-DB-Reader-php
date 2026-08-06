@@ -75,6 +75,15 @@ version="${BASH_REMATCH[1]}"
 date="${BASH_REMATCH[3]}"
 notes="$(echo "${BASH_REMATCH[4]}" | sed -n -E '/^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?/,$!p')"
 
+# The notes become this repository's release body, package.xml's <notes>, and
+# the extension tag's annotation, which is the extension release's body. An
+# unusual heading layout that made the filter above yield nothing would publish
+# all four empty without complaint -- `git tag -a -m ""` exits 0.
+if [ -z "${notes//[[:space:]]/}" ]; then
+    echo "Error: extracted empty release notes from CHANGELOG.md."
+    exit 1
+fi
+
 if [[ "$date" != "$(date +"%Y-%m-%d")" ]]; then
     echo "$date is not today!"
     exit 1
