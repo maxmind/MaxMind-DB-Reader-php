@@ -30,6 +30,19 @@ if ! git ls-remote origin &>/dev/null; then
     exit 1
 fi
 
+# The extension release is a handoff: this script pushes a tag and the
+# extension repository's release.yml does the rest. If that workflow is not on
+# its default branch, the tag push triggers nothing -- and the tag guard
+# further down then refuses every retry, while `gh workflow run` cannot help
+# either, because workflow_dispatch also resolves the workflow from the default
+# branch. Checked here, before anything has been published.
+if ! gh workflow view release.yml --repo maxmind/MaxMind-DB-Reader-php-ext &>/dev/null; then
+    echo "Error: release.yml is not on the extension repository's default branch."
+    echo "Pushing a tag there would build nothing, and it cannot be retried."
+    echo "Merge maxmind/MaxMind-DB-Reader-php-ext#2 first. Nothing has been published yet."
+    exit 1
+fi
+
 check_command perl
 check_command php
 check_command phpize
@@ -75,6 +88,15 @@ version="${BASH_REMATCH[1]}"
 date="${BASH_REMATCH[3]}"
 notes="$(echo "${BASH_REMATCH[4]}" | sed -n -E '/^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?/,$!p')"
 
+# The notes become this repository's release body, package.xml's <notes>, and
+# the extension tag's annotation, which is the extension release's body. An
+# unusual heading layout that made the filter above yield nothing would publish
+# all four empty without complaint -- `git tag -a -m ""` exits 0.
+if [ -z "${notes//[[:space:]]/}" ]; then
+    echo "Error: extracted empty release notes from CHANGELOG.md."
+    exit 1
+fi
+
 if [[ "$date" != "$(date +"%Y-%m-%d")" ]]; then
     echo "$date is not today!"
     exit 1
@@ -89,13 +111,62 @@ fi
 
 rm -fr vendor
 
-perl -pi -e "s{(?<=php composer\.phar require maxmind-db/reader:).+}{^$version}g" README.md
-perl -pi -e "s/(?<=#define PHP_MAXMINDDB_VERSION \")\d+\.\d+\.\d+(?=\")/$version/" ext/php_maxminddb.h
-perl -pi -e "s/(?<=\"ext-maxminddb\": \"<)\d+.\d+.\d+(?=,)/$version/" composer.json
-perl -pi -e "s/(?<=<(?:api)>)\d+\.\d+\.\d+(?=<)/$version/" package.xml
-perl -pi -e "s/(?<=<(?:release)>)\d+\.\d+\.\d+(?=<)/$version/" package.xml
-perl -0777 -pi -e "s{(?<=<notes>).*(?=</notes>)}{$notes}sm" package.xml
-perl -pi -e "s/(?<=<date>)\d{4}-\d{2}-\d{2}(?=<)/$date/" package.xml
+# Every substitution below is asserted to match something.
+#
+# `perl -pi` exits 0 whether or not the pattern matched, and exits 0 on a
+# missing file too, printing only to stderr -- so a substitution can quietly do
+# nothing and the release proceeds. That is not hypothetical: the
+# ext-maxminddb floor in composer.json stopped being updated in April 2024,
+# when the constraint's separator changed from a comma to " || " and left the
+# old anchor matching nothing, and four releases shipped a stale floor before
+# anyone noticed. The suppressor is the `git status --porcelain` test further
+# down, which treats "nothing changed" as normal when it is only ever a bug.
+#
+# Counted in a separate read-only pass because the substituting run cannot
+# report it: with -i, perl has already renamed the rewritten file into place by
+# the time END could inspect a counter.
+subst() { # <file> <s/// expression> [extra perl flags...]
+    local file="$1" expr="$2"
+    shift 2
+    if [ ! -f "$file" ]; then
+        echo "Error: $file is missing; the release tooling cannot update it."
+        exit 1
+    fi
+    local matches
+    matches="$(perl "$@" -ne "\$n += $expr; END { print \$n + 0 }" "$file")"
+    if [ "$matches" -eq 0 ]; then
+        echo "Error: nothing in $file matched, so its version would not be updated."
+        echo "The file's format has probably changed. Pattern: $expr"
+        exit 1
+    fi
+    perl "$@" -pi -e "$expr" "$file"
+}
+
+# Passed through the environment rather than interpolated into perl source by
+# the shell. $notes is free text from the changelog, and perl would re-read a
+# double-quoted replacement as code: "$reader" and "@args" -- ordinary words in
+# a PHP project's release notes -- become variable lookups and vanish.
+export RELEASE_VERSION="$version" RELEASE_DATE="$date" RELEASE_NOTES="$notes"
+
+# shellcheck disable=SC2016 # $ENV{...} is perl source; the shell must not expand it
+{
+    subst README.md 's{(?<=php composer\.phar require maxmind-db/reader:).+}{^$ENV{RELEASE_VERSION}}g'
+    subst ext/php_maxminddb.h 's/(?<=#define PHP_MAXMINDDB_VERSION ")\d+\.\d+\.\d+(?=")/$ENV{RELEASE_VERSION}/'
+    # Matched by what ends the version rather than by the version's own shape.
+    # This line is the one that broke: the constraint was written
+    # "<1.11.1,>=2.0.0" until April 2024 and "<1.11.1 || >=2.0.0" after, and an
+    # anchor tied to the separator stopped matching. Tying it to the digits
+    # instead just moves the problem -- \d+\.\d+\.\d+ does not match
+    # "1.14.0-beta1", which the changelog regex explicitly permits. Consuming
+    # everything up to a space, comma, pipe or quote handles every shape the
+    # file has had, a prerelease, and a `composer normalize` that collapses the
+    # spaces.
+    subst composer.json 's/(?<="ext-maxminddb": "<)[^ ,|"]+/$ENV{RELEASE_VERSION}/'
+    subst package.xml 's/(?<=<(?:api)>)\d+\.\d+\.\d+(?=<)/$ENV{RELEASE_VERSION}/'
+    subst package.xml 's/(?<=<(?:release)>)\d+\.\d+\.\d+(?=<)/$ENV{RELEASE_VERSION}/'
+    subst package.xml 's{(?<=<notes>).*(?=</notes>)}{$ENV{RELEASE_NOTES}}sm' -0777
+    subst package.xml 's/(?<=<date>)\d{4}-\d{2}-\d{2}(?=<)/$ENV{RELEASE_DATE}/'
+}
 
 pushd ext
 phpize
@@ -151,9 +222,7 @@ echo "==================================================================="
 if [ ! -d "$ext_repo_dir" ]; then
     echo "Extension repository not found at: $ext_repo_dir"
     echo "Cloning extension repository..."
-    git clone --recurse-submodules "$ext_repo_url" "$ext_repo_dir"
-
-    if [ $? -ne 0 ]; then
+    if ! git clone --recurse-submodules "$ext_repo_url" "$ext_repo_dir"; then
         echo "ERROR: Failed to clone extension repository"
         echo "Please clone manually: git clone --recurse-submodules $ext_repo_url $ext_repo_dir"
         exit 1
@@ -184,11 +253,23 @@ git pull origin main
 
 # Update submodule to the new tag
 echo "Updating submodule to $tag..."
+
+# .ext is only cloned when it is absent, so a pre-existing clone made without
+# --recurse-submodules leaves this an empty directory. git's repository
+# discovery walks *up*, so the fetch and checkout below would then run against
+# .ext itself and detach its HEAD at its own same-named tag -- and succeed, so
+# set -e never fires and the branch reports contentment.
+if [ ! -e MaxMind-DB-Reader-php/.git ]; then
+    echo "ERROR: $ext_repo_dir/MaxMind-DB-Reader-php is not a git checkout."
+    echo "The clone was probably made without --recurse-submodules. Run:"
+    echo "  git -C $ext_repo_dir submodule update --init"
+    popd >/dev/null
+    exit 1
+fi
+
 cd MaxMind-DB-Reader-php
 git fetch --tags origin
-git checkout "$tag"
-
-if [ $? -ne 0 ]; then
+if ! git checkout "$tag"; then
     echo "ERROR: Failed to checkout tag $tag in submodule"
     popd >/dev/null
     exit 1
@@ -201,9 +282,7 @@ git add MaxMind-DB-Reader-php
 
 # Check if there are actual changes
 if [ -z "$(git status --porcelain)" ]; then
-    echo "No changes needed in extension repository (already at $tag)"
-    popd >/dev/null
-    echo "Extension repository is up to date"
+    echo "No commit needed in extension repository (submodule already at $tag)"
 else
     # Commit submodule update
     echo "Committing submodule update..."
@@ -213,65 +292,87 @@ This updates the submodule reference to track the $tag release.
 
 Release notes from main repository:
 $notes"
+fi
 
-    # Push changes
-    echo "Pushing to origin..."
-    git push origin main
-
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to push to extension repository"
-        popd >/dev/null
-        exit 1
-    fi
-
-    # Create pre-packaged source tarball for PIE
-    # PIE needs this because it doesn't handle git submodules automatically
-    echo "Creating pre-packaged source tarball for PIE..."
-    pie_tarball="maxminddb-${tag}.tgz"
-
-    # Create tarball with files at root level (PIE requirement)
-    # Note: naming must be {extension-name}-v{version}.tgz
-    pushd MaxMind-DB-Reader-php/ext >/dev/null
-    tar -czf "../../$pie_tarball" *
+# Refuse to re-push a tag that is already there. A tag push is what starts the
+# release, and pushing a tag that already exists raises no event, so the run
+# would build nothing while this script reported success.
+if ! ext_remote_tag="$(git ls-remote --tags origin "refs/tags/$tag")"; then
+    echo "ERROR: Could not list tags in the extension repository remote"
     popd >/dev/null
+    exit 1
+fi
 
-    if [ ! -f "$pie_tarball" ]; then
-        echo "ERROR: Failed to create source tarball"
-        popd >/dev/null
-        exit 1
-    fi
+if [ -n "$ext_remote_tag" ]; then
+    echo "ERROR: Tag $tag already exists in the extension repository."
+    echo "Pushing it again raises no event, so the release workflow would not"
+    echo "run. Check whether the release is already there:"
+    echo "https://github.com/maxmind/MaxMind-DB-Reader-php-ext/releases/tag/$tag"
+    echo "If it is still a draft, or absent, you can rebuild its assets by hand:"
+    echo "gh workflow run release.yml --repo maxmind/MaxMind-DB-Reader-php-ext -f tag=$tag"
+    echo "That will not help once the release is published: the workflow refuses"
+    echo "to stage assets onto a published release, and there is nothing to be"
+    echo "done about one except cut a new version."
+    popd >/dev/null
+    exit 1
+fi
 
-    echo "Created $pie_tarball"
+# Tagging the extension repository is what triggers its release workflow, which
+# builds the pre-packaged source tarball and the precompiled binaries, uploads
+# them all, and publishes the release. That has to happen even when the
+# submodule commit above turned out to be unnecessary -- on a re-run, or after
+# someone bumped the submodule by hand, the commit is a no-op but the tag may
+# still not be on the remote, and it is the tag that starts the release.
+#
+# --cleanup=verbatim because git's default for -m is --cleanup=strip, which
+# removes every line beginning with '#'. The annotation is the extension
+# release's notes, and '#' begins a Markdown heading and a "#123" issue
+# reference, so the default would silently publish notes that differ from the
+# ones this repository's release carries.
+echo "Tagging $tag in extension repository..."
+git tag -f -a --cleanup=verbatim "$tag" -m "$notes"
 
-    # Create corresponding release in extension repo with same tag
-    echo "Creating release $tag in extension repository..."
-    gh release create "$tag" \
+# One transaction. Pushed separately, a failure between them leaves the branch
+# public and the tag missing -- the half-done state this whole change exists to
+# remove, and one that cannot be repaired by re-running, because release.sh
+# dies far earlier at `gh release create` and never reaches this block again.
+#
+# Pushing main here also settles what the tag names. The cleanliness check
+# above says nothing about ahead-ness, so a local-only commit in a
+# pre-existing .ext clone could otherwise be tagged and pushed while the commit
+# itself stayed on no branch GitHub knows about. Sending both together means
+# the tag can only ever point at something reachable from main -- and a main
+# that does not fast-forward now fails the whole push instead of half of it.
+echo "Pushing main and tag $tag..."
+git push --atomic origin main "refs/tags/$tag"
+
+echo ""
+echo "✓ Extension repository tagged $tag"
+
+# The script's last real action was that push; everything after it used to be a
+# printed promise. Confirm the workflow actually picked the tag up, because the
+# only remedy is manual and the main repository's release is already public by
+# now.
+echo "Waiting for the extension release workflow to start..."
+ext_run=""
+for _ in $(seq 1 12); do
+    ext_run="$(gh run list --workflow=release.yml \
         --repo maxmind/MaxMind-DB-Reader-php-ext \
-        --title "$version" \
-        --notes "Extension release for MaxMind-DB-Reader-php $version
+        --branch "$tag" --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+    [ -n "$ext_run" ] && break
+    sleep 10
+done
 
-This release tracks the $tag tag of the main repository.
-
-## Release notes from main repository
-
-$notes" \
-        "$pie_tarball"
-
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to create release in extension repository"
-        echo "You may need to create it manually at:"
-        echo "https://github.com/maxmind/MaxMind-DB-Reader-php-ext/releases/new?tag=$tag"
-        popd >/dev/null
-        exit 1
-    fi
-
-    # Clean up tarball
-    rm -f "$pie_tarball"
-
+if [ -n "$ext_run" ]; then
+    echo "✓ Its release workflow is running:"
+    echo "  https://github.com/maxmind/MaxMind-DB-Reader-php-ext/actions/runs/$ext_run"
+else
     echo ""
-    echo "✓ Extension repository updated successfully!"
-    echo "✓ Release created: https://github.com/maxmind/MaxMind-DB-Reader-php-ext/releases/tag/$tag"
-    echo "✓ Pre-packaged source uploaded: $pie_tarball"
+    echo "WARNING: no release workflow run appeared for $tag after two minutes."
+    echo "This repository's $tag release is already published, so this needs a"
+    echo "human. Check for a run, and start one by hand if none arrived:"
+    echo "  https://github.com/maxmind/MaxMind-DB-Reader-php-ext/actions/workflows/release.yml"
+    echo "  gh workflow run release.yml --repo maxmind/MaxMind-DB-Reader-php-ext -f tag=$tag"
 fi
 
 popd >/dev/null
@@ -283,9 +384,18 @@ echo "==================================================================="
 echo ""
 echo "Main repository: https://github.com/maxmind/MaxMind-DB-Reader-php/releases/tag/$tag"
 echo "Extension repository: https://github.com/maxmind/MaxMind-DB-Reader-php-ext/releases/tag/$tag"
+echo "  (published by CI once the release workflow finishes)"
 echo ""
 echo "Action items:"
-echo "1. Upload PECL package to pecl.php.net: https://pecl.php.net/package-new.php"
+echo "1. Watch the extension repository's release workflow and confirm that it"
+echo "   published the release with all of its assets:"
+echo "   https://github.com/maxmind/MaxMind-DB-Reader-php-ext/actions/workflows/release.yml"
+echo "   It builds the pre-packaged source tarball and the precompiled binaries,"
+echo "   checks them, and only then un-drafts the release, so the release stays"
+echo "   a draft until its publish job's last step."
+echo "   Its final job smoke tests 'pie install' *after* that step, so a red"
+echo "   workflow can still mean an already-published release. That one needs a"
+echo "   human rather than a re-run."
+echo "2. Upload PECL package to pecl.php.net: https://pecl.php.net/package-new.php"
 echo "   File: $package"
-echo "2. Verify PIE installation: pie install maxmind-db/reader-ext:^$version"
 echo "3. Announce release"
