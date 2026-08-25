@@ -47,6 +47,18 @@ class Decoder
     private const _BOOLEAN = 14;
     private const _FLOAT = 15;
 
+    // Per-lookup decode limits recommended by the MaxMind DB specification. The
+    // depth limit stops pointer cycles and over-deep data. The value limit
+    // stops a pointer fan-out, where nested pointers to shared targets would
+    // otherwise cost 2**depth decode operations. The count follows the
+    // specification's flat rule: the root is one value, each array and map
+    // charges its declared children (a map entry costs two, key and value),
+    // and a pointer costs nothing beyond the value it resolves to, which its
+    // container already charged. The largest real records decode a few hundred
+    // values, so the limit leaves a wide margin.
+    private const MAX_DEPTH = 512;
+    private const MAX_VALUES = 1 << 16;
+
     /**
      * @param resource $fileStream
      */
@@ -68,6 +80,21 @@ class Decoder
      */
     public function decode(int $offset): array
     {
+        // Bound the work per lookup so a crafted database cannot exhaust CPU or
+        // memory. $budget is passed by reference so the running count is shared
+        // across the recursion. It is call-local, so concurrent lookups do not
+        // share state. The root value is charged here; containers charge their
+        // children.
+        $budget = self::MAX_VALUES - 1;
+
+        return $this->decodeWithBudget($offset, 0, $budget);
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function decodeWithBudget(int $offset, int $depth, int &$budget): array
+    {
         $ctrlByte = \ord(Util::read($this->fileStream, $offset, 1));
         ++$offset;
 
@@ -84,7 +111,16 @@ class Decoder
                 return [$pointer];
             }
 
-            [$result] = $this->decode($pointer);
+            if ($depth >= self::MAX_DEPTH) {
+                throw new InvalidDatabaseException(
+                    "The MaxMind DB file's data section exceeds the maximum depth"
+                );
+            }
+
+            // The value at the pointer's position was charged by its containing
+            // array or map, so the target costs nothing more. Only the depth
+            // grows.
+            [$result] = $this->decodeWithBudget($pointer, $depth + 1, $budget);
 
             return [$result, $offset];
         }
@@ -108,7 +144,7 @@ class Decoder
 
         [$size, $offset] = $this->sizeFromCtrlByte($ctrlByte, $offset);
 
-        return $this->decodeByType($type, $offset, $size);
+        return $this->decodeByType($type, $offset, $size, $depth, $budget);
     }
 
     /**
@@ -116,14 +152,14 @@ class Decoder
      *
      * @return array{0:mixed, 1:int}
      */
-    private function decodeByType(int $type, int $offset, int $size): array
+    private function decodeByType(int $type, int $offset, int $size, int $depth, int &$budget): array
     {
         switch ($type) {
             case self::_MAP:
-                return $this->decodeMap($size, $offset);
+                return $this->decodeMap($size, $offset, $depth, $budget);
 
             case self::_ARRAY:
-                return $this->decodeArray($size, $offset);
+                return $this->decodeArray($size, $offset, $depth, $budget);
 
             case self::_BOOLEAN:
                 return [$this->decodeBoolean($size), $offset];
@@ -173,14 +209,48 @@ class Decoder
     }
 
     /**
+     * Applies the per-lookup limits when entering a container. The depth limit
+     * stops cycles and over-deep data (checked here and at pointer follows,
+     * the only places depth grows). The value budget is charged per declared
+     * element up front, so an oversized declared size is rejected before the
+     * loop reads anything. A pointer element costs nothing more when it is
+     * followed: its slot is charged here, and a container it resolves to
+     * charges its own children each time it is decoded, which is what bounds
+     * a fan-out through shared targets.
+     */
+    private function enterContainer(
+        int $size,
+        int $depth,
+        int &$budget,
+        int $valuesPerEntry = 1
+    ): void {
+        if ($depth >= self::MAX_DEPTH) {
+            throw new InvalidDatabaseException(
+                "The MaxMind DB file's data section exceeds the maximum depth"
+            );
+        }
+        // Compare with a division rather than multiplying the declared size, so
+        // an oversized declaration cannot overflow the integer on 32-bit builds
+        // before the budget check runs.
+        if ($size > intdiv($budget, $valuesPerEntry)) {
+            throw new InvalidDatabaseException(
+                "The MaxMind DB file's data section exceeds the maximum number of values"
+            );
+        }
+        $budget -= $size * $valuesPerEntry;
+    }
+
+    /**
      * @return array{0:array<mixed>, 1:int}
      */
-    private function decodeArray(int $size, int $offset): array
+    private function decodeArray(int $size, int $offset, int $depth, int &$budget): array
     {
+        $this->enterContainer($size, $depth, $budget);
+
         $array = [];
 
         for ($i = 0; $i < $size; ++$i) {
-            [$value, $offset] = $this->decode($offset);
+            [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget);
             $array[] = $value;
         }
 
@@ -258,13 +328,16 @@ class Decoder
     /**
      * @return array{0:array<string, mixed>, 1:int}
      */
-    private function decodeMap(int $size, int $offset): array
+    private function decodeMap(int $size, int $offset, int $depth, int &$budget): array
     {
+        // A map entry decodes a key and a value, so it costs two values.
+        $this->enterContainer($size, $depth, $budget, 2);
+
         $map = [];
 
         for ($i = 0; $i < $size; ++$i) {
-            [$key, $offset] = $this->decode($offset);
-            [$value, $offset] = $this->decode($offset);
+            [$key, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget);
+            [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget);
             $map[$key] = $value;
         }
 
