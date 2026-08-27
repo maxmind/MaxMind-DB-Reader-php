@@ -291,6 +291,83 @@ class ReaderTest extends TestCase
         $reader->get('1.1.1.16');
     }
 
+    // The DoS and payload-limit tests below assert the pure-PHP decoder's
+    // messages, so they skip when the maxminddb extension is loaded: that path
+    // decodes through libmaxminddb, which reports different text, and has
+    // its own tests. Skipping also keeps the large amplification
+    // and fan-out fixtures away from a possibly-unpatched extension, whose
+    // decoder would otherwise exhaust memory.
+    private function skipIfExtensionLoaded(): void
+    {
+        if (\extension_loaded('maxminddb')) {
+            $this->markTestSkipped(
+                'covers the pure-PHP decoder; the extension path has its own tests'
+            );
+        }
+    }
+
+    public function testPayloadAmplificationDosIsRejected(): void
+    {
+        $this->skipIfExtensionLoaded();
+        // An array of pointers to one large value. The value count stays low,
+        // but a reader that copies each target materializes the value once per
+        // pointer. The produced-payload byte budget rejects it.
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage("The MaxMind DB file's data section exceeds the maximum payload size");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-payload-amplification-dos.mmdb');
+        $reader->get('1.1.1.1');
+    }
+
+    public function testStringPayloadAmplificationDosIsRejected(): void
+    {
+        $this->skipIfExtensionLoaded();
+        // The string variant, so the UTF-8 path is charged as well as bytes.
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage("The MaxMind DB file's data section exceeds the maximum payload size");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-payload-amplification-dos-string.mmdb');
+        $reader->get('1.1.1.1');
+    }
+
+    public function testWorstCasePayloadAmplificationDosIsRejected(): void
+    {
+        $this->skipIfExtensionLoaded();
+        // The worst case sits exactly at the value limit: 65,535 pointers to
+        // one 64 KiB value. Only the payload budget rejects it.
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage("The MaxMind DB file's data section exceeds the maximum payload size");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-payload-amplification-dos-worst-case.mmdb');
+        $reader->get('1.1.1.1');
+    }
+
+    public function testPayloadAtLimitDecodes(): void
+    {
+        // A record whose produced payload is exactly at the byte budget must
+        // still decode, so the limit does not reject legitimate data.
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-payload-limit.mmdb');
+        $this->assertIsArray($reader->get('1.1.1.1'));
+        $reader->close();
+    }
+
+    public function testPayloadOverLimitIsRejected(): void
+    {
+        $this->skipIfExtensionLoaded();
+        // One byte past the limit must be rejected.
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage("The MaxMind DB file's data section exceeds the maximum payload size");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-payload-limit-over.mmdb');
+        $reader->get('1.1.1.1');
+    }
+
+    public function testMetadataPayloadLimitIsRejectedOnOpen(): void
+    {
+        $this->skipIfExtensionLoaded();
+        // Metadata is decoded while opening the database, so the same bound
+        // must guard that path.
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage("The MaxMind DB file's data section exceeds the maximum payload size");
+        new Reader('tests/data/test-data/MaxMind-DB-test-metadata-payload-limit.mmdb');
+    }
+
     public function testMissingDatabase(): void
     {
         $this->expectException(\InvalidArgumentException::class);

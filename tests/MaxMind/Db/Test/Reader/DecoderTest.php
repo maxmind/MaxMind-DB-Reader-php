@@ -610,6 +610,45 @@ class DecoderTest extends TestCase
         (new Decoder($handle, 0))->decode(0);
     }
 
+    public function testOversizedStringIsRejectedBeforeRead(): void
+    {
+        // A UTF-8 string that declares 2,097,153 bytes, one past the 2 MiB
+        // payload limit, with no payload behind it. The payload check must
+        // reject it before the read, so the error is the payload limit and not
+        // the short read that would otherwise follow. 0x5f is a string with
+        // size code 31, then three size bytes for
+        // 2,097,153 - 65,821 = 2,031,332 (0x1eff64).
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, "\x5f\x1e\xff\x64");
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage(
+            "The MaxMind DB file's data section exceeds the maximum payload size"
+        );
+        (new Decoder($handle, 0))->decode(0);
+    }
+
+    public function testOversizedVariableLengthIntegerIsBounded(): void
+    {
+        // A fixed-width scalar never needs more than 16 bytes. A uint32 (type 6)
+        // that declares a 17-byte payload is an oversized variable-length
+        // integer: a reader that copies the declared bytes before range-checking
+        // copies an attacker-controlled length. The fixture is the header
+        // alone: 0xd1, a uint32 with the size encoded directly as 17. No
+        // payload follows, so the decoder must reject the size before it
+        // reads. A read would fail with the short-read error instead.
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, "\xd1");
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage(
+            "The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)"
+        );
+        (new Decoder($handle, 0))->decode(0);
+    }
+
     // @phpstan-ignore-next-line
     private function checkDecoding(string $type, array $input, $expected, $name = null): void
     {
