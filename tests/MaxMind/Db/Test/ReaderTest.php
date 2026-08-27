@@ -15,6 +15,8 @@ use PHPUnit\Framework\TestCase;
  */
 class ReaderTest extends TestCase
 {
+    private const EXTENSION_LIMIT_MESSAGE = 'exceeds the configured resource limits';
+
     public function testReader(): void
     {
         foreach ([24, 28, 32] as $recordSize) {
@@ -289,6 +291,109 @@ class ReaderTest extends TestCase
         $this->expectExceptionMessage('contains bad data');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-broken-pointers-24.mmdb');
         $reader->get('1.1.1.16');
+    }
+
+    private function requireDecoderLimits(): void
+    {
+        if (!\extension_loaded('maxminddb')) {
+            return;
+        }
+
+        // Probe with 2 MiB plus one byte before fixtures that could exhaust an
+        // unpatched library. Unexpected errors must still fail the test.
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-payload-limit-over.mmdb');
+
+        try {
+            $reader->get('1.1.1.1');
+        } catch (InvalidDatabaseException $e) {
+            if (!str_contains($e->getMessage(), self::EXTENSION_LIMIT_MESSAGE)) {
+                throw $e;
+            }
+
+            return;
+        } finally {
+            $reader->close();
+        }
+
+        // libmaxminddb 1.14.0 introduced these limits. Older versions may
+        // carry a backport, which the probe above also accepts.
+        if (\defined('MaxMind\Db\Reader::MMDB_LIB_VERSION')
+            && version_compare(Reader::MMDB_LIB_VERSION, '1.14.0', '>=')) {
+            $this->fail('the linked libmaxminddb did not enforce its decoder resource limits');
+        }
+        $this->markTestSkipped('linked libmaxminddb predates the decoder resource limits');
+    }
+
+    private function expectDecoderLimit(string $message): void
+    {
+        $this->requireDecoderLimits();
+        $this->expectException(InvalidDatabaseException::class);
+        if (\extension_loaded('maxminddb')) {
+            $message = self::EXTENSION_LIMIT_MESSAGE;
+        }
+        $this->expectExceptionMessage($message);
+    }
+
+    public function testPayloadAmplificationDosIsRejected(): void
+    {
+        // An array of pointers to one large value. The value count stays low,
+        // but a reader that copies each target materializes the value once per
+        // pointer. The produced-payload byte budget rejects it.
+        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum payload size");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-payload-amplification-dos.mmdb');
+        $reader->get('1.1.1.1');
+    }
+
+    public function testStringPayloadAmplificationDosIsRejected(): void
+    {
+        // The string variant, so the UTF-8 path is charged as well as bytes.
+        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum payload size");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-payload-amplification-dos-string.mmdb');
+        $reader->get('1.1.1.1');
+    }
+
+    public function testWorstCasePayloadAmplificationDosIsRejected(): void
+    {
+        // The worst case sits exactly at the value limit: 65,535 pointers to
+        // one 64 KiB value. Only the payload budget rejects it.
+        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum payload size");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-payload-amplification-dos-worst-case.mmdb');
+        $reader->get('1.1.1.1');
+    }
+
+    public function testPayloadAtLimitDecodes(): void
+    {
+        // A record whose produced payload is exactly at the byte budget must
+        // still decode, so the limit does not reject legitimate data.
+        $expected = array_fill(0, 32, str_repeat("\x00", 65535));
+        $expected[] = str_repeat("\x00", 32);
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-payload-limit.mmdb');
+        $this->assertSame($expected, $reader->get('1.1.1.1'));
+        $reader->close();
+    }
+
+    public function testPayloadOverLimitIsRejected(): void
+    {
+        // One byte past the limit must be rejected.
+        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum payload size");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-payload-limit-over.mmdb');
+        $reader->get('1.1.1.1');
+    }
+
+    public function testMetadataPayloadLimitIsRejectedOnOpen(): void
+    {
+        // Metadata is decoded while opening the database, so the same bound
+        // must guard that path.
+        $this->requireDecoderLimits();
+        $this->expectException(InvalidDatabaseException::class);
+        if (\extension_loaded('maxminddb')) {
+            // libmaxminddb reports metadata limits as invalid metadata, and
+            // the extension uses its standard database-open error.
+            $this->expectExceptionMessage('Error opening database file');
+        } else {
+            $this->expectExceptionMessage("The MaxMind DB file's data section exceeds the maximum payload size");
+        }
+        new Reader('tests/data/test-data/MaxMind-DB-test-metadata-payload-limit.mmdb');
     }
 
     public function testMissingDatabase(): void

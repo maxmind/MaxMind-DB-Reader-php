@@ -59,6 +59,21 @@ class Decoder
     private const MAX_DEPTH = 512;
     private const MAX_VALUES = 1 << 16;
 
+    // The value limit alone does not stop payload amplification: an array of
+    // pointers to one large string or bytes value keeps the value count low
+    // while forcing the reader to copy the target once per pointer. This
+    // second, independent limit bounds the total string and bytes payload
+    // copied for one lookup to 2 MiB, matching libmaxminddb and the Go reader.
+    // No real record approaches it, and re-decoding a shared target charges its
+    // payload again, so the fan-out is bounded.
+    private const MAX_PAYLOAD_BYTES = 1 << 21;
+
+    // A fixed-width scalar (a float, double, or integer) never needs more than
+    // 16 bytes (the width of a uint128). A larger declared size is either
+    // corrupt or an attempt to amplify the read of an oversized variable-length
+    // integer, so it is rejected before the bytes are materialized.
+    private const MAX_SCALAR_BYTES = 16;
+
     /**
      * @param resource $fileStream
      */
@@ -81,19 +96,22 @@ class Decoder
     public function decode(int $offset): array
     {
         // Bound the work per lookup so a crafted database cannot exhaust CPU or
-        // memory. $budget is passed by reference so the running count is shared
-        // across the recursion. It is call-local, so concurrent lookups do not
-        // share state. The root value is charged here; containers charge their
-        // children.
+        // memory. The two budgets are passed by reference so the running totals
+        // are shared across the recursion. $budget counts decoded values and
+        // stops the pointer fan-out; $byteBudget counts copied string and bytes
+        // payload and stops payload amplification. Both are call-local, so
+        // concurrent lookups do not share state. The root value is charged
+        // here; containers charge their children.
         $budget = self::MAX_VALUES - 1;
+        $byteBudget = self::MAX_PAYLOAD_BYTES;
 
-        return $this->decodeWithBudget($offset, 0, $budget);
+        return $this->decodeWithBudget($offset, 0, $budget, $byteBudget);
     }
 
     /**
      * @return array<mixed>
      */
-    private function decodeWithBudget(int $offset, int $depth, int &$budget): array
+    private function decodeWithBudget(int $offset, int $depth, int &$budget, int &$byteBudget): array
     {
         $ctrlByte = \ord(Util::read($this->fileStream, $offset, 1));
         ++$offset;
@@ -120,7 +138,7 @@ class Decoder
             // The value at the pointer's position was charged by its containing
             // array or map, so the target costs nothing more. Only the depth
             // grows.
-            [$result] = $this->decodeWithBudget($pointer, $depth + 1, $budget);
+            [$result] = $this->decodeWithBudget($pointer, $depth + 1, $budget, $byteBudget);
 
             return [$result, $offset];
         }
@@ -144,7 +162,7 @@ class Decoder
 
         [$size, $offset] = $this->sizeFromCtrlByte($ctrlByte, $offset);
 
-        return $this->decodeByType($type, $offset, $size, $depth, $budget);
+        return $this->decodeByType($type, $offset, $size, $depth, $budget, $byteBudget);
     }
 
     /**
@@ -152,27 +170,54 @@ class Decoder
      *
      * @return array{0:mixed, 1:int}
      */
-    private function decodeByType(int $type, int $offset, int $size, int $depth, int &$budget): array
+    private function decodeByType(int $type, int $offset, int $size, int $depth, int &$budget, int &$byteBudget): array
     {
         switch ($type) {
             case self::_MAP:
-                return $this->decodeMap($size, $offset, $depth, $budget);
+                return $this->decodeMap($size, $offset, $depth, $budget, $byteBudget);
 
             case self::_ARRAY:
-                return $this->decodeArray($size, $offset, $depth, $budget);
+                return $this->decodeArray($size, $offset, $depth, $budget, $byteBudget);
 
             case self::_BOOLEAN:
                 return [$this->decodeBoolean($size), $offset];
+
+            case self::_BYTES:
+            case self::_UTF8_STRING:
+                // A string or bytes value is copied into a native string, so N
+                // pointers to one large value copy N times its length. Charge
+                // the payload against the byte budget wherever it is decoded,
+                // including inline inside a pointed-to container, so a shared
+                // target recharges each time it is followed. Compare before
+                // subtracting so an oversized declared size cannot drive the
+                // budget negative. A total exactly at the limit is allowed.
+                if ($size > $byteBudget) {
+                    throw new InvalidDatabaseException(
+                        "The MaxMind DB file's data section exceeds the maximum payload size"
+                    );
+                }
+                $byteBudget -= $size;
+
+                return [Util::read($this->fileStream, $offset, $size), $offset + $size];
+        }
+
+        // The remaining valid types are fixed-width scalars, none wider than a
+        // uint128. A few other control bytes also reach here: the container
+        // (12) and end-marker (13) types, and any unknown extended type. The
+        // size guard below rejects one that declares an oversized size, and the
+        // default case at the end of the switch rejects the rest. Reject an
+        // oversized declared size before materializing the bytes, so an
+        // oversized variable-length integer cannot amplify the read.
+        if ($size > self::MAX_SCALAR_BYTES) {
+            throw new InvalidDatabaseException(
+                "The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)"
+            );
         }
 
         $newOffset = $offset + $size;
         $bytes = Util::read($this->fileStream, $offset, $size);
 
         switch ($type) {
-            case self::_BYTES:
-            case self::_UTF8_STRING:
-                return [$bytes, $newOffset];
-
             case self::_DOUBLE:
                 $this->verifySize(8, $size);
 
@@ -243,14 +288,14 @@ class Decoder
     /**
      * @return array{0:array<mixed>, 1:int}
      */
-    private function decodeArray(int $size, int $offset, int $depth, int &$budget): array
+    private function decodeArray(int $size, int $offset, int $depth, int &$budget, int &$byteBudget): array
     {
         $this->enterContainer($size, $depth, $budget);
 
         $array = [];
 
         for ($i = 0; $i < $size; ++$i) {
-            [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget);
+            [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget, $byteBudget);
             $array[] = $value;
         }
 
@@ -328,7 +373,7 @@ class Decoder
     /**
      * @return array{0:array<string, mixed>, 1:int}
      */
-    private function decodeMap(int $size, int $offset, int $depth, int &$budget): array
+    private function decodeMap(int $size, int $offset, int $depth, int &$budget, int &$byteBudget): array
     {
         // A map entry decodes a key and a value, so it costs two values.
         $this->enterContainer($size, $depth, $budget, 2);
@@ -336,8 +381,8 @@ class Decoder
         $map = [];
 
         for ($i = 0; $i < $size; ++$i) {
-            [$key, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget);
-            [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget);
+            [$key, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget, $byteBudget);
+            [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget, $byteBudget);
             $map[$key] = $value;
         }
 
