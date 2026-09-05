@@ -163,7 +163,7 @@ jobs:
                 { echo "::error::gmp is not loaded; ReaderTest's uint128 value assertions would be skipped, not run"; exit 1; }
 
       - name: Test with phpunit using the bundled extension
-        run: php -d extension="$PWD/ext/modules/maxminddb.so" vendor/bin/phpunit
+        run: MAXMINDDB_EXPECT_DECODER_LIMITS=1 php -d extension="$PWD/ext/modules/maxminddb.so" vendor/bin/phpunit
 
   bundled-debug:
     runs-on: ubuntu-latest
