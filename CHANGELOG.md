@@ -16,6 +16,9 @@ CHANGELOG
     exception.
   * A scalar that declares more than 16 bytes, the width of the widest
     fixed-width type, is rejected as invalid data.
+* The bundled libmaxminddb used by `--with-maxminddb-bundled` builds of the
+  extension now applies the same decoder limits. The extension throws an
+  `InvalidDatabaseException` when a lookup exceeds them.
 * The Windows build configuration now accepts either `libmaxminddb.lib` or
   `maxminddb.lib` when building the extension. The `lib` prefix was removed
   in libmaxminddb 1.6.0, but the libmaxminddb that PHP publishes for Windows
