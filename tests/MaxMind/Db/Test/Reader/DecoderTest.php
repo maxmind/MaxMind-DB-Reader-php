@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MaxMind\Db\Test\Reader;
 
 use MaxMind\Db\Reader\Decoder;
+use MaxMind\Db\Reader\InvalidDatabaseException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -417,6 +418,235 @@ class DecoderTest extends TestCase
                 $test['name'] ?? $test['input']
             );
         }
+    }
+
+    private function encodePointer1(int $target): string
+    {
+        // One-byte-payload pointer (type 1, pointer_size 1) with base 0.
+        return \chr((1 << 5) | (($target >> 8) & 0x7)) . \chr($target & 0xFF);
+    }
+
+    public function testPointerFanOutIsBounded(): void
+    {
+        // A data section of nested arrays, each holding two pointers to the
+        // node below, would cost 2**depth decode operations. The decoder bounds
+        // the number of values it decodes per lookup and rejects the database.
+        $depth = 100;
+        $buf = "\xa0"; // leaf: uint16 with value 0
+        $prev = 0;
+        for ($i = 0; $i < $depth; ++$i) {
+            $offset = \strlen($buf);
+            $buf .= "\x02\x04" . $this->encodePointer1($prev) . $this->encodePointer1($prev);
+            $prev = $offset;
+        }
+
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, $buf);
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage(
+            "The MaxMind DB file's data section exceeds the maximum number of values"
+        );
+        (new Decoder($handle, 0))->decode($prev);
+    }
+
+    public function testMapPointerFanOutIsBounded(): void
+    {
+        // Each map has two distinct UTF-8 keys whose values point to the map below.
+        // This makes the decoder visit the shared target twice per layer while
+        // keeping the fixture itself small.
+        $depth = 100;
+        $buf = "\xa0"; // leaf: uint16 with value 0
+        $prev = 0;
+        for ($i = 0; $i < $depth; ++$i) {
+            $offset = \strlen($buf);
+            $buf .= "\xe2\x41a" . $this->encodePointer1($prev)
+                . "\x41b" . $this->encodePointer1($prev);
+            $prev = $offset;
+        }
+
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, $buf);
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage(
+            "The MaxMind DB file's data section exceeds the maximum number of values"
+        );
+        (new Decoder($handle, 0))->decode($prev);
+    }
+
+    public function testOversizedArrayIsBounded(): void
+    {
+        // The root is one value and an array charges one value per declared
+        // element, so an array that declares 65,536 elements reaches 65,537
+        // values, one past the limit. It is rejected on its header alone: no
+        // element follows in the stream, so reading one would fail with a
+        // different error. 0x1e is an array (extended type 0x04) with size
+        // code 30, then the two size bytes for 65,536 - 285 = 65,251 (0xfee3).
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, "\x1e\x04\xfe\xe3");
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage(
+            "The MaxMind DB file's data section exceeds the maximum number of values"
+        );
+        (new Decoder($handle, 0))->decode(0);
+    }
+
+    public function testPointerFreeContainerAtMaximumDepthDecodes(): void
+    {
+        $buf = "\xa0"; // leaf: uint16 with value 0
+        for ($i = 0; $i < 512; ++$i) {
+            $buf = "\x01\x04" . $buf; // array with one element
+        }
+
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, $buf);
+        fseek($handle, 0);
+
+        [, $offset] = (new Decoder($handle, 0))->decode(0);
+        $this->assertSame(\strlen($buf), $offset);
+    }
+
+    public function testPointerFreeContainerOverMaximumDepthIsBounded(): void
+    {
+        $buf = "\xa0"; // leaf: uint16 with value 0
+        for ($i = 0; $i < 513; ++$i) {
+            $buf = "\x01\x04" . $buf; // array with one element
+        }
+
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, $buf);
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage(
+            "The MaxMind DB file's data section exceeds the maximum depth"
+        );
+        (new Decoder($handle, 0))->decode(0);
+    }
+
+    /**
+     * Builds a chain of one-element arrays where each element is a pointer to
+     * the array below, so every level costs one container entry and one
+     * pointer follow. Returns the buffer and the offset of the top array.
+     *
+     * @return array{0:string, 1:int}
+     */
+    private function pointerChain(int $arrays): array
+    {
+        $buf = "\xa0"; // leaf: uint16 with value 0
+        $prev = 0;
+        for ($i = 0; $i < $arrays; ++$i) {
+            $offset = \strlen($buf);
+            $buf .= "\x01\x04" . $this->encodePointer1($prev);
+            $prev = $offset;
+        }
+
+        return [$buf, $prev];
+    }
+
+    public function testPointerChainAtMaximumDepthDecodes(): void
+    {
+        // A pointer follow counts as one level, like entering a container, so
+        // 256 arrays reached through 256 pointers enter exactly 512 levels.
+        [$buf, $top] = $this->pointerChain(256);
+
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, $buf);
+        fseek($handle, 0);
+
+        [$value, $offset] = (new Decoder($handle, 0))->decode($top);
+        $this->assertIsArray($value);
+        $this->assertSame(\strlen($buf), $offset);
+    }
+
+    public function testPointerChainOverMaximumDepthIsBounded(): void
+    {
+        // One more array makes 513 levels.
+        [$buf, $top] = $this->pointerChain(257);
+
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, $buf);
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage(
+            "The MaxMind DB file's data section exceeds the maximum depth"
+        );
+        (new Decoder($handle, 0))->decode($top);
+    }
+
+    public function testCyclicPointerThrows(): void
+    {
+        // A pointer to itself must throw a catchable InvalidDatabaseException
+        // rather than recursing until the stack is exhausted.
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, "\x20\x00"); // pointer (base 0) to offset 0, itself
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        (new Decoder($handle, 0))->decode(0);
+    }
+
+    public function testOversizedMapIsBounded(): void
+    {
+        // A map entry decodes a key and a value, so a map of N entries costs 2N
+        // values on top of the root. A map that declares 32,768 entries reaches
+        // 65,537 values, one past the 65,536 limit, and is rejected on its
+        // header alone, before any entry is read. 0xfe is a map with size code
+        // 30, then the two size bytes for 32,768 - 285 = 32,483 (0x7ee3).
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, "\xfe\x7e\xe3");
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage(
+            "The MaxMind DB file's data section exceeds the maximum number of values"
+        );
+        (new Decoder($handle, 0))->decode(0);
+    }
+
+    public function testOversizedStringIsRejectedBeforeRead(): void
+    {
+        // A UTF-8 string that declares 2,097,153 bytes, one past the 2 MiB
+        // payload limit, with no payload behind it. The payload check must
+        // reject it before the read, so the error is the payload limit and not
+        // the short read that would otherwise follow. 0x5f is a string with
+        // size code 31, then three size bytes for
+        // 2,097,153 - 65,821 = 2,031,332 (0x1eff64).
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, "\x5f\x1e\xff\x64");
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage(
+            "The MaxMind DB file's data section exceeds the maximum payload size"
+        );
+        (new Decoder($handle, 0))->decode(0);
+    }
+
+    public function testOversizedVariableLengthIntegerIsBounded(): void
+    {
+        // A fixed-width scalar never needs more than 16 bytes. A uint32 (type 6)
+        // that declares a 17-byte payload is an oversized variable-length
+        // integer: a reader that copies the declared bytes before range-checking
+        // copies an attacker-controlled length. The fixture is the header
+        // alone: 0xd1, a uint32 with the size encoded directly as 17. No
+        // payload follows, so the decoder must reject the size before it
+        // reads. A read would fail with the short-read error instead.
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, "\xd1");
+        fseek($handle, 0);
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage(
+            "The MaxMind DB file's data section contains bad data (unknown data type or corrupt data)"
+        );
+        (new Decoder($handle, 0))->decode(0);
     }
 
     // @phpstan-ignore-next-line

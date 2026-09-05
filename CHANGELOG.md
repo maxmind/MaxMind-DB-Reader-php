@@ -4,6 +4,24 @@ CHANGELOG
 1.14.0
 -------------------
 
+* Bounded the resources that the pure PHP decoder spends on a single lookup. A
+  crafted database could nest data-section pointers to shared targets so that
+  decoding one record cost exponential time and memory, or point many times at
+  one large value so that the decoder copied far more data than the file holds.
+  The decoder now follows the Reader Resource Limits section of the MaxMind DB
+  specification. Each lookup is limited to 65,536 values, 512 levels of
+  nesting, and 2 MiB of string and bytes payload.
+  * Exceeding a limit throws an `InvalidDatabaseException`.
+  * Opening a database whose metadata exceeds a limit throws the same
+    exception.
+  * A scalar that declares more than 16 bytes, the width of the widest
+    fixed-width type, is rejected as invalid data.
+* The bundled libmaxminddb used by `--with-maxminddb-bundled` builds of the
+  extension now applies the same decoder limits. The extension throws an
+  `InvalidDatabaseException` when a lookup exceeds them.
+* The pure PHP reader is about 40% faster on City lookups. It no longer seeks
+  before a read that continues where the last one ended, and it checks read
+  lengths with `strlen()` instead of `ftell()`.
 * The Windows build configuration now accepts either `libmaxminddb.lib` or
   `maxminddb.lib` when building the extension. The `lib` prefix was removed
   in libmaxminddb 1.6.0, but the libmaxminddb that PHP publishes for Windows
