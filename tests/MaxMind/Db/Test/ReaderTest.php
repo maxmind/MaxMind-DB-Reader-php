@@ -396,6 +396,48 @@ class ReaderTest extends TestCase
         new Reader('tests/data/test-data/MaxMind-DB-test-metadata-payload-limit.mmdb');
     }
 
+    public function testPointerFanOutDosIsRejected(): void
+    {
+        // Nested arrays of pointers to the level below: 2**40 leaf decodes
+        // from 451 bytes. The value budget rejects it.
+        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum number of values");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-pointer-decoder-dos.mmdb');
+        $reader->get('1.1.1.1');
+    }
+
+    public function testPointerFanOutDosIpv6IsRejected(): void
+    {
+        // The same fan-out in a conventional IPv6 database.
+        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum number of values");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-pointer-decoder-dos-ipv6.mmdb');
+        $reader->get('::1');
+    }
+
+    public function testValueCountAtLimitDecodes(): void
+    {
+        // Exactly 65,536 values must decode, and so must a second lookup on
+        // the same reader, because the budget belongs to one call.
+        $expected = array_fill(0, 65535, 0);
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-value-limit.mmdb');
+        $this->assertSame($expected, $reader->get('1.1.1.1'));
+        $this->assertSame($expected, $reader->get('1.1.1.1'));
+        $reader->close();
+
+        // 65,535 values reached through a depth-15 pointer fan-out. Under the
+        // flat rule a pointer costs nothing beyond the value it resolves to.
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-value-limit-pointer-heavy.mmdb');
+        $this->assertIsArray($reader->get('1.1.1.1'));
+        $reader->close();
+    }
+
+    public function testValueCountOverLimitIsRejected(): void
+    {
+        // One value past the limit must be rejected.
+        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum number of values");
+        $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-value-limit-over.mmdb');
+        $reader->get('1.1.1.1');
+    }
+
     public function testMissingDatabase(): void
     {
         $this->expectException(\InvalidArgumentException::class);
