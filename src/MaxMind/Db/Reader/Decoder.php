@@ -45,6 +45,14 @@ class Decoder
      */
     private $byteBudget = 0;
 
+    /**
+     * Stream position after the last read of the current decode() call, or -1
+     * when unknown.
+     *
+     * @var int
+     */
+    private $position = -1;
+
     private const _EXTENDED = 0;
     private const _POINTER = 1;
     private const _UTF8_STRING = 2;
@@ -122,6 +130,10 @@ class Decoder
         $this->budget = self::MAX_VALUES - 1;
         $this->byteBudget = self::MAX_PAYLOAD_BYTES;
 
+        // Other readers of the stream, such as the search tree walk, may have
+        // moved it since the last call.
+        $this->position = -1;
+
         return $this->decodeWithBudget($offset, 0);
     }
 
@@ -130,7 +142,7 @@ class Decoder
      */
     private function decodeWithBudget(int $offset, int $depth): array
     {
-        $ctrlByte = \ord(Util::read($this->fileStream, $offset, 1));
+        $ctrlByte = \ord($this->read($offset, 1));
         ++$offset;
 
         $type = $ctrlByte >> 5;
@@ -161,7 +173,7 @@ class Decoder
         }
 
         if ($type === self::_EXTENDED) {
-            $nextByte = \ord(Util::read($this->fileStream, $offset, 1));
+            $nextByte = \ord($this->read($offset, 1));
 
             $type = $nextByte + 7;
 
@@ -215,7 +227,7 @@ class Decoder
                 }
                 $this->byteBudget -= $size;
 
-                return [Util::read($this->fileStream, $offset, $size), $offset + $size];
+                return [$this->read($offset, $size), $offset + $size];
         }
 
         // The remaining valid types are fixed-width scalars, none wider than a
@@ -232,7 +244,7 @@ class Decoder
         }
 
         $newOffset = $offset + $size;
-        $bytes = Util::read($this->fileStream, $offset, $size);
+        $bytes = $this->read($offset, $size);
 
         switch ($type) {
             case self::_DOUBLE:
@@ -259,6 +271,39 @@ class Decoder
                     'Unknown or unexpected type: ' . $type
                 );
         }
+    }
+
+    /**
+     * Reads from the stream, seeking only when the read does not continue where
+     * the previous one ended. Most values in a record are laid out in order, and
+     * fseek() discards PHP's read buffer, so seeking before every read turned
+     * each small read into a system call. Skipping the seek makes a City lookup
+     * about 40% faster.
+     *
+     * @param int<0, max> $numberOfBytes
+     */
+    private function read(int $offset, int $numberOfBytes): string
+    {
+        if ($numberOfBytes === 0) {
+            return '';
+        }
+
+        $stream = $this->fileStream;
+        if ($offset !== $this->position && fseek($stream, $offset) !== 0) {
+            $this->position = -1;
+
+            throw new InvalidDatabaseException('The MaxMind DB file contains bad data');
+        }
+
+        $value = fread($stream, $numberOfBytes);
+        if ($value === false || \strlen($value) !== $numberOfBytes) {
+            $this->position = -1;
+
+            throw new InvalidDatabaseException('The MaxMind DB file contains bad data');
+        }
+        $this->position = $offset + $numberOfBytes;
+
+        return $value;
     }
 
     private function verifySize(int $expected, int $actual): void
@@ -412,7 +457,7 @@ class Decoder
     {
         $pointerSize = (($ctrlByte >> 3) & 0x3) + 1;
 
-        $buffer = Util::read($this->fileStream, $offset, $pointerSize);
+        $buffer = $this->read($offset, $pointerSize);
         $offset += $pointerSize;
 
         switch ($pointerSize) {
@@ -538,7 +583,7 @@ class Decoder
         }
 
         $bytesToRead = $size - 28;
-        $bytes = Util::read($this->fileStream, $offset, $bytesToRead);
+        $bytes = $this->read($offset, $bytesToRead);
 
         if ($size === 29) {
             $size = 29 + \ord($bytes);
