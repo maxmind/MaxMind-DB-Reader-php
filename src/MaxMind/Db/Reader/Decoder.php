@@ -30,6 +30,21 @@ class Decoder
      */
     private $switchByteOrder;
 
+    /**
+     * Remaining decoded-value allowance for the current decode() call.
+     *
+     * @var int
+     */
+    private $budget = 0;
+
+    /**
+     * Remaining string and bytes payload allowance for the current decode()
+     * call.
+     *
+     * @var int
+     */
+    private $byteBudget = 0;
+
     private const _EXTENDED = 0;
     private const _POINTER = 1;
     private const _UTF8_STRING = 2;
@@ -96,22 +111,24 @@ class Decoder
     public function decode(int $offset): array
     {
         // Bound the work per lookup so a crafted database cannot exhaust CPU or
-        // memory. The two budgets are passed by reference so the running totals
-        // are shared across the recursion. $budget counts decoded values and
-        // stops the pointer fan-out; $byteBudget counts copied string and bytes
-        // payload and stops payload amplification. Both are call-local, so
-        // concurrent lookups do not share state. The root value is charged
-        // here; containers charge their children.
-        $budget = self::MAX_VALUES - 1;
-        $byteBudget = self::MAX_PAYLOAD_BYTES;
+        // memory. $budget counts decoded values and stops the pointer fan-out;
+        // $byteBudget counts copied string and bytes payload and stops payload
+        // amplification. Both live on the decoder and are reset here, so every
+        // call starts with the full allowance. Passing them by reference
+        // through each recursive call instead costs a few percent per lookup.
+        // No other lookup can observe them mid-decode: PHP runs one request
+        // per thread, and the decoder never yields while it decodes. The root
+        // value is charged here; containers charge their children.
+        $this->budget = self::MAX_VALUES - 1;
+        $this->byteBudget = self::MAX_PAYLOAD_BYTES;
 
-        return $this->decodeWithBudget($offset, 0, $budget, $byteBudget);
+        return $this->decodeWithBudget($offset, 0);
     }
 
     /**
      * @return array<mixed>
      */
-    private function decodeWithBudget(int $offset, int $depth, int &$budget, int &$byteBudget): array
+    private function decodeWithBudget(int $offset, int $depth): array
     {
         $ctrlByte = \ord(Util::read($this->fileStream, $offset, 1));
         ++$offset;
@@ -138,7 +155,7 @@ class Decoder
             // The value at the pointer's position was charged by its containing
             // array or map, so the target costs nothing more. Only the depth
             // grows.
-            [$result] = $this->decodeWithBudget($pointer, $depth + 1, $budget, $byteBudget);
+            [$result] = $this->decodeWithBudget($pointer, $depth + 1);
 
             return [$result, $offset];
         }
@@ -162,7 +179,7 @@ class Decoder
 
         [$size, $offset] = $this->sizeFromCtrlByte($ctrlByte, $offset);
 
-        return $this->decodeByType($type, $offset, $size, $depth, $budget, $byteBudget);
+        return $this->decodeByType($type, $offset, $size, $depth);
     }
 
     /**
@@ -170,14 +187,14 @@ class Decoder
      *
      * @return array{0:mixed, 1:int}
      */
-    private function decodeByType(int $type, int $offset, int $size, int $depth, int &$budget, int &$byteBudget): array
+    private function decodeByType(int $type, int $offset, int $size, int $depth): array
     {
         switch ($type) {
             case self::_MAP:
-                return $this->decodeMap($size, $offset, $depth, $budget, $byteBudget);
+                return $this->decodeMap($size, $offset, $depth);
 
             case self::_ARRAY:
-                return $this->decodeArray($size, $offset, $depth, $budget, $byteBudget);
+                return $this->decodeArray($size, $offset, $depth);
 
             case self::_BOOLEAN:
                 return [$this->decodeBoolean($size), $offset];
@@ -191,12 +208,12 @@ class Decoder
                 // target recharges each time it is followed. Compare before
                 // subtracting so an oversized declared size cannot drive the
                 // budget negative. A total exactly at the limit is allowed.
-                if ($size > $byteBudget) {
+                if ($size > $this->byteBudget) {
                     throw new InvalidDatabaseException(
                         "The MaxMind DB file's data section exceeds the maximum payload size"
                     );
                 }
-                $byteBudget -= $size;
+                $this->byteBudget -= $size;
 
                 return [Util::read($this->fileStream, $offset, $size), $offset + $size];
         }
@@ -266,7 +283,6 @@ class Decoder
     private function enterContainer(
         int $size,
         int $depth,
-        int &$budget,
         int $valuesPerEntry = 1
     ): void {
         if ($depth >= self::MAX_DEPTH) {
@@ -277,25 +293,25 @@ class Decoder
         // Compare with a division rather than multiplying the declared size, so
         // an oversized declaration cannot overflow the integer on 32-bit builds
         // before the budget check runs.
-        if ($size > intdiv($budget, $valuesPerEntry)) {
+        if ($size > intdiv($this->budget, $valuesPerEntry)) {
             throw new InvalidDatabaseException(
                 "The MaxMind DB file's data section exceeds the maximum number of values"
             );
         }
-        $budget -= $size * $valuesPerEntry;
+        $this->budget -= $size * $valuesPerEntry;
     }
 
     /**
      * @return array{0:array<mixed>, 1:int}
      */
-    private function decodeArray(int $size, int $offset, int $depth, int &$budget, int &$byteBudget): array
+    private function decodeArray(int $size, int $offset, int $depth): array
     {
-        $this->enterContainer($size, $depth, $budget);
+        $this->enterContainer($size, $depth);
 
         $array = [];
 
         for ($i = 0; $i < $size; ++$i) {
-            [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget, $byteBudget);
+            [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1);
             $array[] = $value;
         }
 
@@ -373,16 +389,16 @@ class Decoder
     /**
      * @return array{0:array<string, mixed>, 1:int}
      */
-    private function decodeMap(int $size, int $offset, int $depth, int &$budget, int &$byteBudget): array
+    private function decodeMap(int $size, int $offset, int $depth): array
     {
         // A map entry decodes a key and a value, so it costs two values.
-        $this->enterContainer($size, $depth, $budget, 2);
+        $this->enterContainer($size, $depth, 2);
 
         $map = [];
 
         for ($i = 0; $i < $size; ++$i) {
-            [$key, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget, $byteBudget);
-            [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1, $budget, $byteBudget);
+            [$key, $offset] = $this->decodeWithBudget($offset, $depth + 1);
+            [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1);
             $map[$key] = $value;
         }
 
