@@ -19,6 +19,9 @@ CHANGELOG
 * The bundled libmaxminddb used by `--with-maxminddb-bundled` builds of the
   extension now applies the same decoder limits. The extension throws an
   `InvalidDatabaseException` when a lookup exceeds them.
+* The pure PHP reader is about 40% faster on City lookups. It no longer seeks
+  before a read that continues where the last one ended, and it checks read
+  lengths with `strlen()` instead of `ftell()`.
 * The Windows build configuration now accepts either `libmaxminddb.lib` or
   `maxminddb.lib` when building the extension. The `lib` prefix was removed
   in libmaxminddb 1.6.0, but the libmaxminddb that PHP publishes for Windows
