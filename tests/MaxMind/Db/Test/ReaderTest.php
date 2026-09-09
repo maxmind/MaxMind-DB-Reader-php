@@ -339,7 +339,7 @@ class ReaderTest extends TestCase
         // An array of pointers to one large value. The value count stays low,
         // but a reader that copies each target materializes the value once per
         // pointer. The produced-payload byte budget rejects it.
-        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum payload size");
+        $this->expectDecoderLimit('The MaxMind DB file exceeds the maximum payload size');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-payload-amplification-dos.mmdb');
         $reader->get('1.1.1.1');
     }
@@ -347,7 +347,7 @@ class ReaderTest extends TestCase
     public function testStringPayloadAmplificationDosIsRejected(): void
     {
         // The string variant, so the UTF-8 path is charged as well as bytes.
-        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum payload size");
+        $this->expectDecoderLimit('The MaxMind DB file exceeds the maximum payload size');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-payload-amplification-dos-string.mmdb');
         $reader->get('1.1.1.1');
     }
@@ -356,7 +356,7 @@ class ReaderTest extends TestCase
     {
         // The worst case sits exactly at the value limit: 65,535 pointers to
         // one 64 KiB value. Only the payload budget rejects it.
-        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum payload size");
+        $this->expectDecoderLimit('The MaxMind DB file exceeds the maximum payload size');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-payload-amplification-dos-worst-case.mmdb');
         $reader->get('1.1.1.1');
     }
@@ -375,7 +375,7 @@ class ReaderTest extends TestCase
     public function testPayloadOverLimitIsRejected(): void
     {
         // One byte past the limit must be rejected.
-        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum payload size");
+        $this->expectDecoderLimit('The MaxMind DB file exceeds the maximum payload size');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-payload-limit-over.mmdb');
         $reader->get('1.1.1.1');
     }
@@ -391,7 +391,7 @@ class ReaderTest extends TestCase
             // the extension uses its standard database-open error.
             $this->expectExceptionMessage('Error opening database file');
         } else {
-            $this->expectExceptionMessage("The MaxMind DB file's data section exceeds the maximum payload size");
+            $this->expectExceptionMessage('The MaxMind DB file exceeds the maximum payload size');
         }
         new Reader('tests/data/test-data/MaxMind-DB-test-metadata-payload-limit.mmdb');
     }
@@ -400,7 +400,7 @@ class ReaderTest extends TestCase
     {
         // Nested arrays of pointers to the level below: 2**40 leaf decodes
         // from 451 bytes. The value budget rejects it.
-        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum number of values");
+        $this->expectDecoderLimit('The MaxMind DB file exceeds the maximum number of values');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-pointer-decoder-dos.mmdb');
         $reader->get('1.1.1.1');
     }
@@ -408,7 +408,7 @@ class ReaderTest extends TestCase
     public function testPointerFanOutDosIpv6IsRejected(): void
     {
         // The same fan-out in a conventional IPv6 database.
-        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum number of values");
+        $this->expectDecoderLimit('The MaxMind DB file exceeds the maximum number of values');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-pointer-decoder-dos-ipv6.mmdb');
         $reader->get('::1');
     }
@@ -433,7 +433,7 @@ class ReaderTest extends TestCase
     public function testValueCountOverLimitIsRejected(): void
     {
         // One value past the limit must be rejected.
-        $this->expectDecoderLimit("The MaxMind DB file's data section exceeds the maximum number of values");
+        $this->expectDecoderLimit('The MaxMind DB file exceeds the maximum number of values');
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-value-limit-over.mmdb');
         $reader->get('1.1.1.1');
     }

@@ -166,7 +166,7 @@ class Decoder
 
             if ($depth >= self::MAX_DEPTH) {
                 throw new InvalidDatabaseException(
-                    "The MaxMind DB file's data section exceeds the maximum depth"
+                    'The MaxMind DB file exceeds the maximum depth'
                 );
             }
 
@@ -228,7 +228,7 @@ class Decoder
                 // budget negative. A total exactly at the limit is allowed.
                 if ($size > $this->byteBudget) {
                     throw new InvalidDatabaseException(
-                        "The MaxMind DB file's data section exceeds the maximum payload size"
+                        'The MaxMind DB file exceeds the maximum payload size'
                     );
                 }
                 $this->byteBudget -= $size;
@@ -338,7 +338,7 @@ class Decoder
     ): void {
         if ($depth >= self::MAX_DEPTH) {
             throw new InvalidDatabaseException(
-                "The MaxMind DB file's data section exceeds the maximum depth"
+                'The MaxMind DB file exceeds the maximum depth'
             );
         }
         // Compare with a division rather than multiplying the declared size, so
@@ -346,7 +346,7 @@ class Decoder
         // before the budget check runs.
         if ($size > intdiv($this->budget, $valuesPerEntry)) {
             throw new InvalidDatabaseException(
-                "The MaxMind DB file's data section exceeds the maximum number of values"
+                'The MaxMind DB file exceeds the maximum number of values'
             );
         }
         $this->budget -= $size * $valuesPerEntry;

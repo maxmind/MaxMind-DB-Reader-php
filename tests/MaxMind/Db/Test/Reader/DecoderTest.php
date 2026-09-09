@@ -446,7 +446,7 @@ class DecoderTest extends TestCase
 
         $this->expectException(InvalidDatabaseException::class);
         $this->expectExceptionMessage(
-            "The MaxMind DB file's data section exceeds the maximum number of values"
+            'The MaxMind DB file exceeds the maximum number of values'
         );
         (new Decoder($handle, 0))->decode($prev);
     }
@@ -472,7 +472,7 @@ class DecoderTest extends TestCase
 
         $this->expectException(InvalidDatabaseException::class);
         $this->expectExceptionMessage(
-            "The MaxMind DB file's data section exceeds the maximum number of values"
+            'The MaxMind DB file exceeds the maximum number of values'
         );
         (new Decoder($handle, 0))->decode($prev);
     }
@@ -491,7 +491,7 @@ class DecoderTest extends TestCase
 
         $this->expectException(InvalidDatabaseException::class);
         $this->expectExceptionMessage(
-            "The MaxMind DB file's data section exceeds the maximum number of values"
+            'The MaxMind DB file exceeds the maximum number of values'
         );
         (new Decoder($handle, 0))->decode(0);
     }
@@ -524,7 +524,7 @@ class DecoderTest extends TestCase
 
         $this->expectException(InvalidDatabaseException::class);
         $this->expectExceptionMessage(
-            "The MaxMind DB file's data section exceeds the maximum depth"
+            'The MaxMind DB file exceeds the maximum depth'
         );
         (new Decoder($handle, 0))->decode(0);
     }
@@ -575,7 +575,7 @@ class DecoderTest extends TestCase
 
         $this->expectException(InvalidDatabaseException::class);
         $this->expectExceptionMessage(
-            "The MaxMind DB file's data section exceeds the maximum depth"
+            'The MaxMind DB file exceeds the maximum depth'
         );
         (new Decoder($handle, 0))->decode($top);
     }
@@ -627,7 +627,7 @@ class DecoderTest extends TestCase
 
         $this->expectException(InvalidDatabaseException::class);
         $this->expectExceptionMessage(
-            "The MaxMind DB file's data section exceeds the maximum number of values"
+            'The MaxMind DB file exceeds the maximum number of values'
         );
         (new Decoder($handle, 0))->decode(0);
     }
@@ -646,7 +646,7 @@ class DecoderTest extends TestCase
 
         $this->expectException(InvalidDatabaseException::class);
         $this->expectExceptionMessage(
-            "The MaxMind DB file's data section exceeds the maximum payload size"
+            'The MaxMind DB file exceeds the maximum payload size'
         );
         (new Decoder($handle, 0))->decode(0);
     }
