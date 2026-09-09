@@ -592,6 +592,28 @@ class DecoderTest extends TestCase
         (new Decoder($handle, 0))->decode(0);
     }
 
+    public function testPointerToPointerIsRejected(): void
+    {
+        $handle = fopen('php://memory', 'rwb');
+        // Two pointers followed by a scalar. Direct pointer chains are invalid.
+        fwrite($handle, "\x20\x02\x20\x04\xa0");
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage('contains a pointer to another pointer');
+        (new Decoder($handle, 0))->decode(0);
+    }
+
+    public function testPointerThroughContainerCycleIsBounded(): void
+    {
+        $handle = fopen('php://memory', 'rwb');
+        // An array containing a pointer back to itself still needs a depth bound.
+        fwrite($handle, "\x01\x04\x20\x00");
+
+        $this->expectException(InvalidDatabaseException::class);
+        $this->expectExceptionMessage('exceeds the maximum depth');
+        (new Decoder($handle, 0))->decode(0);
+    }
+
     public function testOversizedMapIsBounded(): void
     {
         // A map entry decodes a key and a value, so a map of N entries costs 2N

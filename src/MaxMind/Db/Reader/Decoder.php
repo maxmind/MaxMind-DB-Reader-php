@@ -140,7 +140,7 @@ class Decoder
     /**
      * @return array<mixed>
      */
-    private function decodeWithBudget(int $offset, int $depth): array
+    private function decodeWithBudget(int $offset, int $depth, bool $allowPointer = true): array
     {
         $ctrlByte = \ord($this->read($offset, 1));
         ++$offset;
@@ -151,6 +151,12 @@ class Decoder
         // use the size to determine the length of the pointer and then follow
         // it.
         if ($type === self::_POINTER) {
+            if (!$allowPointer) {
+                throw new InvalidDatabaseException(
+                    'The MaxMind DB file contains a pointer to another pointer'
+                );
+            }
+
             [$pointer, $offset] = $this->decodePointer($ctrlByte, $offset);
 
             // for unit testing
@@ -167,7 +173,7 @@ class Decoder
             // The value at the pointer's position was charged by its containing
             // array or map, so the target costs nothing more. Only the depth
             // grows.
-            [$result] = $this->decodeWithBudget($pointer, $depth + 1);
+            [$result] = $this->decodeWithBudget($pointer, $depth + 1, false);
 
             return [$result, $offset];
         }
