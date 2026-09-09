@@ -671,6 +671,64 @@ class DecoderTest extends TestCase
         (new Decoder($handle, 0))->decode(0);
     }
 
+    public function testValueBudgetResetsAfterFailedDecode(): void
+    {
+        // Charge two children, then encounter an array that exceeds the limit.
+        $invalid = "\x02\x04\xa0\x1e\x04\xfe\xe3";
+        // The next record uses all 65,536 values, including the root.
+        $valid = "\x1e\x04\xfe\xe2" . str_repeat("\xa0", 65535);
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, $invalid . $valid);
+        $decoder = new Decoder($handle);
+
+        try {
+            $decoder->decode(0);
+            $this->fail('the first record must exceed the value limit');
+        } catch (InvalidDatabaseException $e) {
+            $this->assertStringContainsString('exceeds the maximum number of values', $e->getMessage());
+        }
+
+        $this->assertSame(
+            [array_fill(0, 65535, 0), \strlen($invalid . $valid)],
+            $decoder->decode(\strlen($invalid))
+        );
+    }
+
+    public function testPayloadBudgetResetsAfterFailedDecode(): void
+    {
+        // A one-byte string followed by a 2 MiB string exceeds the payload limit.
+        $invalid = "\x02\x04\x41x\x5f\x1e\xfe\xe3";
+        $payload = str_repeat('x', 1 << 21);
+        $valid = "\x5f\x1e\xfe\xe3" . $payload;
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, $invalid . $valid);
+        $decoder = new Decoder($handle);
+
+        try {
+            $decoder->decode(0);
+            $this->fail('the first record must exceed the payload limit');
+        } catch (InvalidDatabaseException $e) {
+            $this->assertStringContainsString('exceeds the maximum payload size', $e->getMessage());
+        }
+
+        $this->assertSame(
+            [$payload, \strlen($invalid . $valid)],
+            $decoder->decode(\strlen($invalid))
+        );
+    }
+
+    public function testDecodeAfterExternalSeek(): void
+    {
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, "\xa1\x01\xa1\x02");
+        $decoder = new Decoder($handle);
+        $this->assertSame([1, 2], $decoder->decode(0));
+
+        $this->assertSame(0, fseek($handle, 0));
+        // Offset 2 matches the cached position, but the stream has moved.
+        $this->assertSame([2, 4], $decoder->decode(2));
+    }
+
     // @phpstan-ignore-next-line
     private function checkDecoding(string $type, array $input, $expected, $name = null): void
     {
