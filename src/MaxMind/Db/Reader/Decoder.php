@@ -124,9 +124,9 @@ class Decoder
         // amplification. Both live on the decoder and are reset here, so every
         // call starts with the full allowance. Passing them by reference
         // through each recursive call instead costs a few percent per lookup.
-        // No other lookup can observe them mid-decode: PHP runs one request
-        // per thread, and the decoder never yields while it decodes. The root
-        // value is charged here; containers charge their children.
+        // Reader prevents nested lookups from moving its stream during a
+        // decode. The root value is charged here; containers charge their
+        // children.
         $this->budget = self::MAX_VALUES - 1;
         $this->byteBudget = self::MAX_PAYLOAD_BYTES;
 
