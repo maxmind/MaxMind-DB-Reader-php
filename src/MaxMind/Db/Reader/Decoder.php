@@ -77,18 +77,15 @@ class Decoder
     // specification's flat rule: the root is one value, each array and map
     // charges its declared children (a map entry costs two, key and value),
     // and a pointer costs nothing beyond the value it resolves to, which its
-    // container already charged. The largest real records decode a few hundred
-    // values, so the limit leaves a wide margin.
+    // container already charged.
     private const MAX_DEPTH = 512;
     private const MAX_VALUES = 1 << 16;
 
     // The value limit alone does not stop payload amplification: an array of
     // pointers to one large string or bytes value keeps the value count low
     // while forcing the reader to copy the target once per pointer. This
-    // second, independent limit bounds the total string and bytes payload
-    // copied for one lookup to 2 MiB, matching libmaxminddb and the Go reader.
-    // No real record approaches it, and re-decoding a shared target charges its
-    // payload again, so the fan-out is bounded.
+    // second limit bounds the total string and bytes payload copied for one
+    // lookup to 2 MiB. Re-decoding a shared target charges its payload again.
     private const MAX_PAYLOAD_BYTES = 1 << 21;
 
     // A fixed-width scalar (a float, double, or integer) never needs more than
@@ -118,15 +115,9 @@ class Decoder
      */
     public function decode(int $offset): array
     {
-        // Bound the work per lookup so a crafted database cannot exhaust CPU or
-        // memory. $budget counts decoded values and stops the pointer fan-out;
-        // $byteBudget counts copied string and bytes payload and stops payload
-        // amplification. Both live on the decoder and are reset here, so every
-        // call starts with the full allowance. Passing them by reference
-        // through each recursive call instead costs a few percent per lookup.
-        // Reader prevents nested lookups from moving its stream during a
-        // decode. The root value is charged here; containers charge their
-        // children.
+        // Reset both budgets for each lookup. Charge the root value here and
+        // container children when entering each container. Reader prevents
+        // nested lookups from moving its stream during a decode.
         $this->budget = self::MAX_VALUES - 1;
         $this->byteBudget = self::MAX_PAYLOAD_BYTES;
 
@@ -281,10 +272,7 @@ class Decoder
 
     /**
      * Reads from the stream, seeking only when the read does not continue where
-     * the previous one ended. Most values in a record are laid out in order, and
-     * fseek() discards PHP's read buffer, so seeking before every read turned
-     * each small read into a system call. Skipping the seek makes a City lookup
-     * about 40% faster.
+     * the previous one ended.
      *
      * @param int<0, max> $numberOfBytes
      */
@@ -322,14 +310,9 @@ class Decoder
     }
 
     /**
-     * Applies the per-lookup limits when entering a container. The depth limit
-     * stops cycles and over-deep data (checked here and at pointer follows,
-     * the only places depth grows). The value budget is charged per declared
-     * element up front, so an oversized declared size is rejected before the
-     * loop reads anything. A pointer element costs nothing more when it is
-     * followed: its slot is charged here, and a container it resolves to
-     * charges its own children each time it is decoded, which is what bounds
-     * a fan-out through shared targets.
+     * Charges declared children before decoding them. An oversized container
+     * fails before any child is read. Each visit to a shared container charges
+     * its children again, which bounds pointer fan-out.
      */
     private function enterContainer(
         int $size,
@@ -341,9 +324,6 @@ class Decoder
                 'The MaxMind DB file exceeds the maximum depth'
             );
         }
-        // Compare with a division rather than multiplying the declared size, so
-        // an oversized declaration cannot overflow the integer on 32-bit builds
-        // before the budget check runs.
         if ($size > intdiv($this->budget, $valuesPerEntry)) {
             throw new InvalidDatabaseException(
                 'The MaxMind DB file exceeds the maximum number of values'
