@@ -639,9 +639,9 @@ class DecoderTest extends TestCase
         // reject it before the read, so the error is the payload limit and not
         // the short read that would otherwise follow. 0x5f is a string with
         // size code 31, then three size bytes for
-        // 2,097,153 - 65,821 = 2,031,332 (0x1eff64).
+        // 2,097,153 - 65,821 = 2,031,332 (0x1efee4).
         $handle = fopen('php://memory', 'rwb');
-        fwrite($handle, "\x5f\x1e\xff\x64");
+        fwrite($handle, "\x5f\x1e\xfe\xe4");
         fseek($handle, 0);
 
         $this->expectException(InvalidDatabaseException::class);
