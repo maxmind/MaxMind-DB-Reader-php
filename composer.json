@@ -28,7 +28,8 @@
         "friendsofphp/php-cs-fixer": "3.*",
         "phpunit/phpunit": ">=8.0.0,<10.0.0",
         "squizlabs/php_codesniffer": "4.*",
-        "phpstan/phpstan": "*"
+        "phpstan/phpstan": "*",
+        "symfony/polyfill-php80": "^1.33"
     },
     "autoload": {
         "psr-4": {
