@@ -44,6 +44,10 @@ if ! gh workflow view release.yml --repo maxmind/MaxMind-DB-Reader-php-ext &>/de
 fi
 
 check_command perl
+if ! perl -MHTML::Entities -e 1; then
+    echo "Error: Cannot load HTML::Entities. Install the Perl HTML::Parser distribution before releasing."
+    exit 1
+fi
 check_command php
 check_command phpize
 check_command pecl
@@ -164,7 +168,8 @@ export RELEASE_VERSION="$version" RELEASE_DATE="$date" RELEASE_NOTES="$notes"
     subst composer.json 's/(?<="ext-maxminddb": "<)[^ ,|"]+/$ENV{RELEASE_VERSION}/'
     subst package.xml 's/(?<=<(?:api)>)\d+\.\d+\.\d+(?=<)/$ENV{RELEASE_VERSION}/'
     subst package.xml 's/(?<=<(?:release)>)\d+\.\d+\.\d+(?=<)/$ENV{RELEASE_VERSION}/'
-    subst package.xml 's{(?<=<notes>).*(?=</notes>)}{$ENV{RELEASE_NOTES}}sm' -0777
+    # Limit escaping to XML text characters to avoid HTML-only named entities.
+    subst package.xml 's{(?<=<notes>).*(?=</notes>)}{encode_entities($ENV{RELEASE_NOTES}, "<>&")}sme' -0777 -MHTML::Entities
     subst package.xml 's/(?<=<date>)\d{4}-\d{2}-\d{2}(?=<)/$ENV{RELEASE_DATE}/'
 }
 
@@ -179,6 +184,8 @@ php -n -dextension=ext/modules/maxminddb.so "$(mise which composer.phar)" update
 php -n -dextension=ext/modules/maxminddb.so ./vendor/bin/phpunit
 php -n ./vendor/bin/phpunit
 
+pecl package
+
 echo $'\nDiff:'
 git diff
 
@@ -188,8 +195,6 @@ fi
 
 echo $'\nRelease notes:'
 echo "$notes"
-
-pecl package
 
 package="maxminddb-$version.tgz"
 

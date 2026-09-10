@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.14.0
+1.14.0 (2026-09-10)
 -------------------
 
 * Bounded the resources that the pure PHP decoder spends on a single lookup. A

@@ -40,7 +40,7 @@ You should now have the file `composer.phar` in your project directory.
 Run in your project root:
 
 ```
-php composer.phar require maxmind-db/reader:^1.13.1
+php composer.phar require maxmind-db/reader:^1.14.0
 ```
 
 You should now have the files `composer.json` and `composer.lock` as well as
@@ -230,6 +230,6 @@ The MaxMind DB Reader PHP API uses [Semantic Versioning](https://semver.org/).
 
 ## Copyright and License ##
 
-This software is Copyright (c) 2014-2025 by MaxMind, Inc.
+This software is Copyright (c) 2014-2026 by MaxMind, Inc.
 
 This is free software, licensed under the Apache License, Version 2.0.
