@@ -31,7 +31,7 @@
  * every build, so a stale value here fails CI rather than shipping.
  */
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.13.3"
+#define PACKAGE_VERSION "1.14.0"
 #endif
 
 #endif /* MAXMINDDB_CONFIG_H */

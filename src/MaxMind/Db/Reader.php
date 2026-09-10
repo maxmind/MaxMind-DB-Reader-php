@@ -46,6 +46,11 @@ class Reader
     private $fileHandle;
 
     /**
+     * @var bool
+     */
+    private $lookupInProgress = false;
+
+    /**
      * @var int
      */
     private $fileSize;
@@ -118,7 +123,7 @@ class Reader
      *
      * @param string $ipAddress the IP address to look up
      *
-     * @throws \BadMethodCallException   if this method is called on a closed database
+     * @throws \BadMethodCallException   if the database is closed or another lookup is in progress
      * @throws \InvalidArgumentException if something other than a single IP address is passed to the method
      * @throws InvalidDatabaseException
      *                                   if the database is invalid or there is an error reading
@@ -143,7 +148,7 @@ class Reader
      *
      * @param string $ipAddress the IP address to look up
      *
-     * @throws \BadMethodCallException   if this method is called on a closed database
+     * @throws \BadMethodCallException   if the database is closed or another lookup is in progress
      * @throws \InvalidArgumentException if something other than a single IP address is passed to the method
      * @throws InvalidDatabaseException
      *                                   if the database is invalid or there is an error reading
@@ -166,12 +171,25 @@ class Reader
             );
         }
 
-        [$pointer, $prefixLen] = $this->findAddressInTree($ipAddress);
-        if ($pointer === 0) {
-            return [null, $prefixLen];
+        if ($this->lookupInProgress) {
+            throw new \BadMethodCallException(
+                'A lookup is already in progress on this reader. Use a separate reader for nested lookups.'
+            );
         }
+        // A stream wrapper can call back into this reader during a read.
+        // Reject nested lookups before they can move the shared stream.
+        $this->lookupInProgress = true;
 
-        return [$this->resolveDataPointer($pointer), $prefixLen];
+        try {
+            [$pointer, $prefixLen] = $this->findAddressInTree($ipAddress);
+            if ($pointer === 0) {
+                return [null, $prefixLen];
+            }
+
+            return [$this->resolveDataPointer($pointer), $prefixLen];
+        } finally {
+            $this->lookupInProgress = false;
+        }
     }
 
     /**
