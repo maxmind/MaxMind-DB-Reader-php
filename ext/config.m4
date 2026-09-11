@@ -77,6 +77,9 @@ if test $PHP_MAXMINDDB != "no"; then
         CFLAGS="$CFLAGS -fvisibility=hidden -UHAVE_CONFIG_H -DHAVE_CONFIG_H=0 -DMMDB_UINT128_USING_MODE=0 -DMMDB_UINT128_IS_BYTE_ARRAY=1"
 
         maxminddb_sources="$maxminddb_sources libmaxminddb/src/maxminddb.c libmaxminddb/src/data-pool.c"
+
+        AC_DEFINE([HAVE_LIBMAXMINDDB_BUNDLED], [1], [Use bundled or system libmaxminddb])
+        PHP_SUBST([HAVE_LIBMAXMINDDB_BUNDLED])
     else
         AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 
