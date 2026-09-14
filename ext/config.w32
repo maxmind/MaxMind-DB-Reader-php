@@ -82,7 +82,7 @@ if (PHP_MAXMINDDB == "yes") {
 		 * ask for it explicitly too, and the dependency is ours now. */
 		ADD_FLAG("LIBS_MAXMINDDB", "ws2_32.lib");
 
-		AC_DEFINE("HAVE_LIBMAXMINDDB_BUNDLED", 1, "Use bundled or system libmaxminddb");
+		AC_DEFINE("HAVE_LIBMAXMINDDB_BUNDLED", 1, "Defined when the bundled libmaxminddb is compiled into the extension");
 
 		EXTENSION("maxminddb", "maxminddb.c");
 
