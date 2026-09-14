@@ -798,7 +798,12 @@ static PHP_MINFO_FUNCTION(maxminddb) {
     php_info_print_table_row(
         2, "maxminddb extension version", PHP_MAXMINDDB_VERSION);
     php_info_print_table_row(
-        2, "libmaxminddb library version", MMDB_lib_version());
+        3, "libmaxminddb library version", MMDB_lib_version(),
+#ifdef HAVE_LIBMAXMINDDB_BUNDLED
+        "(bundled)");
+#else
+        "(system)");
+#endif
 
     php_info_print_table_end();
 }
