@@ -12,12 +12,12 @@ if (PHP_MAXMINDDB == "yes") {
 			ERROR("--with-maxminddb-bundled needs the bundled libmaxminddb sources; run \"git submodule update --init\"");
 		}
 
-		/* Read the version out of the submodule rather than repeating it here.
-		 * Nothing else checks this file -- there is no Windows workflow in this
-		 * repository -- so a bump that updated config.m4 and forgot this line
-		 * would ship a PACKAGE_VERSION that lies, with nothing to notice it.
-		 * config.m4 keeps a literal because test-bundled.yml compares
-		 * MMDB_LIB_VERSION against configure.ac on every build. */
+		/* Read the version out of the submodule so a bump cannot leave this
+		 * line behind. The Unix build keeps a literal in
+		 * ext/bundled-include/maxminddb_config.h instead; that header says
+		 * why. The bundled and windows-bundled jobs in test-bundled.yml check
+		 * both by comparing MMDB_LIB_VERSION against configure.ac on every
+		 * build. */
 		var maxminddb_ac = file_get_contents(maxminddb_bundled + "\\configure.ac");
 		/* The match is captured rather than read back out of RegExp.$1, which is
 		 * engine-global state shared with every other config.w32 evaluated in
