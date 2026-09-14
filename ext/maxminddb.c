@@ -26,6 +26,15 @@
 #include "ext/standard/info.h"
 #include <maxminddb.h>
 
+/* Both build files define this as 1 or 0 on every path, so a missing
+ * definition is a build-file mistake, not a system build. Fail rather than
+ * report "system" for a bundled object. Unlike php-src's HAVE_GD_BUNDLED,
+ * which is absent in a system build, this must be tested with #if: #ifdef
+ * is true for the 0 too. */
+#ifndef HAVE_LIBMAXMINDDB_BUNDLED
+#error "HAVE_LIBMAXMINDDB_BUNDLED must be defined by the build files"
+#endif
+
 #ifdef ZTS
 #include <TSRM.h>
 #endif
@@ -792,7 +801,7 @@ PHP_MINIT_FUNCTION(maxminddb) {
 }
 
 static PHP_MINFO_FUNCTION(maxminddb) {
-#ifdef HAVE_LIBMAXMINDDB_BUNDLED
+#if HAVE_LIBMAXMINDDB_BUNDLED
     const char *lib_source = "bundled";
 #else
     const char *lib_source = "system";

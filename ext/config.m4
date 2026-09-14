@@ -78,8 +78,10 @@ if test $PHP_MAXMINDDB != "no"; then
 
         maxminddb_sources="$maxminddb_sources libmaxminddb/src/maxminddb.c libmaxminddb/src/data-pool.c"
 
-        AC_DEFINE([HAVE_LIBMAXMINDDB_BUNDLED], [1], [Defined when the bundled libmaxminddb is compiled into the extension])
+        AC_DEFINE([HAVE_LIBMAXMINDDB_BUNDLED], [1], [1 if the bundled libmaxminddb is compiled into the extension, 0 if a system libmaxminddb is linked])
     else
+        AC_DEFINE([HAVE_LIBMAXMINDDB_BUNDLED], [0], [1 if the bundled libmaxminddb is compiled into the extension, 0 if a system libmaxminddb is linked])
+
         AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 
         AC_MSG_CHECKING(for libmaxminddb)

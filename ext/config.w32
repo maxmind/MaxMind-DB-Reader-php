@@ -82,7 +82,7 @@ if (PHP_MAXMINDDB == "yes") {
 		 * ask for it explicitly too, and the dependency is ours now. */
 		ADD_FLAG("LIBS_MAXMINDDB", "ws2_32.lib");
 
-		AC_DEFINE("HAVE_LIBMAXMINDDB_BUNDLED", 1, "Defined when the bundled libmaxminddb is compiled into the extension");
+		AC_DEFINE("HAVE_LIBMAXMINDDB_BUNDLED", 1, "1 if the bundled libmaxminddb is compiled into the extension, 0 if a system libmaxminddb is linked");
 
 		EXTENSION("maxminddb", "maxminddb.c");
 
@@ -112,6 +112,8 @@ if (PHP_MAXMINDDB == "yes") {
 			"maxminddb", "libmaxminddb");
 	} else if (CHECK_HEADER_ADD_INCLUDE("maxminddb.h", "CFLAGS_MAXMINDDB", PHP_MAXMINDDB +  ";" + PHP_PHP_BUILD + "\\include\\maxminddb") &&
 		CHECK_LIB("libmaxminddb.lib;maxminddb.lib", "maxminddb", PHP_MAXMINDDB)) {
+		AC_DEFINE("HAVE_LIBMAXMINDDB_BUNDLED", 0, "1 if the bundled libmaxminddb is compiled into the extension, 0 if a system libmaxminddb is linked");
+
 		EXTENSION("maxminddb", "maxminddb.c");
 	} else {
 		WARNING('Could not find maxminddb.h, libmaxminddb.lib, or maxminddb.lib; skipping');
