@@ -12,12 +12,12 @@ if (PHP_MAXMINDDB == "yes") {
 			ERROR("--with-maxminddb-bundled needs the bundled libmaxminddb sources; run \"git submodule update --init\"");
 		}
 
-		/* Read the version out of the submodule rather than repeating it here.
-		 * Nothing else checks this file -- there is no Windows workflow in this
-		 * repository -- so a bump that updated config.m4 and forgot this line
-		 * would ship a PACKAGE_VERSION that lies, with nothing to notice it.
-		 * config.m4 keeps a literal because test-bundled.yml compares
-		 * MMDB_LIB_VERSION against configure.ac on every build. */
+		/* Read the version out of the submodule so a bump cannot leave this
+		 * line behind. The Unix build keeps a literal in
+		 * ext/bundled-include/maxminddb_config.h instead; that header says
+		 * why. The bundled and windows-bundled jobs in test-bundled.yml check
+		 * both by comparing MMDB_LIB_VERSION against configure.ac on every
+		 * build. */
 		var maxminddb_ac = file_get_contents(maxminddb_bundled + "\\configure.ac");
 		/* The match is captured rather than read back out of RegExp.$1, which is
 		 * engine-global state shared with every other config.w32 evaluated in
@@ -57,6 +57,7 @@ if (PHP_MAXMINDDB == "yes") {
 		 * The Windows build never defines HAVE_CONFIG_H, so libmaxminddb
 		 * already does the right thing, and defining it here would instead
 		 * make our own maxminddb.c include a config.h that does not exist.
+		 * The AC_DEFINE below reaches maxminddb.c by another route; see there.
 		 *
 		 * MSVC has no unsigned __int128, so the byte array is the only option
 		 * for uint128 values. Both this file and config.m4 have to define
@@ -82,7 +83,20 @@ if (PHP_MAXMINDDB == "yes") {
 		 * ask for it explicitly too, and the dependency is ours now. */
 		ADD_FLAG("LIBS_MAXMINDDB", "ws2_32.lib");
 
-		AC_DEFINE("HAVE_LIBMAXMINDDB_BUNDLED", 1, "Use bundled or system libmaxminddb");
+		/* phpinfo() reports this. It reaches maxminddb.c through php.h, not
+		 * through any config header of ours: as of PHP 8.4, under phpize,
+		 * configure.js writes AC_DEFINE results to
+		 * <devpack>\include\main\config.pickle.h, which main\config.w32.h
+		 * includes (in a php-src tree they land in that file directly).
+		 *
+		 * It is 1 here and 0 in the system branch below, never absent,
+		 * because config.pickle.h is shared state in the PHP install and
+		 * generate_config_pickle_h() removes only the lines whose keys the
+		 * current run defines. A bundled configure followed by a system one
+		 * would leave this 1 in place and the system build would report
+		 * "bundled". The 0 overwrites it, and maxminddb.c refuses to compile
+		 * if neither arrives. */
+		AC_DEFINE("HAVE_LIBMAXMINDDB_BUNDLED", 1, "1 if the bundled libmaxminddb is compiled into the extension, 0 if a system libmaxminddb is linked");
 
 		EXTENSION("maxminddb", "maxminddb.c");
 
@@ -112,6 +126,9 @@ if (PHP_MAXMINDDB == "yes") {
 			"maxminddb", "libmaxminddb");
 	} else if (CHECK_HEADER_ADD_INCLUDE("maxminddb.h", "CFLAGS_MAXMINDDB", PHP_MAXMINDDB +  ";" + PHP_PHP_BUILD + "\\include\\maxminddb") &&
 		CHECK_LIB("libmaxminddb.lib;maxminddb.lib", "maxminddb", PHP_MAXMINDDB)) {
+		/* See the bundled branch above for why this is 0 rather than absent. */
+		AC_DEFINE("HAVE_LIBMAXMINDDB_BUNDLED", 0, "1 if the bundled libmaxminddb is compiled into the extension, 0 if a system libmaxminddb is linked");
+
 		EXTENSION("maxminddb", "maxminddb.c");
 	} else {
 		WARNING('Could not find maxminddb.h, libmaxminddb.lib, or maxminddb.lib; skipping');

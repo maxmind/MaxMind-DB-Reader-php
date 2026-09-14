@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+1.15.0
+-------------------
+
+* `phpinfo()` and `php --ri maxminddb` now show whether the extension was built
+  with the bundled libmaxminddb or links a system library. The
+  `libmaxminddb library version` row reads, for example, `1.14.0 (bundled)` or
+  `1.9.1 (system)`. Pull request by Remi Collet. GitHub #289.
+
 1.14.0 (2026-09-10)
 -------------------
 
