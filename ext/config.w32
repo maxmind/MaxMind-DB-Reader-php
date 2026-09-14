@@ -57,6 +57,7 @@ if (PHP_MAXMINDDB == "yes") {
 		 * The Windows build never defines HAVE_CONFIG_H, so libmaxminddb
 		 * already does the right thing, and defining it here would instead
 		 * make our own maxminddb.c include a config.h that does not exist.
+		 * The AC_DEFINE below reaches maxminddb.c by another route; see there.
 		 *
 		 * MSVC has no unsigned __int128, so the byte array is the only option
 		 * for uint128 values. Both this file and config.m4 have to define
@@ -82,6 +83,19 @@ if (PHP_MAXMINDDB == "yes") {
 		 * ask for it explicitly too, and the dependency is ours now. */
 		ADD_FLAG("LIBS_MAXMINDDB", "ws2_32.lib");
 
+		/* phpinfo() reports this. It reaches maxminddb.c through php.h, not
+		 * through any config header of ours: as of PHP 8.4, under phpize,
+		 * configure.js writes AC_DEFINE results to
+		 * <devpack>\include\main\config.pickle.h, which main\config.w32.h
+		 * includes (in a php-src tree they land in that file directly).
+		 *
+		 * It is 1 here and 0 in the system branch below, never absent,
+		 * because config.pickle.h is shared state in the PHP install and
+		 * generate_config_pickle_h() removes only the lines whose keys the
+		 * current run defines. A bundled configure followed by a system one
+		 * would leave this 1 in place and the system build would report
+		 * "bundled". The 0 overwrites it, and maxminddb.c refuses to compile
+		 * if neither arrives. */
 		AC_DEFINE("HAVE_LIBMAXMINDDB_BUNDLED", 1, "1 if the bundled libmaxminddb is compiled into the extension, 0 if a system libmaxminddb is linked");
 
 		EXTENSION("maxminddb", "maxminddb.c");
@@ -112,6 +126,7 @@ if (PHP_MAXMINDDB == "yes") {
 			"maxminddb", "libmaxminddb");
 	} else if (CHECK_HEADER_ADD_INCLUDE("maxminddb.h", "CFLAGS_MAXMINDDB", PHP_MAXMINDDB +  ";" + PHP_PHP_BUILD + "\\include\\maxminddb") &&
 		CHECK_LIB("libmaxminddb.lib;maxminddb.lib", "maxminddb", PHP_MAXMINDDB)) {
+		/* See the bundled branch above for why this is 0 rather than absent. */
 		AC_DEFINE("HAVE_LIBMAXMINDDB_BUNDLED", 0, "1 if the bundled libmaxminddb is compiled into the extension, 0 if a system libmaxminddb is linked");
 
 		EXTENSION("maxminddb", "maxminddb.c");
