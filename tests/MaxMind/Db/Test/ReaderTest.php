@@ -419,8 +419,10 @@ class ReaderTest extends TestCase
         // the same reader, because the budget belongs to one call.
         $expected = array_fill(0, 65535, 0);
         $reader = new Reader('tests/data/test-data/MaxMind-DB-test-decoder-value-limit.mmdb');
-        $this->assertSame($expected, $reader->get('1.1.1.1'));
-        $this->assertSame($expected, $reader->get('1.1.1.1'));
+        $first = $reader->get('1.1.1.1');
+        $second = $reader->get('1.1.1.1');
+        $this->assertSame($expected, $first);
+        $this->assertSame($expected, $second);
         $reader->close();
 
         // 65,535 values reached through a depth-15 pointer fan-out. Under the
