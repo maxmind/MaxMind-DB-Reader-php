@@ -96,6 +96,8 @@ class Decoder
 
     /**
      * @param resource $fileStream
+     *
+     * @throws InvalidDatabaseException
      */
     public function __construct(
         $fileStream,
@@ -111,6 +113,13 @@ class Decoder
     }
 
     /**
+     * @throws InvalidDatabaseException if the data is invalid or there is an
+     *                                  error reading it
+     * @throws \RuntimeException        if the data contains an integer that
+     *                                  needs the gmp or bcmath extension and
+     *                                  neither is installed, or a data offset
+     *                                  that is too large for the platform
+     *
      * @return array<mixed>
      */
     public function decode(int $offset): array
@@ -129,6 +138,9 @@ class Decoder
     }
 
     /**
+     * @throws InvalidDatabaseException
+     * @throws \RuntimeException
+     *
      * @return array<mixed>
      */
     private function decodeWithBudget(int $offset, int $depth, bool $allowPointer = true): array
@@ -193,6 +205,9 @@ class Decoder
 
     /**
      * @param int<0, max> $size
+     *
+     * @throws InvalidDatabaseException
+     * @throws \RuntimeException
      *
      * @return array{0:mixed, 1:int}
      */
@@ -275,6 +290,8 @@ class Decoder
      * the previous one ended.
      *
      * @param int<0, max> $numberOfBytes
+     *
+     * @throws InvalidDatabaseException
      */
     private function read(int $offset, int $numberOfBytes): string
     {
@@ -300,6 +317,9 @@ class Decoder
         return $value;
     }
 
+    /**
+     * @throws InvalidDatabaseException
+     */
     private function verifySize(int $expected, int $actual): void
     {
         if ($expected !== $actual) {
@@ -313,6 +333,8 @@ class Decoder
      * Charges declared children before decoding them. An oversized container
      * fails before any child is read. Each visit to a shared container charges
      * its children again, which bounds pointer fan-out.
+     *
+     * @throws InvalidDatabaseException
      */
     private function enterContainer(
         int $size,
@@ -333,6 +355,9 @@ class Decoder
     }
 
     /**
+     * @throws InvalidDatabaseException
+     * @throws \RuntimeException
+     *
      * @return array{0:array<mixed>, 1:int}
      */
     private function decodeArray(int $size, int $offset, int $depth): array
@@ -354,6 +379,9 @@ class Decoder
         return $size !== 0;
     }
 
+    /**
+     * @throws InvalidDatabaseException
+     */
     private function decodeDouble(string $bytes): float
     {
         // This assumes IEEE 754 doubles, but most (all?) modern platforms
@@ -369,6 +397,9 @@ class Decoder
         return $double;
     }
 
+    /**
+     * @throws InvalidDatabaseException
+     */
     private function decodeFloat(string $bytes): float
     {
         // This assumes IEEE 754 floats, but most (all?) modern platforms
@@ -384,6 +415,9 @@ class Decoder
         return $float;
     }
 
+    /**
+     * @throws InvalidDatabaseException
+     */
     private function decodeInt32(string $bytes, int $size): int
     {
         switch ($size) {
@@ -418,6 +452,9 @@ class Decoder
     }
 
     /**
+     * @throws InvalidDatabaseException
+     * @throws \RuntimeException
+     *
      * @return array{0:array<string, mixed>, 1:int}
      */
     private function decodeMap(int $size, int $offset, int $depth): array
@@ -437,6 +474,9 @@ class Decoder
     }
 
     /**
+     * @throws InvalidDatabaseException
+     * @throws \RuntimeException
+     *
      * @return array{0:int, 1:int}
      */
     private function decodePointer(int $ctrlByte, int $offset): array
@@ -515,6 +555,9 @@ class Decoder
         return [$pointer, $offset];
     }
 
+    /**
+     * @throws \RuntimeException
+     */
     // @phpstan-ignore-next-line
     private function decodeUint(string $bytes, int $byteLength)
     {
@@ -558,6 +601,8 @@ class Decoder
     }
 
     /**
+     * @throws InvalidDatabaseException
+     *
      * @return array{0:int, 1:int}
      */
     private function sizeFromCtrlByte(int $ctrlByte, int $offset): array
@@ -601,6 +646,9 @@ class Decoder
         return $this->switchByteOrder ? strrev($bytes) : $bytes;
     }
 
+    /**
+     * @throws InvalidDatabaseException
+     */
     private function isPlatformLittleEndian(): bool
     {
         $testint = 0x00FF;
