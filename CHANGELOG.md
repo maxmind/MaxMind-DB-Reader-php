@@ -8,6 +8,17 @@ CHANGELOG
   with the bundled libmaxminddb or links a system library. The
   `libmaxminddb library version` row reads, for example, `1.14.0 (bundled)` or
   `1.9.1 (system)`. Pull request by Remi Collet. GitHub #289.
+* The PHPDoc of the pure PHP reader now lists the exceptions that its methods
+  can throw:
+  * The `MaxMind\Db\Reader` constructor, `get()`, and `getWithPrefixLen()`
+    declare `RuntimeException`. The reader throws it for an integer that needs
+    the gmp or bcmath extension when neither is installed.
+  * The constructor declares `UnexpectedValueException`.
+  * `close()` declares `BadMethodCallException` in place of `Exception`.
+    `metadata()` no longer declares `InvalidArgumentException`, which it
+    cannot throw.
+  * `MaxMind\Db\Reader\Decoder::decode()` and `MaxMind\Db\Reader\Util::read()`
+    declare their exceptions.
 
 1.14.0 (2026-09-10)
 -------------------

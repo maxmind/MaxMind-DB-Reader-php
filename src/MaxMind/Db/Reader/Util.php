@@ -9,6 +9,8 @@ class Util
     /**
      * @param resource    $stream
      * @param int<0, max> $numberOfBytes
+     *
+     * @throws InvalidDatabaseException if the bytes cannot be read
      */
     public static function read($stream, int $offset, int $numberOfBytes): string
     {
