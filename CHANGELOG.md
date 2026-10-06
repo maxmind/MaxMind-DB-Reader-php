@@ -4,10 +4,36 @@ CHANGELOG
 1.15.0
 -------------------
 
+* The pure PHP reader now rejects non-string map keys with
+  `InvalidDatabaseException` instead of a `TypeError`, a warning, or an
+  implicit type conversion.
+* The pure PHP reader now rejects malformed metadata with
+  `InvalidDatabaseException` instead of a `TypeError`, a warning, or an
+  implicit type conversion. Missing optional `languages` and `description`
+  fields default to empty arrays.
+* Missing gmp/bcmath support and offsets that exceed the platform limit now
+  throw `MaxMind\Db\Reader\UnsupportedPlatformException`. It extends
+  `RuntimeException`, so existing catches continue to work.
+* The pure PHP reader also throws `UnsupportedPlatformException` when the
+  metadata node count or the start of the data section exceeds the platform's
+  integer limit. These cases no longer produce `InvalidDatabaseException` or
+  overflow into a `TypeError`.
 * `phpinfo()` and `php --ri maxminddb` now show whether the extension was built
   with the bundled libmaxminddb or links a system library. The
   `libmaxminddb library version` row reads, for example, `1.14.0 (bundled)` or
   `1.9.1 (system)`. Pull request by Remi Collet. GitHub #289.
+* The PHPDoc of the pure PHP reader now lists the exceptions that its methods
+  can throw:
+  * The `MaxMind\Db\Reader` constructor, `get()`, and `getWithPrefixLen()`
+    declare `UnsupportedPlatformException`. The reader throws it when an
+    integer needs gmp or bcmath and neither is installed, or a data offset
+    exceeds the platform limit.
+  * The constructor declares `UnexpectedValueException`.
+  * `close()` declares `BadMethodCallException` in place of `Exception`.
+    `metadata()` no longer declares `InvalidArgumentException`, which it
+    cannot throw.
+  * `MaxMind\Db\Reader\Decoder::decode()` and `MaxMind\Db\Reader\Util::read()`
+    declare their exceptions.
 
 1.14.0 (2026-09-10)
 -------------------

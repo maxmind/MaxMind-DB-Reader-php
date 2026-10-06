@@ -29,7 +29,7 @@ class Metadata
      * This is an unsigned 64-bit integer that contains the database build
      * timestamp as a Unix epoch value.
      *
-     * @var int
+     * @var int|string
      */
     public $buildEpoch;
 
@@ -97,6 +97,9 @@ class Metadata
 
     /**
      * @param array<string, mixed> $metadata
+     *
+     * @throws InvalidDatabaseException     if a metadata field is missing or invalid
+     * @throws UnsupportedPlatformException if the search tree exceeds the platform limit
      */
     public function __construct(array $metadata)
     {
@@ -104,6 +107,62 @@ class Metadata
             throw new \ArgumentCountError(
                 \sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
             );
+        }
+
+        $nodeCount = $metadata['node_count'] ?? null;
+        if (\is_string($nodeCount) && preg_match('/\A(?:0|[1-9][0-9]*)\z/', $nodeCount)) {
+            $maxInteger = (string) \PHP_INT_MAX;
+            if (\strlen($nodeCount) > \strlen($maxInteger)
+                || (\strlen($nodeCount) === \strlen($maxInteger) && strcmp($nodeCount, $maxInteger) > 0)
+            ) {
+                throw new UnsupportedPlatformException('The database node count exceeds the platform limit.');
+            }
+        }
+
+        foreach ([
+            'binary_format_major_version',
+            'binary_format_minor_version',
+            'ip_version',
+            'node_count',
+            'record_size',
+        ] as $key) {
+            if (!isset($metadata[$key]) || !\is_int($metadata[$key]) || $metadata[$key] < 0) {
+                throw new InvalidDatabaseException("Metadata field $key must be an unsigned integer.");
+            }
+        }
+        $buildEpoch = $metadata['build_epoch'] ?? null;
+        if ((!\is_int($buildEpoch) || $buildEpoch < 0)
+            && (!\is_string($buildEpoch) || !preg_match('/\A[0-9]+\z/', $buildEpoch))
+        ) {
+            throw new InvalidDatabaseException('Metadata build_epoch must be an unsigned integer.');
+        }
+        if (!\in_array($metadata['record_size'], [24, 28, 32], true)) {
+            throw new InvalidDatabaseException('Metadata record_size must be 24, 28, or 32.');
+        }
+        if (!\in_array($metadata['ip_version'], [4, 6], true)) {
+            throw new InvalidDatabaseException('Metadata ip_version must be 4 or 6.');
+        }
+        if (!isset($metadata['database_type']) || !\is_string($metadata['database_type'])) {
+            throw new InvalidDatabaseException('Metadata database_type must be a string.');
+        }
+        foreach (['languages', 'description'] as $key) {
+            if (!\array_key_exists($key, $metadata)) {
+                $metadata[$key] = [];
+            }
+            if (!\is_array($metadata[$key])) {
+                throw new InvalidDatabaseException("Metadata field $key must be an array of strings.");
+            }
+            foreach ($metadata[$key] as $value) {
+                if (!\is_string($value)) {
+                    throw new InvalidDatabaseException("Metadata field $key must contain only strings.");
+                }
+            }
+        }
+
+        $nodeByteSize = intdiv($metadata['record_size'], 4);
+        // The data section starts after the search tree and its 16-byte separator.
+        if ($metadata['node_count'] > intdiv(\PHP_INT_MAX - 16, $nodeByteSize)) {
+            throw new UnsupportedPlatformException('The database search tree exceeds the platform limit.');
         }
 
         $this->binaryFormatMajorVersion
@@ -117,7 +176,7 @@ class Metadata
         $this->ipVersion = $metadata['ip_version'];
         $this->nodeCount = $metadata['node_count'];
         $this->recordSize = $metadata['record_size'];
-        $this->nodeByteSize = $this->recordSize / 4;
+        $this->nodeByteSize = $nodeByteSize;
         $this->searchTreeSize = $this->nodeCount * $this->nodeByteSize;
     }
 }

@@ -129,6 +129,35 @@ class ReaderTest extends TestCase
         $this->assertSame('340282366920938463463374607431768211455', $uint128);
     }
 
+    public function testInvalidMetadataType(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'mmdb-metadata-');
+        file_put_contents($path, "\xab\xcd\xefMaxMind.com\xa0");
+
+        try {
+            $this->expectException(InvalidDatabaseException::class);
+            new Reader($path);
+        } finally {
+            unlink($path);
+        }
+    }
+
+    public function testInvalidMetadataRecordSize(): void
+    {
+        $database = file_get_contents('tests/data/test-data/MaxMind-DB-test-ipv4-24.mmdb');
+        $database = str_replace("\x4brecord_size\xa1\x18", "\x4brecord_size\x41x", $database, $count);
+        $this->assertSame(1, $count);
+        $path = tempnam(sys_get_temp_dir(), 'mmdb-metadata-');
+        file_put_contents($path, $database);
+
+        try {
+            $this->expectException(InvalidDatabaseException::class);
+            new Reader($path);
+        } finally {
+            unlink($path);
+        }
+    }
+
     public function testMetadataPointers(): void
     {
         $reader = new Reader(

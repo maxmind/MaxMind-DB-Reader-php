@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace MaxMind\Db\Test\Reader;
 
+use MaxMind\Db\Reader\InvalidDatabaseException;
 use MaxMind\Db\Reader\Metadata;
+use MaxMind\Db\Reader\UnsupportedPlatformException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -40,6 +42,126 @@ class MetadataTest extends TestCase
         $this->assertSame($metadata->nodeCount, 665037);
         $this->assertSame($metadata->recordSize, 24);
         $this->assertSame($metadata->searchTreeSize, 6 * 665037);
+    }
+
+    /**
+     * @dataProvider invalidMetadata
+     *
+     * @param mixed $value
+     */
+    public function testInvalidMetadata(string $key, $value): void
+    {
+        if (\extension_loaded('maxminddb')) {
+            $this->markTestSkipped('This test covers the pure PHP metadata constructor.');
+        }
+
+        $metadata = [
+            'node_count' => 1,
+            'record_size' => 24,
+            'ip_version' => 6,
+            'binary_format_major_version' => 2,
+            'binary_format_minor_version' => 0,
+            'build_epoch' => 1594066370,
+            'database_type' => 'Test',
+            'languages' => ['en'],
+            'description' => ['en' => 'Test'],
+        ];
+        $metadata[$key] = $value;
+
+        $this->expectException(InvalidDatabaseException::class);
+        new Metadata($metadata);
+    }
+
+    /**
+     * @return array<string, array{string, mixed}>
+     */
+    public static function invalidMetadata(): array
+    {
+        return [
+            'string record size' => ['record_size', 'bad'],
+            'map record size' => ['record_size', ['bad' => 1]],
+            'null record size' => ['record_size', null],
+            'unsupported record size' => ['record_size', 16],
+            'string node count' => ['node_count', '1'],
+            'negative node count' => ['node_count', -1],
+            'unsupported IP version' => ['ip_version', 5],
+            'invalid database type' => ['database_type', []],
+            'invalid languages' => ['languages', 'en'],
+            'invalid language' => ['languages', [1]],
+            'invalid description' => ['description', ['en' => []]],
+            'invalid build epoch' => ['build_epoch', 'bad'],
+        ];
+    }
+
+    public function testOptionalMetadata(): void
+    {
+        if (\extension_loaded('maxminddb')) {
+            $this->markTestSkipped('This test covers the pure PHP metadata constructor.');
+        }
+
+        $metadata = new Metadata([
+            'node_count' => 1,
+            'record_size' => 24,
+            'ip_version' => 6,
+            'binary_format_major_version' => 2,
+            'binary_format_minor_version' => 0,
+            'build_epoch' => '2147483648',
+            'database_type' => 'Test',
+        ]);
+        $this->assertSame([], $metadata->languages);
+        $this->assertSame([], $metadata->description);
+        $this->assertSame('2147483648', $metadata->buildEpoch);
+    }
+
+    public function testMissingMetadata(): void
+    {
+        if (\extension_loaded('maxminddb')) {
+            $this->markTestSkipped('This test covers the pure PHP metadata constructor.');
+        }
+
+        $this->expectException(InvalidDatabaseException::class);
+        new Metadata([]);
+    }
+
+    /**
+     * @dataProvider unsupportedNodeCounts
+     *
+     * @param int|string $nodeCount
+     */
+    public function testUnsupportedNodeCount($nodeCount): void
+    {
+        if (\extension_loaded('maxminddb')) {
+            $this->markTestSkipped('This test covers the pure PHP metadata constructor.');
+        }
+
+        $this->expectException(UnsupportedPlatformException::class);
+        new Metadata([
+            'node_count' => $nodeCount,
+            'record_size' => 32,
+            'ip_version' => 6,
+            'binary_format_major_version' => 2,
+            'binary_format_minor_version' => 0,
+            'build_epoch' => 1594066370,
+            'database_type' => 'Test',
+        ]);
+    }
+
+    /**
+     * @return array<string, array{int|string}>
+     */
+    public static function unsupportedNodeCounts(): array
+    {
+        $firstUnsupportedInteger = '9223372036854775808';
+        if (\PHP_INT_SIZE === 4) {
+            $firstUnsupportedInteger = '2147483648';
+        }
+
+        return [
+            'decoded integer just beyond platform limit' => [$firstUnsupportedInteger],
+            'decoded integer beyond platform limit' => [(string) \PHP_INT_MAX . '0'],
+            'search tree multiplication overflow' => [\PHP_INT_MAX],
+            'data section separator overflow' => [intdiv(\PHP_INT_MAX, 8)],
+        ];
     }
 
     public function testTooManyConstructorArgs(): void

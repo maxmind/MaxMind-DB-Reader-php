@@ -6,6 +6,7 @@ namespace MaxMind\Db\Test\Reader;
 
 use MaxMind\Db\Reader\Decoder;
 use MaxMind\Db\Reader\InvalidDatabaseException;
+use MaxMind\Db\Reader\UnsupportedPlatformException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -363,6 +364,56 @@ class DecoderTest extends TestCase
     public function testMaps(): void
     {
         $this->validateTypeDecodingList('map', $this->maps);
+    }
+
+    /**
+     * @dataProvider invalidMapKeys
+     */
+    public function testInvalidMapKey(string $key): void
+    {
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, "\xe1" . $key . "\xa0");
+        $decoder = new Decoder($handle);
+
+        try {
+            $this->expectException(InvalidDatabaseException::class);
+            $this->expectExceptionMessage('A map key must be a string.');
+            $decoder->decode(0);
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function invalidMapKeys(): array
+    {
+        return [
+            'map' => ["\xe0"],
+            'array' => ["\x00\x04"],
+            'uint16' => ["\xa1\x01"],
+            'double' => ["\x68" . pack('E', 1.5)],
+            'boolean' => ["\x01\x07"],
+        ];
+    }
+
+    public function testLargeIntegerWithoutExtensions(): void
+    {
+        if (\extension_loaded('gmp') || \extension_loaded('bcmath')) {
+            $this->markTestSkipped('This test requires both gmp and bcmath to be disabled.');
+        }
+        $handle = fopen('php://memory', 'rwb');
+        // uint64 with the high bit set cannot fit in a signed PHP integer.
+        fwrite($handle, "\x08\x02\x80\x00\x00\x00\x00\x00\x00\x00");
+        $decoder = new Decoder($handle);
+
+        try {
+            $this->expectException(UnsupportedPlatformException::class);
+            $decoder->decode(0);
+        } finally {
+            fclose($handle);
+        }
     }
 
     public function testPointers(): void
