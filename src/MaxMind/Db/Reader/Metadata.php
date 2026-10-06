@@ -98,7 +98,8 @@ class Metadata
     /**
      * @param array<string, mixed> $metadata
      *
-     * @throws InvalidDatabaseException if a metadata field is missing or invalid
+     * @throws InvalidDatabaseException     if a metadata field is missing or invalid
+     * @throws UnsupportedPlatformException if the search tree exceeds the platform limit
      */
     public function __construct(array $metadata)
     {
@@ -106,6 +107,16 @@ class Metadata
             throw new \ArgumentCountError(
                 \sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
             );
+        }
+
+        $nodeCount = $metadata['node_count'] ?? null;
+        if (\is_string($nodeCount) && preg_match('/\A(?:0|[1-9][0-9]*)\z/', $nodeCount)) {
+            $maxInteger = (string) \PHP_INT_MAX;
+            if (\strlen($nodeCount) > \strlen($maxInteger)
+                || (\strlen($nodeCount) === \strlen($maxInteger) && strcmp($nodeCount, $maxInteger) > 0)
+            ) {
+                throw new UnsupportedPlatformException('The database node count exceeds the platform limit.');
+            }
         }
 
         foreach ([
@@ -148,6 +159,12 @@ class Metadata
             }
         }
 
+        $nodeByteSize = intdiv($metadata['record_size'], 4);
+        // The data section starts after the search tree and its 16-byte separator.
+        if ($metadata['node_count'] > intdiv(\PHP_INT_MAX - 16, $nodeByteSize)) {
+            throw new UnsupportedPlatformException('The database search tree exceeds the platform limit.');
+        }
+
         $this->binaryFormatMajorVersion
             = $metadata['binary_format_major_version'];
         $this->binaryFormatMinorVersion
@@ -159,7 +176,7 @@ class Metadata
         $this->ipVersion = $metadata['ip_version'];
         $this->nodeCount = $metadata['node_count'];
         $this->recordSize = $metadata['record_size'];
-        $this->nodeByteSize = $this->recordSize / 4;
+        $this->nodeByteSize = $nodeByteSize;
         $this->searchTreeSize = $this->nodeCount * $this->nodeByteSize;
     }
 }

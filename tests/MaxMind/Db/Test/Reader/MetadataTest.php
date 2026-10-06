@@ -6,6 +6,7 @@ namespace MaxMind\Db\Test\Reader;
 
 use MaxMind\Db\Reader\InvalidDatabaseException;
 use MaxMind\Db\Reader\Metadata;
+use MaxMind\Db\Reader\UnsupportedPlatformException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -120,6 +121,47 @@ class MetadataTest extends TestCase
 
         $this->expectException(InvalidDatabaseException::class);
         new Metadata([]);
+    }
+
+    /**
+     * @dataProvider unsupportedNodeCounts
+     *
+     * @param int|string $nodeCount
+     */
+    public function testUnsupportedNodeCount($nodeCount): void
+    {
+        if (\extension_loaded('maxminddb')) {
+            $this->markTestSkipped('This test covers the pure PHP metadata constructor.');
+        }
+
+        $this->expectException(UnsupportedPlatformException::class);
+        new Metadata([
+            'node_count' => $nodeCount,
+            'record_size' => 32,
+            'ip_version' => 6,
+            'binary_format_major_version' => 2,
+            'binary_format_minor_version' => 0,
+            'build_epoch' => 1594066370,
+            'database_type' => 'Test',
+        ]);
+    }
+
+    /**
+     * @return array<string, array{int|string}>
+     */
+    public static function unsupportedNodeCounts(): array
+    {
+        $firstUnsupportedInteger = '9223372036854775808';
+        if (\PHP_INT_SIZE === 4) {
+            $firstUnsupportedInteger = '2147483648';
+        }
+
+        return [
+            'decoded integer just beyond platform limit' => [$firstUnsupportedInteger],
+            'decoded integer beyond platform limit' => [(string) \PHP_INT_MAX . '0'],
+            'search tree multiplication overflow' => [\PHP_INT_MAX],
+            'data section separator overflow' => [intdiv(\PHP_INT_MAX, 8)],
+        ];
     }
 
     public function testTooManyConstructorArgs(): void

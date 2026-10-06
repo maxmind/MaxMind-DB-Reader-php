@@ -14,6 +14,10 @@ CHANGELOG
 * Missing gmp/bcmath support and offsets that exceed the platform limit now
   throw `MaxMind\Db\Reader\UnsupportedPlatformException`. It extends
   `RuntimeException`, so existing catches continue to work.
+* The pure PHP reader also throws `UnsupportedPlatformException` when the
+  metadata node count or the start of the data section exceeds the platform's
+  integer limit. These cases no longer produce `InvalidDatabaseException` or
+  overflow into a `TypeError`.
 * `phpinfo()` and `php --ri maxminddb` now show whether the extension was built
   with the bundled libmaxminddb or links a system library. The
   `libmaxminddb library version` row reads, for example, `1.14.0 (bundled)` or
