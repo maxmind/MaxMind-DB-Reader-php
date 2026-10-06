@@ -560,8 +560,9 @@ class Decoder
 
     /**
      * @throws UnsupportedPlatformException
+     *
+     * @return int|string
      */
-    // @phpstan-ignore-next-line
     private function decodeUint(string $bytes, int $byteLength)
     {
         if ($byteLength === 0) {
