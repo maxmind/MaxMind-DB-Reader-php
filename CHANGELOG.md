@@ -11,6 +11,9 @@ CHANGELOG
   `InvalidDatabaseException` instead of a `TypeError`, a warning, or an
   implicit type conversion. Missing optional `languages` and `description`
   fields default to empty arrays.
+* Missing gmp/bcmath support and offsets that exceed the platform limit now
+  throw `MaxMind\Db\Reader\UnsupportedPlatformException`. It extends
+  `RuntimeException`, so existing catches continue to work.
 * `phpinfo()` and `php --ri maxminddb` now show whether the extension was built
   with the bundled libmaxminddb or links a system library. The
   `libmaxminddb library version` row reads, for example, `1.14.0 (bundled)` or
@@ -18,8 +21,9 @@ CHANGELOG
 * The PHPDoc of the pure PHP reader now lists the exceptions that its methods
   can throw:
   * The `MaxMind\Db\Reader` constructor, `get()`, and `getWithPrefixLen()`
-    declare `RuntimeException`. The reader throws it for an integer that needs
-    the gmp or bcmath extension when neither is installed.
+    declare `UnsupportedPlatformException`. The reader throws it when an
+    integer needs gmp or bcmath and neither is installed, or a data offset
+    exceeds the platform limit.
   * The constructor declares `UnexpectedValueException`.
   * `close()` declares `BadMethodCallException` in place of `Exception`.
     `metadata()` no longer declares `InvalidArgumentException`, which it

@@ -7,6 +7,7 @@ namespace MaxMind\Db;
 use MaxMind\Db\Reader\Decoder;
 use MaxMind\Db\Reader\InvalidDatabaseException;
 use MaxMind\Db\Reader\Metadata;
+use MaxMind\Db\Reader\UnsupportedPlatformException;
 use MaxMind\Db\Reader\Util;
 
 /**
@@ -74,18 +75,18 @@ class Reader
      *
      * @param string $database the MaxMind DB file to use
      *
-     * @throws \InvalidArgumentException if the database file does not exist or
-     *                                   is not readable
+     * @throws \InvalidArgumentException    if the database file does not exist or
+     *                                      is not readable
      * @throws InvalidDatabaseException
-     *                                   if the database is invalid or there is an error reading
-     *                                   from it
-     * @throws \UnexpectedValueException if the size of the database file
-     *                                   cannot be determined
-     * @throws \RuntimeException         if the metadata contains an integer
-     *                                   that needs the gmp or bcmath extension
-     *                                   and neither is installed, or a data
-     *                                   offset that is too large for the
-     *                                   platform
+     *                                      if the database is invalid or there is an error reading
+     *                                      from it
+     * @throws \UnexpectedValueException    if the size of the database file
+     *                                      cannot be determined
+     * @throws UnsupportedPlatformException if the metadata contains an integer
+     *                                      that needs the gmp or bcmath extension
+     *                                      and neither is installed, or a data
+     *                                      offset that is too large for the
+     *                                      platform
      */
     public function __construct(string $database)
     {
@@ -137,18 +138,18 @@ class Reader
      *
      * @param string $ipAddress the IP address to look up
      *
-     * @throws \BadMethodCallException   if the database is closed or another lookup is in progress
-     * @throws \InvalidArgumentException if the IP address is not valid, or if
-     *                                   it is an IPv6 address and the database
-     *                                   is IPv4-only
+     * @throws \BadMethodCallException      if the database is closed or another lookup is in progress
+     * @throws \InvalidArgumentException    if the IP address is not valid, or if
+     *                                      it is an IPv6 address and the database
+     *                                      is IPv4-only
      * @throws InvalidDatabaseException
-     *                                   if the database is invalid or there is an error reading
-     *                                   from it
-     * @throws \RuntimeException         if the record contains an integer
-     *                                   that needs the gmp or bcmath extension
-     *                                   and neither is installed, or a data
-     *                                   offset that is too large for the
-     *                                   platform
+     *                                      if the database is invalid or there is an error reading
+     *                                      from it
+     * @throws UnsupportedPlatformException if the record contains an integer
+     *                                      that needs the gmp or bcmath extension
+     *                                      and neither is installed, or a data
+     *                                      offset that is too large for the
+     *                                      platform
      *
      * @return mixed the record for the IP address
      */
@@ -169,18 +170,18 @@ class Reader
      *
      * @param string $ipAddress the IP address to look up
      *
-     * @throws \BadMethodCallException   if the database is closed or another lookup is in progress
-     * @throws \InvalidArgumentException if the IP address is not valid, or if
-     *                                   it is an IPv6 address and the database
-     *                                   is IPv4-only
+     * @throws \BadMethodCallException      if the database is closed or another lookup is in progress
+     * @throws \InvalidArgumentException    if the IP address is not valid, or if
+     *                                      it is an IPv6 address and the database
+     *                                      is IPv4-only
      * @throws InvalidDatabaseException
-     *                                   if the database is invalid or there is an error reading
-     *                                   from it
-     * @throws \RuntimeException         if the record contains an integer
-     *                                   that needs the gmp or bcmath extension
-     *                                   and neither is installed, or a data
-     *                                   offset that is too large for the
-     *                                   platform
+     *                                      if the database is invalid or there is an error reading
+     *                                      from it
+     * @throws UnsupportedPlatformException if the record contains an integer
+     *                                      that needs the gmp or bcmath extension
+     *                                      and neither is installed, or a data
+     *                                      offset that is too large for the
+     *                                      platform
      *
      * @return array{0:mixed, 1:int} an array where the first element is the record and the
      *                               second the network prefix length for the record
@@ -363,7 +364,7 @@ class Reader
 
     /**
      * @throws InvalidDatabaseException
-     * @throws \RuntimeException
+     * @throws UnsupportedPlatformException
      *
      * @return mixed
      */

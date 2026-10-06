@@ -6,6 +6,7 @@ namespace MaxMind\Db\Test\Reader;
 
 use MaxMind\Db\Reader\Decoder;
 use MaxMind\Db\Reader\InvalidDatabaseException;
+use MaxMind\Db\Reader\UnsupportedPlatformException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -395,6 +396,24 @@ class DecoderTest extends TestCase
             'double' => ["\x68" . pack('E', 1.5)],
             'boolean' => ["\x01\x07"],
         ];
+    }
+
+    public function testLargeIntegerWithoutExtensions(): void
+    {
+        if (\extension_loaded('gmp') || \extension_loaded('bcmath')) {
+            $this->markTestSkipped('This test requires both gmp and bcmath to be disabled.');
+        }
+        $handle = fopen('php://memory', 'rwb');
+        // uint64 with the high bit set cannot fit in a signed PHP integer.
+        fwrite($handle, "\x08\x02\x80\x00\x00\x00\x00\x00\x00\x00");
+        $decoder = new Decoder($handle);
+
+        try {
+            $this->expectException(UnsupportedPlatformException::class);
+            $decoder->decode(0);
+        } finally {
+            fclose($handle);
+        }
     }
 
     public function testPointers(): void

@@ -113,12 +113,12 @@ class Decoder
     }
 
     /**
-     * @throws InvalidDatabaseException if the data is invalid or there is an
-     *                                  error reading it
-     * @throws \RuntimeException        if the data contains an integer that
-     *                                  needs the gmp or bcmath extension and
-     *                                  neither is installed, or a data offset
-     *                                  that is too large for the platform
+     * @throws InvalidDatabaseException     if the data is invalid or there is an
+     *                                      error reading it
+     * @throws UnsupportedPlatformException if the data contains an integer that
+     *                                      needs the gmp or bcmath extension and
+     *                                      neither is installed, or a data offset
+     *                                      that is too large for the platform
      *
      * @return array<mixed>
      */
@@ -139,7 +139,7 @@ class Decoder
 
     /**
      * @throws InvalidDatabaseException
-     * @throws \RuntimeException
+     * @throws UnsupportedPlatformException
      *
      * @return array<mixed>
      */
@@ -207,7 +207,7 @@ class Decoder
      * @param int<0, max> $size
      *
      * @throws InvalidDatabaseException
-     * @throws \RuntimeException
+     * @throws UnsupportedPlatformException
      *
      * @return array{0:mixed, 1:int}
      */
@@ -356,7 +356,7 @@ class Decoder
 
     /**
      * @throws InvalidDatabaseException
-     * @throws \RuntimeException
+     * @throws UnsupportedPlatformException
      *
      * @return array{0:array<mixed>, 1:int}
      */
@@ -453,7 +453,7 @@ class Decoder
 
     /**
      * @throws InvalidDatabaseException
-     * @throws \RuntimeException
+     * @throws UnsupportedPlatformException
      *
      * @return array{0:array<string, mixed>, 1:int}
      */
@@ -478,7 +478,7 @@ class Decoder
 
     /**
      * @throws InvalidDatabaseException
-     * @throws \RuntimeException
+     * @throws UnsupportedPlatformException
      *
      * @return array{0:int, 1:int}
      */
@@ -542,7 +542,7 @@ class Decoder
                 if (\PHP_INT_MAX - $pointerBase >= $pointerOffset) {
                     $pointer = $pointerOffset + $pointerBase;
                 } else {
-                    throw new \RuntimeException(
+                    throw new UnsupportedPlatformException(
                         'The database offset is too large to be represented on your platform.'
                     );
                 }
@@ -559,7 +559,7 @@ class Decoder
     }
 
     /**
-     * @throws \RuntimeException
+     * @throws UnsupportedPlatformException
      */
     // @phpstan-ignore-next-line
     private function decodeUint(string $bytes, int $byteLength)
@@ -594,7 +594,7 @@ class Decoder
             } elseif (\extension_loaded('bcmath')) {
                 $integerAsString = bcadd(bcmul($integerAsString, '256'), (string) $part);
             } else {
-                throw new \RuntimeException(
+                throw new UnsupportedPlatformException(
                     'The gmp or bcmath extension must be installed to read this database.'
                 );
             }
