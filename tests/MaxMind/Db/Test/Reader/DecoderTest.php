@@ -365,6 +365,38 @@ class DecoderTest extends TestCase
         $this->validateTypeDecodingList('map', $this->maps);
     }
 
+    /**
+     * @dataProvider invalidMapKeys
+     */
+    public function testInvalidMapKey(string $key): void
+    {
+        $handle = fopen('php://memory', 'rwb');
+        fwrite($handle, "\xe1" . $key . "\xa0");
+        $decoder = new Decoder($handle);
+
+        try {
+            $this->expectException(InvalidDatabaseException::class);
+            $this->expectExceptionMessage('A map key must be a string.');
+            $decoder->decode(0);
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function invalidMapKeys(): array
+    {
+        return [
+            'map' => ["\xe0"],
+            'array' => ["\x00\x04"],
+            'uint16' => ["\xa1\x01"],
+            'double' => ["\x68" . pack('E', 1.5)],
+            'boolean' => ["\x01\x07"],
+        ];
+    }
+
     public function testPointers(): void
     {
         $this->validateTypeDecodingList('pointers', $this->pointers());

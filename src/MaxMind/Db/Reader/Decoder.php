@@ -466,6 +466,9 @@ class Decoder
 
         for ($i = 0; $i < $size; ++$i) {
             [$key, $offset] = $this->decodeWithBudget($offset, $depth + 1);
+            if (!\is_string($key)) {
+                throw new InvalidDatabaseException('A map key must be a string.');
+            }
             [$value, $offset] = $this->decodeWithBudget($offset, $depth + 1);
             $map[$key] = $value;
         }
