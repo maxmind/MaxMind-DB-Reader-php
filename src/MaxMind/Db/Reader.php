@@ -417,6 +417,9 @@ class Reader
     }
 
     /**
+     * The C extension can also throw InvalidDatabaseException if it cannot
+     * decode the metadata. The pure PHP reader decodes it during construction.
+     *
      * @throws \BadMethodCallException if the database has been closed
      *
      * @return Metadata object for the database
