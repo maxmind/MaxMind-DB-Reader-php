@@ -96,8 +96,6 @@ class Decoder
 
     /**
      * @param resource $fileStream
-     *
-     * @throws InvalidDatabaseException
      */
     public function __construct(
         $fileStream,
@@ -650,16 +648,13 @@ class Decoder
         return $this->switchByteOrder ? strrev($bytes) : $bytes;
     }
 
-    /**
-     * @throws InvalidDatabaseException
-     */
     private function isPlatformLittleEndian(): bool
     {
         $testint = 0x00FF;
         $packed = pack('S', $testint);
         $rc = unpack('v', $packed);
         if ($rc === false) {
-            throw new InvalidDatabaseException(
+            throw new \Error(
                 'Could not unpack an unsigned short value from the given bytes.'
             );
         }
