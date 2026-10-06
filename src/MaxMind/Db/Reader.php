@@ -121,6 +121,9 @@ class Reader
         $start = $this->findMetadataStart($database);
         $metadataDecoder = new Decoder($this->fileHandle, $start);
         [$metadataArray] = $metadataDecoder->decode($start);
+        if (!\is_array($metadataArray)) {
+            throw new InvalidDatabaseException('The database metadata must be a map.');
+        }
         $this->metadata = new Metadata($metadataArray);
         $this->decoder = new Decoder(
             $this->fileHandle,

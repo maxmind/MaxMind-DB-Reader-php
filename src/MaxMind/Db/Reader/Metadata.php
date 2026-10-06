@@ -29,7 +29,7 @@ class Metadata
      * This is an unsigned 64-bit integer that contains the database build
      * timestamp as a Unix epoch value.
      *
-     * @var int
+     * @var int|string
      */
     public $buildEpoch;
 
@@ -97,6 +97,8 @@ class Metadata
 
     /**
      * @param array<string, mixed> $metadata
+     *
+     * @throws InvalidDatabaseException if a metadata field is missing or invalid
      */
     public function __construct(array $metadata)
     {
@@ -104,6 +106,46 @@ class Metadata
             throw new \ArgumentCountError(
                 \sprintf('%s() expects exactly 1 parameter, %d given', __METHOD__, \func_num_args())
             );
+        }
+
+        foreach ([
+            'binary_format_major_version',
+            'binary_format_minor_version',
+            'ip_version',
+            'node_count',
+            'record_size',
+        ] as $key) {
+            if (!isset($metadata[$key]) || !\is_int($metadata[$key]) || $metadata[$key] < 0) {
+                throw new InvalidDatabaseException("Metadata field $key must be an unsigned integer.");
+            }
+        }
+        $buildEpoch = $metadata['build_epoch'] ?? null;
+        if ((!\is_int($buildEpoch) || $buildEpoch < 0)
+            && (!\is_string($buildEpoch) || !preg_match('/\A[0-9]+\z/', $buildEpoch))
+        ) {
+            throw new InvalidDatabaseException('Metadata build_epoch must be an unsigned integer.');
+        }
+        if (!\in_array($metadata['record_size'], [24, 28, 32], true)) {
+            throw new InvalidDatabaseException('Metadata record_size must be 24, 28, or 32.');
+        }
+        if (!\in_array($metadata['ip_version'], [4, 6], true)) {
+            throw new InvalidDatabaseException('Metadata ip_version must be 4 or 6.');
+        }
+        if (!isset($metadata['database_type']) || !\is_string($metadata['database_type'])) {
+            throw new InvalidDatabaseException('Metadata database_type must be a string.');
+        }
+        foreach (['languages', 'description'] as $key) {
+            if (!\array_key_exists($key, $metadata)) {
+                $metadata[$key] = [];
+            }
+            if (!\is_array($metadata[$key])) {
+                throw new InvalidDatabaseException("Metadata field $key must be an array of strings.");
+            }
+            foreach ($metadata[$key] as $value) {
+                if (!\is_string($value)) {
+                    throw new InvalidDatabaseException("Metadata field $key must contain only strings.");
+                }
+            }
         }
 
         $this->binaryFormatMajorVersion

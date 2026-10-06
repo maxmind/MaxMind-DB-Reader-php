@@ -7,6 +7,10 @@ CHANGELOG
 * The pure PHP reader now rejects non-string map keys with
   `InvalidDatabaseException` instead of a `TypeError`, a warning, or an
   implicit type conversion.
+* The pure PHP reader now rejects malformed metadata with
+  `InvalidDatabaseException` instead of a `TypeError`, a warning, or an
+  implicit type conversion. Missing optional `languages` and `description`
+  fields default to empty arrays.
 * `phpinfo()` and `php --ri maxminddb` now show whether the extension was built
   with the bundled libmaxminddb or links a system library. The
   `libmaxminddb library version` row reads, for example, `1.14.0 (bundled)` or
