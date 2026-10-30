@@ -69,3 +69,73 @@ jobs:
 
       - name: Test with phpunit using extension
         run: php -d extension=ext/modules/maxminddb.so vendor/bin/phpunit
+
+  native:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+        # windows-latest has no toolchain for PHP <= 7.4.
+        php-version: ['8.1', '8.5']
+
+    name: "PHP ${{ matrix.php-version }} test on ${{ matrix.os }}"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: gmp
+          tools: "composer, phpize"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+
+      # Without gmp, ReaderTest's uint128 value checks are marked incomplete,
+      # which does not fail the run.
+      - name: Check that gmp is loaded
+        run: |
+              php -r 'exit(extension_loaded("gmp") ? 0 : 1);' ||
+                { echo "::error::gmp is not loaded; the uint128 value assertions would not run"; exit 1; }
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Test with phpunit without extension
+        run: php vendor/bin/phpunit
+
+      # configure finds the Homebrew libmaxminddb through pkg-config, so the
+      # Homebrew prefix does not need to be known here.
+      - name: Install libmaxminddb
+        if: runner.os == 'macOS'
+        run: brew install libmaxminddb pkgconf
+
+      - name: Build extension
+        if: runner.os == 'macOS'
+        run: |
+              cd ext
+              phpize
+              ./configure --with-maxminddb --enable-maxminddb-debug
+              make clean
+              make
+              ../dev-bin/run-ext-tests.sh
+
+      # A failed extension= load is only a warning, and the suite passes with
+      # the pure-PHP reader too, so without this check PHPUnit could pass
+      # without testing the extension.
+      - name: Check that the extension is loaded
+        if: runner.os == 'macOS'
+        run: |
+              php -d extension="$PWD/ext/modules/maxminddb.so" -r \
+                'exit(extension_loaded("maxminddb") ? 0 : 1);' ||
+                { echo "::error::the extension did not load"; exit 1; }
+
+      - name: Test with phpunit using extension
+        if: runner.os == 'macOS'
+        run: php -d extension="$PWD/ext/modules/maxminddb.so" vendor/bin/phpunit
