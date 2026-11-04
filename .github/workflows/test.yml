@@ -21,8 +21,16 @@ jobs:
           # when it is loaded. Disable gmp so that the bcmath path runs.
           - php-extension: bcmath
             disabled-extensions: ':gmp'
+          # Two PHP versions on each OS are enough to find platform problems.
+          - { os: macos-latest, php-version: '8.1', php-extension: gmp }
+          - { os: macos-latest, php-version: '8.5', php-extension: gmp }
+          - { os: windows-latest, php-version: '8.1', php-extension: gmp }
+          - { os: windows-latest, php-version: '8.5', php-extension: gmp }
 
     name: "PHP ${{ matrix.php-version }} (with ${{ matrix.php-extension }}) test on ${{ matrix.os }}"
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Install PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
@@ -57,7 +65,8 @@ jobs:
           submodules: true
           persist-credentials: false
 
-      - name: Install libmaxminddb
+      - name: Install libmaxminddb from git
+        if: runner.os == 'Linux'
         run: |
               mkdir -p "$HOME/libmaxminddb"
               git clone --recursive https://github.com/maxmind/libmaxminddb.git
@@ -66,11 +75,19 @@ jobs:
               ./configure --prefix="$HOME/libmaxminddb"
               make
               make install
+              echo "CFLAGS=-L$HOME/libmaxminddb/lib" >> "$GITHUB_ENV"
+              echo "CPPFLAGS=-I$HOME/libmaxminddb/include" >> "$GITHUB_ENV"
 
+      # configure finds the Homebrew libmaxminddb through pkg-config.
+      - name: Install libmaxminddb from Homebrew
+        if: runner.os == 'macOS'
+        run: brew install libmaxminddb pkgconf
+
+      # Windows can only build the bundled extension. test-bundled.yml tests
+      # that DLL.
       - name: Build extension
+        if: runner.os != 'Windows'
         run: |
-              export CFLAGS="-L$HOME/libmaxminddb/lib"
-              export CPPFLAGS="-I$HOME/libmaxminddb/include"
               cd ext
               phpize
               ./configure --with-maxminddb --enable-maxminddb-debug
@@ -83,7 +100,8 @@ jobs:
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Test with phpunit without extension
-        run: vendor/bin/phpunit
+        run: php vendor/bin/phpunit
 
       - name: Test with phpunit using extension
+        if: runner.os != 'Windows'
         run: php -d extension=ext/modules/maxminddb.so vendor/bin/phpunit
