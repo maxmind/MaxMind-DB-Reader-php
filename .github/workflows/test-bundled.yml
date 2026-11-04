@@ -233,11 +233,15 @@ jobs:
       # One job is enough. config.w32 does not vary by PHP version, arch or
       # thread safety in any way this exercises, and PHP <= 7.4 needs a
       # toolchain windows-latest no longer carries.
+      #
+      # github.sha is the commit the checkout above uses. For a pull request,
+      # that is the merge commit, which the action can fetch through
+      # refs/pull/<n>/merge.
       - name: Build the extension
         uses: php/php-windows-builder/extension@29352c0ef9e8ce65264ea9e287881a6f7758a953 # 1.9.0
         with:
           extension-url: https://github.com/${{ github.repository }}
-          extension-ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          extension-ref: ${{ github.sha }}
           build-directory: winbuild
           php-version: '8.4'
           arch: x64
