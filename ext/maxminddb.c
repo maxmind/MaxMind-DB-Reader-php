@@ -528,11 +528,11 @@ static void handle_uint32(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC) {
     uint32_t val = entry_data_list->entry_data.uint32;
 
-#if LONG_MAX >= UINT32_MAX
+#if ZEND_LONG_MAX >= UINT32_MAX
     ZVAL_LONG(z_value, val);
     return;
 #else
-    if (val <= LONG_MAX) {
+    if (val <= ZEND_LONG_MAX) {
         ZVAL_LONG(z_value, val);
         return;
     }
@@ -550,11 +550,11 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC) {
     uint64_t val = entry_data_list->entry_data.uint64;
 
-#if LONG_MAX >= UINT64_MAX
+#if ZEND_LONG_MAX >= UINT64_MAX
     ZVAL_LONG(z_value, val);
     return;
 #else
-    if (val <= LONG_MAX) {
+    if (val <= ZEND_LONG_MAX) {
         ZVAL_LONG(z_value, val);
         return;
     }

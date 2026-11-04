@@ -34,6 +34,8 @@ CHANGELOG
     cannot throw.
   * `MaxMind\Db\Reader\Decoder::decode()` and `MaxMind\Db\Reader\Util::read()`
     declare their exceptions.
+* On 64-bit Windows, the extension returned `uint32` and `uint64` values
+  from 2^31 to `PHP_INT_MAX` as strings. It now returns them as integers.
 
 1.14.0 (2026-09-10)
 -------------------
