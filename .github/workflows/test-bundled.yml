@@ -256,7 +256,8 @@ jobs:
       #
       # Uses the php.exe the build downloaded, not the runner's: version, arch,
       # thread safety and toolset all have to match. Neither is on PATH in a
-      # later step, so both are located by search.
+      # later step, so both are located by search and saved for the PHPUnit
+      # step.
       - name: Gate the built DLL
         shell: pwsh
         run: |
@@ -265,6 +266,8 @@ jobs:
                      Where-Object { $_.Directory.Name -eq 'php-bin' })
           if ($dll.Count -ne 1) { throw "expected one php_maxminddb.dll, found $($dll.Count)" }
           if ($php.Count -ne 1) { throw "expected one php-bin\php.exe, found $($php.Count)" }
+          "BUILD_PHP=$($php[0].FullName)" >> $env:GITHUB_ENV
+          "BUILD_DLL=$($dll[0].FullName)" >> $env:GITHUB_ENV
 
           $ac = Get-Content ext/libmaxminddb/configure.ac -Raw
           if ($ac -notmatch 'AC_INIT\(\[libmaxminddb\], \[([^\]]+)\]') {
@@ -279,3 +282,38 @@ jobs:
               dev-bin/verify-extension.php `
               tests/data/test-data/GeoIP2-City-Test.mmdb $version
           if ($LASTEXITCODE -ne 0) { throw "the DLL did not load and query cleanly" }
+
+      # The phpt files decode nothing, so this is the only run of the decoding
+      # tests against the DLL. See the bundled job above for why it matters.
+      # The runner's PHP only runs Composer. The tests use the downloaded
+      # php.exe, for the reason the gate step gives.
+      - name: Install PHP for Composer
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          tools: composer
+        env:
+          fail-fast: true
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      # -n ignores the php.ini the build wrote, so extension_dir is set here.
+      # A failed extension= load is only a warning. Without the check, PHPUnit
+      # could pass with the pure-PHP reader, or with the uint128 value checks
+      # marked incomplete.
+      - name: Test with phpunit using the DLL
+        shell: pwsh
+        run: |
+          $extDir = Join-Path (Split-Path $env:BUILD_PHP) ext
+          $phpArgs = @(
+            '-n',
+            '-d', "extension_dir=$extDir",
+            '-d', 'extension=gmp',
+            '-d', 'extension=mbstring',
+            '-d', "extension=$env:BUILD_DLL"
+          )
+          & $env:BUILD_PHP @phpArgs -r "exit(extension_loaded('maxminddb') && extension_loaded('gmp') ? 0 : 1);"
+          if ($LASTEXITCODE -ne 0) { throw "the DLL or gmp did not load" }
+          & $env:BUILD_PHP @phpArgs vendor/bin/phpunit
+          if ($LASTEXITCODE -ne 0) { throw "PHPUnit failed" }
