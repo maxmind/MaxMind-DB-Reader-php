@@ -10,26 +10,25 @@ permissions: {}
 
 jobs:
   run:
-    runs-on: ${{ matrix.runner }}
-    container: shivammathur/node:latest-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        arch: ["amd64", "arm64v8"]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
         php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         php-extension: ['bcmath', 'gmp']
         include:
-          - arch: amd64
-            runner: ubuntu-latest
-          - arch: arm64v8
-            runner: ubuntu-24.04-arm
+          # The runner's PHP loads gmp by default, and the decoder uses gmp
+          # when it is loaded. Disable gmp so that the bcmath path runs.
+          - php-extension: bcmath
+            disabled-extensions: ':gmp'
 
-    name: "PHP ${{ matrix.php-version }} (with ${{ matrix.php-extension }}) test on ${{ matrix.runner }}"
+    name: "PHP ${{ matrix.php-version }} (with ${{ matrix.php-extension }}) test on ${{ matrix.os }}"
     steps:
       - name: Install PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: "mbstring, intl, ${{ matrix.php-extension }}"
+          extensions: "mbstring, intl, ${{ matrix.php-extension }}, ${{ matrix.disabled-extensions }}"
           tools: "composer, phpize"
 
       - name: Checkout
