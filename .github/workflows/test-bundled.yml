@@ -195,9 +195,9 @@ jobs:
     runs-on: windows-latest
     name: "Windows bundled build (x64, nts, PHP 8.4)"
     steps:
-      # The action clones and initialises its own copy to build from; this
-      # checkout supplies dev-bin/verify-extension.php and the tests/data
-      # database the gate below queries.
+      # The action clones and initialises its own copy to build from. This
+      # checkout supplies the dev-bin scripts, the tests/data databases,
+      # composer.json and the PHPUnit suite that the steps below use.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

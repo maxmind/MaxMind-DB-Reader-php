@@ -72,8 +72,8 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install libmaxminddb pkgconf
 
-      # Windows can only build the bundled extension. test-bundled.yml tests
-      # that DLL.
+      # This job does not build the extension on Windows. test-bundled.yml
+      # tests the bundled DLL.
       - name: Build extension
         if: runner.os != 'Windows'
         run: |
