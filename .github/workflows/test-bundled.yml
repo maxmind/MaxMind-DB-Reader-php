@@ -204,6 +204,22 @@ jobs:
           submodules: recursive
           persist-credentials: false
 
+      # The phpt files decode nothing, so the PHPUnit step below is the only
+      # run of the decoding tests against the DLL. See the bundled job above
+      # for why it matters. The runner's PHP only runs Composer. The tests use
+      # the downloaded php.exe, for the reason the gate step gives. These steps
+      # run before the build, so a failed install does not lose the build.
+      - name: Install PHP for Composer
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          tools: composer
+        env:
+          fail-fast: true
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
       # extension-url rather than the action's local mode, which cannot be used
       # here: local mode selects itself by finding a config.w32 anywhere in the
       # tree, but Get-ExtensionName then reads "config.w32" relative to the
@@ -264,21 +280,6 @@ jobs:
               dev-bin/verify-extension.php `
               tests/data/test-data/GeoIP2-City-Test.mmdb $version
           if ($LASTEXITCODE -ne 0) { throw "the DLL did not load and query cleanly" }
-
-      # The phpt files decode nothing, so this is the only run of the decoding
-      # tests against the DLL. See the bundled job above for why it matters.
-      # The runner's PHP only runs Composer. The tests use the downloaded
-      # php.exe, for the reason the gate step gives.
-      - name: Install PHP for Composer
-        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
-        with:
-          php-version: '8.4'
-          tools: composer
-        env:
-          fail-fast: true
-
-      - name: Install dependencies
-        run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       # -n ignores the php.ini the build wrote, so extension_dir is set here.
       # A failed extension= load is only a warning. Without the check, PHPUnit
