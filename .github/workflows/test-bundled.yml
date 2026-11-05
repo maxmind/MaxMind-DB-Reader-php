@@ -142,10 +142,7 @@ jobs:
       # load leaves every assertion above testing src/ rather than the object
       # this job built.
       - name: Check the extension is actually loaded
-        run: |
-              php -d extension="$PWD/ext/modules/maxminddb.so" -r \
-                'exit(extension_loaded("maxminddb") ? 0 : 1);' ||
-                { echo "::error::the bundled extension did not load; PHPUnit would silently test the pure-PHP reader"; exit 1; }
+        run: php -d extension="$PWD/ext/modules/maxminddb.so" dev-bin/check-extensions.php maxminddb
 
       - name: Test with phpunit using the bundled extension
         run: php -d extension="$PWD/ext/modules/maxminddb.so" vendor/bin/phpunit
@@ -296,7 +293,7 @@ jobs:
             '-d', 'extension=mbstring',
             '-d', "extension=$env:BUILD_DLL"
           )
-          & $env:BUILD_PHP @phpArgs -r "exit(extension_loaded('maxminddb') ? 0 : 1);"
+          & $env:BUILD_PHP @phpArgs dev-bin/check-extensions.php maxminddb
           if ($LASTEXITCODE -ne 0) { throw "the DLL did not load" }
           & $env:BUILD_PHP @phpArgs vendor/bin/phpunit
           if ($LASTEXITCODE -ne 0) { throw "PHPUnit failed" }

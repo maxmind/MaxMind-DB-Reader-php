@@ -39,31 +39,20 @@ jobs:
           extensions: "mbstring, intl, ${{ matrix.php-extension }}, ${{ matrix.disabled-extensions }}"
           tools: "composer, phpize"
 
-      # Without gmp or bcmath, ReaderTest marks its uint128 value checks
-      # incomplete, and the run still passes. If gmp is loaded, the decoder
-      # uses it, and a bcmath job does not test bcmath.
-      - name: Check the math extension
-        env:
-          MATH_EXTENSION: ${{ matrix.php-extension }}
-        run: |
-              php -r '
-                $ext = getenv("MATH_EXTENSION");
-                if (!extension_loaded($ext)) {
-                    echo "::error::$ext is not loaded\n";
-                    exit(1);
-                }
-                if ($ext === "bcmath" && extension_loaded("gmp")) {
-                    echo "::error::gmp is loaded, so the decoder does not use bcmath\n";
-                    exit(1);
-                }
-              '
-
       - name: Checkout
         # We use v1 due to https://github.com/actions/checkout/issues/334
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           persist-credentials: false
+
+      # The decoder uses gmp if it is loaded, and bcmath otherwise. Check that
+      # each job uses the extension it names.
+      - name: Check the math extension
+        env:
+          MATH_EXTENSION: ${{ matrix.php-extension }}
+          DISABLED_EXTENSIONS: ${{ matrix.disabled-extensions }}
+        run: php dev-bin/check-extensions.php "$MATH_EXTENSION" $DISABLED_EXTENSIONS
 
       - name: Install libmaxminddb from git
         if: runner.os == 'Linux'
