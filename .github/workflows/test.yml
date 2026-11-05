@@ -10,26 +10,33 @@ permissions: {}
 
 jobs:
   run:
-    runs-on: ${{ matrix.runner }}
-    container: shivammathur/node:latest-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        arch: ["amd64", "arm64v8"]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
         php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         php-extension: ['bcmath', 'gmp']
         include:
-          - arch: amd64
-            runner: ubuntu-latest
-          - arch: arm64v8
-            runner: ubuntu-24.04-arm
+          # The runner's PHP loads gmp by default, and the decoder uses gmp
+          # when it is loaded. Disable gmp so that the bcmath path runs.
+          - php-extension: bcmath
+            disabled-extensions: ':gmp'
+          # Two PHP versions on each OS are enough to find platform problems.
+          - { os: macos-latest, php-version: '8.1', php-extension: gmp }
+          - { os: macos-latest, php-version: '8.5', php-extension: gmp }
+          - { os: windows-latest, php-version: '8.1', php-extension: gmp }
+          - { os: windows-latest, php-version: '8.5', php-extension: gmp }
 
-    name: "PHP ${{ matrix.php-version }} (with ${{ matrix.php-extension }}) test on ${{ matrix.runner }}"
+    name: "PHP ${{ matrix.php-version }} (with ${{ matrix.php-extension }}) test on ${{ matrix.os }}"
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Install PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: "mbstring, intl, ${{ matrix.php-extension }}"
+          extensions: "mbstring, intl, ${{ matrix.php-extension }}, ${{ matrix.disabled-extensions }}"
           tools: "composer, phpize"
 
       - name: Checkout
@@ -39,7 +46,16 @@ jobs:
           submodules: true
           persist-credentials: false
 
-      - name: Install libmaxminddb
+      # The decoder uses gmp if it is loaded, and bcmath otherwise. Check that
+      # each job uses the extension it names.
+      - name: Check the math extension
+        env:
+          MATH_EXTENSION: ${{ matrix.php-extension }}
+          DISABLED_EXTENSIONS: ${{ matrix.disabled-extensions }}
+        run: php dev-bin/check-extensions.php "$MATH_EXTENSION" $DISABLED_EXTENSIONS
+
+      - name: Install libmaxminddb from git
+        if: runner.os == 'Linux'
         run: |
               mkdir -p "$HOME/libmaxminddb"
               git clone --recursive https://github.com/maxmind/libmaxminddb.git
@@ -48,11 +64,19 @@ jobs:
               ./configure --prefix="$HOME/libmaxminddb"
               make
               make install
+              echo "CFLAGS=-L$HOME/libmaxminddb/lib" >> "$GITHUB_ENV"
+              echo "CPPFLAGS=-I$HOME/libmaxminddb/include" >> "$GITHUB_ENV"
 
+      # configure finds the Homebrew libmaxminddb through pkg-config.
+      - name: Install libmaxminddb from Homebrew
+        if: runner.os == 'macOS'
+        run: brew install libmaxminddb pkgconf
+
+      # This job does not build the extension on Windows. test-bundled.yml
+      # tests the bundled DLL.
       - name: Build extension
+        if: runner.os != 'Windows'
         run: |
-              export CFLAGS="-L$HOME/libmaxminddb/lib"
-              export CPPFLAGS="-I$HOME/libmaxminddb/include"
               cd ext
               phpize
               ./configure --with-maxminddb --enable-maxminddb-debug
@@ -65,7 +89,12 @@ jobs:
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Test with phpunit without extension
-        run: vendor/bin/phpunit
+        run: php vendor/bin/phpunit
 
+      # make test runs the phpt suite with the PHP from php-config, so it does
+      # not show that the php on PATH can load the extension.
       - name: Test with phpunit using extension
-        run: php -d extension=ext/modules/maxminddb.so vendor/bin/phpunit
+        if: runner.os != 'Windows'
+        run: |
+              php -d extension=ext/modules/maxminddb.so dev-bin/check-extensions.php maxminddb
+              php -d extension=ext/modules/maxminddb.so vendor/bin/phpunit

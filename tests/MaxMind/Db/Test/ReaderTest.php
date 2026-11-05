@@ -65,18 +65,10 @@ class ReaderTest extends TestCase
         $this->assertSame(268435456, $record['uint32']);
         $this->assertSame(\PHP_INT_MAX > 1152921504606846976 ? 1152921504606846976 : '1152921504606846976', $record['uint64']);
 
-        $uint128 = $record['uint128'];
-
-        // For the C extension, which returns a hexadecimal
-        if (\extension_loaded('gmp')) {
-            $uint128 = gmp_strval($uint128);
-        } else {
-            $this->markTestIncomplete('Requires gmp extension to check value of uint128');
-        }
-
+        // The C extension returns uint128 values as hexadecimal strings.
         $this->assertSame(
-            '1329227995784915872903807060280344576',
-            $uint128
+            \extension_loaded('maxminddb') ? '0x01000000000000000000000000000000' : '1329227995784915872903807060280344576',
+            $record['uint128']
         );
     }
 
@@ -99,13 +91,10 @@ class ReaderTest extends TestCase
         $this->assertSame(0, $record['uint32']);
         $this->assertSame('0', $record['uint64'] . '');
 
-        $uint128 = $record['uint128'];
-        if (\extension_loaded('gmp')) {
-            $uint128 = gmp_strval($uint128);
-        } else {
-            $this->markTestIncomplete('Requires gmp extension to check value of uint128');
-        }
-        $this->assertSame('0', $uint128);
+        $this->assertSame(
+            \extension_loaded('maxminddb') ? '0x00000000000000000000000000000000' : 0,
+            $record['uint128']
+        );
     }
 
     public function testMax(): void
@@ -120,13 +109,10 @@ class ReaderTest extends TestCase
         $this->assertSame(\PHP_INT_MAX < 0xFFFFFFFF ? '4294967295' : 0xFFFFFFFF, $record['uint32']);
         $this->assertSame('18446744073709551615', $record['uint64'] . '');
 
-        $uint128 = $record['uint128'];
-        if (\extension_loaded('gmp')) {
-            $uint128 = gmp_strval($uint128);
-        } else {
-            $this->markTestIncomplete('Requires gmp extension to check value of uint128');
-        }
-        $this->assertSame('340282366920938463463374607431768211455', $uint128);
+        $this->assertSame(
+            \extension_loaded('maxminddb') ? '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' : '340282366920938463463374607431768211455',
+            $record['uint128']
+        );
     }
 
     public function testInvalidMetadataType(): void

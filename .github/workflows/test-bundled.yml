@@ -47,10 +47,7 @@ jobs:
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ matrix.php-version }}
-          # gmp so ReaderTest's uint128 boundary cases run rather than skip;
-          # they are gated on it, and uint128 is the branch this job is the
-          # only one to compile.
-          extensions: "mbstring, intl, gmp"
+          extensions: "mbstring, intl"
           tools: "composer, phpize"
 
       - name: Checkout
@@ -138,29 +135,14 @@ jobs:
       - name: Install dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      # Both preconditions are load-bearing, and neither failure is loud on its
-      # own.
-      #
       # A failed `extension=` load is a warning, not a fatal, and PHP carries
       # on. phpunit.xml.dist bootstraps vendor/autoload.php, whose PSR-4 map
       # resolves MaxMind\Db\Reader to the pure-PHP implementation, and the
       # suite is written to pass either way -- so an extension that does not
       # load leaves every assertion above testing src/ rather than the object
       # this job built.
-      #
-      # gmp is what turns ReaderTest's decimal uint128 case from
-      # markTestIncomplete into a real assertion, and markTestIncomplete does
-      # not fail a run. (The hex form at ReaderTest.php:162 is gated on
-      # extension_loaded('maxminddb'), not on gmp, so only half the uint128
-      # coverage depends on this -- but it is the half that checks the value
-      # rather than the format.)
-      - name: Check the extension and gmp are actually loaded
-        run: |
-              php -d extension="$PWD/ext/modules/maxminddb.so" -r \
-                'exit(extension_loaded("maxminddb") ? 0 : 1);' ||
-                { echo "::error::the bundled extension did not load; PHPUnit would silently test the pure-PHP reader"; exit 1; }
-              php -r 'exit(extension_loaded("gmp") ? 0 : 1);' ||
-                { echo "::error::gmp is not loaded; ReaderTest's uint128 value assertions would be skipped, not run"; exit 1; }
+      - name: Check the extension is actually loaded
+        run: php -d extension="$PWD/ext/modules/maxminddb.so" dev-bin/check-extensions.php maxminddb
 
       - name: Test with phpunit using the bundled extension
         run: php -d extension="$PWD/ext/modules/maxminddb.so" vendor/bin/phpunit
@@ -213,14 +195,30 @@ jobs:
     runs-on: windows-latest
     name: "Windows bundled build (x64, nts, PHP 8.4)"
     steps:
-      # The action clones and initialises its own copy to build from; this
-      # checkout supplies dev-bin/verify-extension.php and the tests/data
-      # database the gate below queries.
+      # The action clones and initialises its own copy to build from. This
+      # checkout supplies the dev-bin scripts, the tests/data databases,
+      # composer.json and the PHPUnit suite that the steps below use.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
+
+      # The phpt files decode nothing, so the PHPUnit step below is the only
+      # run of the decoding tests against the DLL. See the bundled job above
+      # for why it matters. The runner's PHP only runs Composer. The tests use
+      # the downloaded php.exe, for the reason the gate step gives. These steps
+      # run before the build, so a failed install does not lose the build.
+      - name: Install PHP for Composer
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          tools: composer
+        env:
+          fail-fast: true
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       # extension-url rather than the action's local mode, which cannot be used
       # here: local mode selects itself by finding a config.w32 anywhere in the
@@ -233,11 +231,15 @@ jobs:
       # One job is enough. config.w32 does not vary by PHP version, arch or
       # thread safety in any way this exercises, and PHP <= 7.4 needs a
       # toolchain windows-latest no longer carries.
+      #
+      # github.sha is the commit the checkout above uses. For a pull request,
+      # that is the merge commit, which the action can fetch through
+      # refs/pull/<n>/merge.
       - name: Build the extension
         uses: php/php-windows-builder/extension@29352c0ef9e8ce65264ea9e287881a6f7758a953 # 1.9.0
         with:
           extension-url: https://github.com/${{ github.repository }}
-          extension-ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          extension-ref: ${{ github.sha }}
           build-directory: winbuild
           php-version: '8.4'
           arch: x64
@@ -252,7 +254,8 @@ jobs:
       #
       # Uses the php.exe the build downloaded, not the runner's: version, arch,
       # thread safety and toolset all have to match. Neither is on PATH in a
-      # later step, so both are located by search.
+      # later step, so both are located by search and saved for the PHPUnit
+      # step.
       - name: Gate the built DLL
         shell: pwsh
         run: |
@@ -261,6 +264,8 @@ jobs:
                      Where-Object { $_.Directory.Name -eq 'php-bin' })
           if ($dll.Count -ne 1) { throw "expected one php_maxminddb.dll, found $($dll.Count)" }
           if ($php.Count -ne 1) { throw "expected one php-bin\php.exe, found $($php.Count)" }
+          "BUILD_PHP=$($php[0].FullName)" >> $env:GITHUB_ENV
+          "BUILD_DLL=$($dll[0].FullName)" >> $env:GITHUB_ENV
 
           $ac = Get-Content ext/libmaxminddb/configure.ac -Raw
           if ($ac -notmatch 'AC_INIT\(\[libmaxminddb\], \[([^\]]+)\]') {
@@ -275,3 +280,21 @@ jobs:
               dev-bin/verify-extension.php `
               tests/data/test-data/GeoIP2-City-Test.mmdb $version
           if ($LASTEXITCODE -ne 0) { throw "the DLL did not load and query cleanly" }
+
+      # -n ignores the php.ini the build wrote, so extension_dir is set here.
+      # A failed extension= load is only a warning. Without the check, PHPUnit
+      # could pass with the pure-PHP reader.
+      - name: Test with phpunit using the DLL
+        shell: pwsh
+        run: |
+          $extDir = Join-Path (Split-Path $env:BUILD_PHP) ext
+          $phpArgs = @(
+            '-n',
+            '-d', "extension_dir=$extDir",
+            '-d', 'extension=mbstring',
+            '-d', "extension=$env:BUILD_DLL"
+          )
+          & $env:BUILD_PHP @phpArgs dev-bin/check-extensions.php maxminddb
+          if ($LASTEXITCODE -ne 0) { throw "the DLL did not load" }
+          & $env:BUILD_PHP @phpArgs vendor/bin/phpunit
+          if ($LASTEXITCODE -ne 0) { throw "PHPUnit failed" }
