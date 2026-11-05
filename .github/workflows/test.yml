@@ -91,6 +91,10 @@ jobs:
       - name: Test with phpunit without extension
         run: php vendor/bin/phpunit
 
+      # make test runs the phpt suite with the PHP from php-config, so it does
+      # not show that the php on PATH can load the extension.
       - name: Test with phpunit using extension
         if: runner.os != 'Windows'
-        run: php -d extension=ext/modules/maxminddb.so vendor/bin/phpunit
+        run: |
+              php -d extension=ext/modules/maxminddb.so dev-bin/check-extensions.php maxminddb
+              php -d extension=ext/modules/maxminddb.so vendor/bin/phpunit
