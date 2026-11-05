@@ -550,10 +550,6 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
                           zval *z_value TSRMLS_DC) {
     uint64_t val = entry_data_list->entry_data.uint64;
 
-#if ZEND_LONG_MAX >= UINT64_MAX
-    ZVAL_LONG(z_value, val);
-    return;
-#else
     if (val <= ZEND_LONG_MAX) {
         ZVAL_LONG(z_value, val);
         return;
@@ -565,7 +561,6 @@ static void handle_uint64(const MMDB_entry_data_list_s *entry_data_list,
 
     ZVAL_STRING(z_value, int_str);
     efree(int_str);
-#endif
 }
 
 static void maxminddb_free_storage(free_obj_t *object TSRMLS_DC) {
