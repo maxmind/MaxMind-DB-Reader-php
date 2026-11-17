@@ -34,6 +34,9 @@ CHANGELOG
     cannot throw.
   * `MaxMind\Db\Reader\Decoder::decode()` and `MaxMind\Db\Reader\Util::read()`
     declare their exceptions.
+* The bundled libmaxminddb used by `--with-maxminddb-bundled` builds of the
+  extension is now 1.14.1. This fixes a build failure with `-Werror` on
+  platforms where `ssize_t` is 32 bits, such as i686.
 * The classes in the pure PHP reader are now marked `@final`. They will be
   `final` in the next major version. Static analyzers such as PHPStan report
   a class that extends them.
