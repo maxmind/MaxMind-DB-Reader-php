@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-1.15.0
+1.15.0 (2026-11-17)
 -------------------
 
 * The pure PHP reader now rejects non-string map keys with
