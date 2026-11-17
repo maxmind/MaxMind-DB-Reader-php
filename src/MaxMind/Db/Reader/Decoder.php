@@ -6,6 +6,9 @@ namespace MaxMind\Db\Reader;
 
 // @codingStandardsIgnoreLine
 
+/**
+ * @final
+ */
 class Decoder
 {
     /**

@@ -34,6 +34,9 @@ CHANGELOG
     cannot throw.
   * `MaxMind\Db\Reader\Decoder::decode()` and `MaxMind\Db\Reader\Util::read()`
     declare their exceptions.
+* The classes in the pure PHP reader are now marked `@final`. They will be
+  `final` in the next major version. Static analyzers such as PHPStan report
+  a class that extends them.
 * On 64-bit Windows, the extension returned `uint32` and `uint64` values
   from 2^31 to `PHP_INT_MAX` as strings. It now returns them as integers.
 

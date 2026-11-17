@@ -6,6 +6,8 @@ namespace MaxMind\Db\Reader;
 
 /**
  * This class provides the metadata for the MaxMind DB file.
+ *
+ * @final
  */
 class Metadata
 {
