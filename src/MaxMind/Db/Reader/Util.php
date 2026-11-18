@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace MaxMind\Db\Reader;
 
+/**
+ * @final
+ */
 class Util
 {
     /**

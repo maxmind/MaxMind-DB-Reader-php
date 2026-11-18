@@ -16,6 +16,8 @@ use MaxMind\Db\Reader\Util;
  *
  * The declared exceptions describe the pure PHP reader. The C extension may
  * differ.
+ *
+ * @final
  */
 class Reader
 {

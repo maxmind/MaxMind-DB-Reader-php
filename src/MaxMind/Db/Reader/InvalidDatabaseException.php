@@ -6,6 +6,8 @@ namespace MaxMind\Db\Reader;
 
 /**
  * This class should be thrown when unexpected data is found in the database.
+ *
+ * @final
  */
 // phpcs:disable
 class InvalidDatabaseException extends \Exception {}
