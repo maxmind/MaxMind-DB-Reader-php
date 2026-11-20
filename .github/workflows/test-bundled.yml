@@ -57,6 +57,14 @@ jobs:
           submodules: true
           persist-credentials: false
 
+      # The image has PHP 7.2 to 8.5. For a newer PHP, setup-php installs a
+      # shivammathur/php-builder build, and that installs libmaxminddb-dev.
+      - name: Remove the libmaxminddb-dev that php-builder installs
+        run: |
+              if dpkg -s libmaxminddb-dev >/dev/null 2>&1; then
+                apt-get remove -y libmaxminddb-dev
+              fi
+
       # We deliberately do not install libmaxminddb, and we do not set
       # PKG_CONFIG_PATH, so that the build cannot silently fall back to a
       # system library.
