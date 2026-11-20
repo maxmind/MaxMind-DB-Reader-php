@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm]
-        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
         php-extension: ['bcmath', 'gmp']
         include:
           # The runner's PHP loads gmp by default, and the decoder uses gmp
@@ -23,9 +23,9 @@ jobs:
             disabled-extensions: ':gmp'
           # Two PHP versions on each OS are enough to find platform problems.
           - { os: macos-latest, php-version: '8.1', php-extension: gmp }
-          - { os: macos-latest, php-version: '8.5', php-extension: gmp }
+          - { os: macos-latest, php-version: '8.6', php-extension: gmp }
           - { os: windows-latest, php-version: '8.1', php-extension: gmp }
-          - { os: windows-latest, php-version: '8.5', php-extension: gmp }
+          - { os: windows-latest, php-version: '8.6', php-extension: gmp }
 
     name: "PHP ${{ matrix.php-version }} (with ${{ matrix.php-extension }}) test on ${{ matrix.os }}"
     defaults:

@@ -34,7 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: ["amd64", "arm64v8"]
-        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
         include:
           - arch: amd64
             runner: ubuntu-latest
@@ -56,6 +56,14 @@ jobs:
         with:
           submodules: true
           persist-credentials: false
+
+      # The image has PHP 7.2 to 8.5. For a newer PHP, setup-php installs a
+      # shivammathur/php-builder build, and that installs libmaxminddb-dev.
+      - name: Remove the libmaxminddb-dev that php-builder installs
+        run: |
+              if dpkg -s libmaxminddb-dev >/dev/null 2>&1; then
+                apt-get remove -y libmaxminddb-dev
+              fi
 
       # We deliberately do not install libmaxminddb, and we do not set
       # PKG_CONFIG_PATH, so that the build cannot silently fall back to a
