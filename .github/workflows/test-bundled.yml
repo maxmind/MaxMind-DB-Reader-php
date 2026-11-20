@@ -34,7 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: ["amd64", "arm64v8"]
-        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
         include:
           - arch: amd64
             runner: ubuntu-latest
